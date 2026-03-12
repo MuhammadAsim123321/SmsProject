@@ -1,0 +1,56 @@
+﻿@model List<SendSmsCallAlerts.Models.OptInstVM>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Option's Instruction</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayName("Option")
+            </th>
+            <th>
+                @Html.DisplayName("Instruction Order")
+            </th>
+            <th>
+                @Html.DisplayName("Instruction")
+            </th>
+            <th>
+                @Html.DisplayName("Twilio#")
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.OptionNumber)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.InstructionOrder)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Instruction)
+            </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.TwilioNumber)
+                </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+<p>
+    <a asp-controller="SMS" asp-action="IncomingLogs">Go back</a>
+</p>

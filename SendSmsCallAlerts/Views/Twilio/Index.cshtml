@@ -1,0 +1,60 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+}
+
+@if (TempData["EMsg"] != null)
+{
+    <div class="alert alert-danger">
+        <b>@TempData["EMsg"]</b>
+    </div>
+}
+else if (TempData["SMsg"] != null)
+{
+    <div class="alert alert-success">
+        <b>@TempData["SMsg"]</b>
+    </div>
+}
+
+@if (ViewBag.TwilioNumber != null)
+{
+    <h1>Update Twilio Number</h1>
+    <b>Currently Active: <i>@ViewBag.TwilioNumber</i></b>
+
+    @using (Html.BeginForm("UpdateData", "Twilio", FormMethod.Post, new { @role = "form", @id = "registerForm", @class = "form-horizontal" }))
+    {
+        <div style="padding:20px;">
+            <label>Add Number</label>
+            <input type="number" name="data" />
+
+            <div class="row">
+                <div class="col-md-8">
+                    <button type="submit" style="margin:10px;" class="btn btn-info">
+                        <i class="fa fa-check"></i> Update
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}else
+{
+    <h1>Add Twilio Number</h1>
+
+    @using (Html.BeginForm("StoreData", "Twilio", FormMethod.Post, new { @role = "form", @id = "registerForm", @class = "form-horizontal" }))
+    {
+        <div style="padding:20px;">
+            <label>Add Number</label>
+            <input type="number" name="data" />
+
+            <div class="row">
+                <div class="col-md-8">
+                    <button type="submit" style="margin:10px;" class="btn btn-info">
+                        <i class="fa fa-check"></i> Add
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+<a asp-action="IncomingLogs" asp-controller="Sms">Go back</a>

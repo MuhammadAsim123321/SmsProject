@@ -1,0 +1,36 @@
+﻿@model SendSmsCallAlerts.Models.IntroSms
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Add Intro Sms</h1>
+
+@if (ViewBag.ErMsg != null)
+{
+    <div class="alert alert-danger">
+        <b>@ViewBag.ErMsg</b>
+    </div>
+}
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" name="TwNum" value="@ViewBag.TwilioNum" />
+            <div class="form-group">
+                <label asp-for="Message" class="control-label"></label>
+                <input asp-for="Message" class="form-control" />
+                <span asp-validation-for="Message" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-controller="Sms" asp-action="IncomingLogs">Back to List</a>
+</div>
+

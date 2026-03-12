@@ -1,0 +1,69 @@
+﻿@model IEnumerable<SendSmsCallAlerts.Models.SmsTemplate>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>All Templates</h1>
+
+@if (TempData["StMsg"] != null)
+{
+    <div class="alert alert-success">
+        <b>@TempData["StMsg"]</b>
+    </div>
+}
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayName("Name")
+            </th>
+            <th>
+                @Html.DisplayName("Template Body")
+            </th>
+            <th>
+                @Html.DisplayName("Image")
+            </th>
+            @*   <th>
+            @Html.DisplayNameFor(model => model.createdOn)
+            </th>*@
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.name)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.templateBody)
+                </td>
+                <td>
+                    @if (item.imgPath == "")
+                    {
+                        <span>N/A</span>
+                    }
+                    else
+                    {
+                        <img src="@item.imgPath" width='100' height='100' />
+                    }
+
+                </td>
+                @*  <td>
+            @Html.DisplayFor(modelItem => item.createdOn)
+            </td>*@
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
+                    @* <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>*@
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

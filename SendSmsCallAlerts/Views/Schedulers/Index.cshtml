@@ -1,0 +1,94 @@
+﻿@model List<SchedulerViewModel>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>All Schedulers</h1>
+@if (TempData["ErrMsg"] != null)
+{
+    <div class="alert alert-danger"><b>@TempData["ErrMsg"]</b></div>
+}
+@if (TempData["SucMsg"] != null)
+{
+    <div class="alert alert-success"><b>@TempData["SucMsg"]</b></div>
+}
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Create New Template</a>
+</p>
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayName("Name")
+            </th>
+            @*  <th>
+                @Html.DisplayName("Template")
+            </th>*@
+
+            <th>
+                @Html.DisplayName("Body")
+            </th>
+            <th>
+                @Html.DisplayName("Execution Type")
+            </th>
+            <th>
+                @Html.DisplayName("Time")
+            </th>
+            <th>
+                @Html.DisplayName("Status")
+            </th>
+            @*  <th>
+            @Html.DisplayNameFor(model => model.createdOn)
+            </th>*@
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.name)
+                </td>
+                @*                <td>
+                    @Html.DisplayFor(modelItem => item.templateOrAudioName)
+                </td>*@
+                <td>
+                    @Html.DisplayFor(modelItem => item.smsBody)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.onceOrRepeat)
+                </td>
+                <td>
+                    @if (item.onceOrRepeat == "Once")
+                    {
+                        @Html.DisplayFor(modelItem => item.executionDateAndTimeSt)
+                    }
+                    else
+                    {
+                        @Html.DisplayFor(modelItem => item.executionTimeSt)
+                    }
+
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.status)
+                </td>
+                @*   <td>
+            @Html.DisplayFor(modelItem => item.createdOn)
+            </td>*@
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-info">Edit</a>
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this scheduler template?');">
+                        @* <a asp-action="Details" asp-route-id="@item.Id">Details</a> |*@
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p>
+    <a asp-controller="SMS" asp-action="IncomingLogs" class="btn btn-secondary">Go back</a>
+</p>

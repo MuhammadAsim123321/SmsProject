@@ -1,0 +1,543 @@
+﻿@*@model IEnumerable<WebAppStuart.Models.Statistics>*@
+
+@{
+    ViewData["Title"] = "DataAdded";
+}
+
+@*<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">*@
+<link href="~/css/bootstrapcopyfromlive.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<style>
+    .fixcolumn {
+        position: sticky;
+        background: #70b3db !important;
+        left: 0;
+    }
+</style>
+@* <link href="//cdn.datatables.net/1.13.5/css/jquery.dataTables.min.css" rel="stylesheet" />*@
+
+@*<script type="text/javascript" src="//cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>*@
+
+<h1>Data History</h1>
+
+@if (TempData["SucMsg"] != null)
+{
+    <div class="alert alert-success">
+        <b>@TempData["SucMsg"]</b>
+    </div>
+}
+
+@if (TempData["ErrMsg"] != null)
+{
+    <div class="alert alert-danger">
+        <b>@TempData["ErrMsg"]</b>
+    </div>
+}
+
+<div style="display: flex; justify-content: flex-end;">
+
+    <a asp-action="Create" style="padding: 8px;
+    background: lightblue;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-right: 2px;
+    color: black;">Add Details</a>
+
+    <a asp-action="CreateAll" style="padding: 8px;
+    background: lightblue;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-right: 2px;
+    color: black;">Add Bulk Details</a>
+
+    <a asp-action="CreateRollerCalender" style="padding: 8px;
+    background: lightblue;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-right: 2px;
+    color: black;">Add Details (Rolling calendar)</a>
+
+</div>
+
+<span style="font-weight:bold;">Select Store</span>
+<select class="form-control" id="StoreId" name="StoreId" style="width:300px;">
+</select>
+
+
+<table class="table table-bordered table-striped" id="tblRPM">
+    <thead style="background: #70b3db;">
+        <tr>
+            <th>Date&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+            <th>Store</th>
+            <th>No Of Orders</th>
+            <th>No of Units</th>
+            <th>Gross Sales</th>
+            <th>Discounts</th>
+            <th>Returns</th>
+            <th>Shipping</th>
+            <th>Gross COGSD</th>
+            <th>Tik Tok Ad Spend</th>
+            <th>Meta Ad Spned</th>
+            <th>Admin Exp</th>
+            <th>Accounting Fee</th>
+            <th>Operator Exp</th>
+            <th>Shopify Fee</th>
+            <th>Apps</th>
+            <th>Variable Expenses</th>
+            <th>Description</th>
+            <th>support_Doc</th>
+            <th>Action</th>
+        </tr>
+
+
+    </thead>
+</table>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+
+@*<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/fixedcolumns/4.3.0/css/fixedColumns.dataTables.css">
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/fixedcolumns/4.3.0/js/dataTables.fixedColumns.min.js"></script>
+*@
+
+@*<script src="https://cdn.datatables.net/select/1.4.0/js/dataTables.select.min.js"></script>
+
+<script src="//cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>*@
+@*<script src="//cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+<script src="//cdn.datatables.net/buttons/1.6.2/js/buttons.html5.min.js"></script>*@
+
+
+
+<script>
+
+    var RpmDatatable = $('#tblRPM').on('error.dt', function (e, settings, techNote, message) {
+        //SessionExpiredRedirect();
+
+    }).DataTable({
+        "drawCallback": function (settings) {
+            $(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
+        },
+        "initComplete": function (settings, json) {
+            //$(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
+
+
+            //$('#tblRPM thead th:eq(1)').css({
+            //    'position': 'sticky',
+            //    'left': 102,
+            //    'background-color': '#70b3db',
+            //    'z-index': 2
+            //});
+
+            //this.api().columns.adjust();
+        },
+        "rowCallback": function (row, data, index) {
+
+            $("table > thead > tr > th:first-child").css({
+                'position': 'sticky',
+                'left': 0,
+                'background-color': '#70b3db',
+                'z-index': 2
+            });
+
+            $("table > thead > tr > th:nth-child(2)").css({
+                'position': 'sticky',
+                'left': 102,
+                'background-color': '#70b3db',
+                'z-index': 2
+            });
+
+            $('td:eq(0)', row).css({
+                'position': 'sticky',
+                'left': 0,
+                'background-color': '#70b3db',
+                'z-index': 1  // Ensure that it's above the other cells
+            });
+            $('td:eq(1)', row).css({
+                'position': 'sticky',
+                'left': 102,
+                'background-color': '#70b3db',
+                'z-index': 1
+            });
+        },
+        "autoWidth": false,
+        "sAjaxSource": "/Statistics/GetData",
+        "fnServerParams": function (aoData) {
+            aoData.push(
+                { "name": "storeId", "value": $('#StoreId').val() }
+            );
+        },
+        "sServerMethod": "POST",
+        "bServerSide": false,
+        "bProcessing": true,
+        "bSearchable": true,
+        "scrollX": true,
+        "scrollY": "400px",
+        //"fixedColumns": {
+        //    "leftColumns": 2 // Number of columns to freeze on the left
+        //},
+        "order": [],
+        //"order": [[0, 'asc']],
+        "language": {
+            "emptyTable": "No record found.",
+            "processing":
+                '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+        },
+        "columns": [
+            {
+                "data": "dtStr",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "storeName",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "totalNoOfOrders",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "noOfUnits",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "grossSales",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "discounts",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "returns",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "shipping",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "gross_COGSD",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "tikTokAdSpend",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "metaAdSpned",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "adminExp",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "accounting_Fee",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "operatorExp",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "shopifyFee",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "apps",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "variableExpenses",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "description",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "support_Doc",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "render": function (data, type, row) {
+
+                    return '<button style="background: #52aadf;margin: 2px" onclick="EditRecord(' + row.id + ')"> Edit </button>' +
+                           '<button style="background: #52aadf;" onclick="DeleteRecord(' + row.id + ')"> Delete </button>';
+
+
+                },
+                "searchable": true
+            }
+
+
+        ]
+    });
+
+    //RpmDatatable.on('draw.dt', function () {
+    //    $(".dtfc-fixed-left").css("background-color", "#66b7d1");
+    //});
+
+
+
+    function EditRecord(id){
+        var url = '@Url.Action("Edit", "Statistics")';
+        url += '?id=' + id;
+        window.location.href = url;
+    }
+
+
+    function DeleteRecord(id) {
+        var url = '@Url.Action("Delete", "Statistics")';
+        url += '?id=' + id;
+        window.location.href = url;
+    }
+
+    function loadStores() {
+
+        $.ajax({
+            type: "GET",
+            url: "/Stores/GetStores",
+            datatype: "Json",
+            success: function (data) {
+                $('#StoreId').empty();
+
+                $('#StoreId').append('<option value="" selected="true" disabled>Choose Store</option>');
+                $('#StoreId').append('<option value="-1">All</option>');
+
+                $.each(data, function (index, value) {
+                    $('#StoreId').append('<option value="' + value.id + '">' + value.name + '</option>');
+
+                });
+            }
+        });
+    }
+
+    loadStores();
+
+    $('#StoreId').on('change', function () {
+        RpmDatatable.ajax.reload();
+    });
+
+
+</script>
+/////////////// Controller Code
+
+                    public JsonResult GetData(StatisticsTbl para)
+        {
+            IEnumerable<StatisticsViewModel>
+    stats = null;
+    string usrRole = HttpContext.Session.GetString("UserRole");
+
+    if (usrRole == "STU_ADMIN")
+    {
+    if(para.storeId == -1)
+    {
+    stats = (from store in _db.Storess
+    join statis in _db.Statisticss
+    on store.Id equals statis.Store_Id
+    // orderby statis.Dt descending
+    select new StatisticsViewModel
+    {
+    DtStr = statis.Dt.ToString("MM-dd-yy"),
+    TotalNoOfOrders = statis.NoOfOrders,
+    NoOfUnits = statis.NoOfUnits,
+    GrossSales = statis.GrossSales,
+    Discounts = statis.Discounts,
+    Returns = statis.Returns,
+    Shipping = statis.Shipping,
+    Gross_COGSD = statis.Gross_COGSD,
+    TikTokAdSpend = statis.TikTok_AD_Spend,
+    MetaAdSpned = statis.Meta_AD_Spend,
+    AdminExp = statis.Admin_Exp,
+    Accounting_Fee = statis.Accounting_Fee,
+    OperatorExp = statis.Operator_Exp,
+    ShopifyFee = statis.Shopify_Fee,
+    Apps = statis.Apps,
+    VariableExpenses = statis.Variable_Expense,
+    Support_Doc = statis.Support_Doc,
+    StoreName = store.Name,
+    Dt = statis.Dt,
+    Description = statis.Description,
+    Id = statis.Id
+    })
+    .Distinct()
+    .ToList();
+    stats = stats.OrderByDescending(d => d.Dt);
+    }
+    else if(para.storeId > 0)
+    {
+    stats = (from store in _db.Storess.Where(i => i.Id == para.storeId)
+    join statis in _db.Statisticss
+    on store.Id equals statis.Store_Id
+    // orderby statis.Dt descending
+    select new StatisticsViewModel
+    {
+    DtStr = statis.Dt.ToString("MM-dd-yy"),
+    TotalNoOfOrders = statis.NoOfOrders,
+    NoOfUnits = statis.NoOfUnits,
+    GrossSales = statis.GrossSales,
+    Discounts = statis.Discounts,
+    Returns = statis.Returns,
+    Shipping = statis.Shipping,
+    Gross_COGSD = statis.Gross_COGSD,
+    TikTokAdSpend = statis.TikTok_AD_Spend,
+    MetaAdSpned = statis.Meta_AD_Spend,
+    AdminExp = statis.Admin_Exp,
+    Accounting_Fee = statis.Accounting_Fee,
+    OperatorExp = statis.Operator_Exp,
+    ShopifyFee = statis.Shopify_Fee,
+    Apps = statis.Apps,
+    VariableExpenses = statis.Variable_Expense,
+    Support_Doc = statis.Support_Doc,
+    StoreName = store.Name,
+    Dt = statis.Dt,
+    Description = statis.Description,
+    Id = statis.Id
+    })
+    .Distinct()
+    .ToList();
+    stats = stats.OrderByDescending(d => d.Dt);
+    }
+
+    }
+    else
+    {
+    string usrId = HttpContext.Session.GetString("UserId");
+    if (para.storeId == -1)
+    {
+
+    stats = (from store in _db.Storess
+    join association in _db.UserStoreAssociations.Where(u => u.UserId == Convert.ToInt32(usrId))
+    on store.Id equals association.StoreId
+    join statis in _db.Statisticss
+    on store.Id equals statis.Store_Id
+    //orderby statis.Dt descending
+    select new StatisticsViewModel
+    {
+    DtStr = statis.Dt.ToString("MM-dd-yy"),
+    TotalNoOfOrders = statis.NoOfOrders,
+    NoOfUnits = statis.NoOfUnits,
+    GrossSales = statis.GrossSales,
+    Discounts = statis.Discounts,
+    Returns = statis.Returns,
+    Shipping = statis.Shipping,
+    Gross_COGSD = statis.Gross_COGSD,
+    TikTokAdSpend = statis.TikTok_AD_Spend,
+    MetaAdSpned = statis.Meta_AD_Spend,
+    AdminExp = statis.Admin_Exp,
+    Accounting_Fee = statis.Accounting_Fee,
+    OperatorExp = statis.Operator_Exp,
+    ShopifyFee = statis.Shopify_Fee,
+    Apps = statis.Apps,
+    VariableExpenses = statis.Variable_Expense,
+    Support_Doc = statis.Support_Doc,
+    StoreName = store.Name,
+    Dt = statis.Dt,
+    Description = statis.Description,
+    Id = statis.Id
+    })
+    .Distinct()
+    .ToList();
+
+    stats = stats.OrderByDescending(d => d.Dt);
+    }
+    else if (para.storeId > 0)
+    {
+
+    stats = (from store in _db.Storess.Where(i=>i.Id == para.storeId)
+    join association in _db.UserStoreAssociations.Where(u => u.UserId == Convert.ToInt32(usrId))
+    on store.Id equals association.StoreId
+    join statis in _db.Statisticss
+    on store.Id equals statis.Store_Id
+    //orderby statis.Dt descending
+    select new StatisticsViewModel
+    {
+    DtStr = statis.Dt.ToString("MM-dd-yy"),
+    TotalNoOfOrders = statis.NoOfOrders,
+    NoOfUnits = statis.NoOfUnits,
+    GrossSales = statis.GrossSales,
+    Discounts = statis.Discounts,
+    Returns = statis.Returns,
+    Shipping = statis.Shipping,
+    Gross_COGSD = statis.Gross_COGSD,
+    TikTokAdSpend = statis.TikTok_AD_Spend,
+    MetaAdSpned = statis.Meta_AD_Spend,
+    AdminExp = statis.Admin_Exp,
+    Accounting_Fee = statis.Accounting_Fee,
+    OperatorExp = statis.Operator_Exp,
+    ShopifyFee = statis.Shopify_Fee,
+    Apps = statis.Apps,
+    VariableExpenses = statis.Variable_Expense,
+    Support_Doc = statis.Support_Doc,
+    StoreName = store.Name,
+    Dt = statis.Dt,
+    Description = statis.Description,
+    Id = statis.Id
+    })
+    .Distinct()
+    .ToList();
+
+    stats = stats.OrderByDescending(d => d.Dt);
+    }
+
+
+    }
+
+
+    // long TotalRecords = _db.Statisticss.ToList().Count();
+
+    //stats = stats.Take(10).ToList();
+
+
+    if (stats == null)
+    {
+    return Json(new
+    {
+    para.sEcho,
+    //iTotalRecords = TotalRecords,
+    //iTotalDisplayRecords = TotalRecords,
+    aaData = new List<StatisticsViewModel>
+        ()
+        });
+        }
+
+        //return Json(new
+        //{
+        //    para.sEcho,
+        //    iTotalRecords = TotalRecords,
+        //    iTotalDisplayRecords = TotalRecords,
+        //    aaData = stats
+        //}, JsonRequestBehavior.AllowGet);
+
+        return Json(new
+        {
+        para.sEcho,
+        // iTotalRecords = TotalRecords,
+        // iTotalDisplayRecords = TotalRecords,
+        aaData = stats
+        });
+
+        }

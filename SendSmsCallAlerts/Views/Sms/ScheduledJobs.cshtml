@@ -1,0 +1,420 @@
+﻿@{
+    ViewData["Title"] = "All Scheduled Jobs and History";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+<style>
+    .page-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        padding: 28px;
+        margin: 20px;
+    }
+
+    .page-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+        color: #888;
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+    }
+
+    #tblScheduledJobs {
+        width: 100% !important;
+        border-collapse: collapse;
+    }
+
+        #tblScheduledJobs thead th {
+            background-color: #70b3db;
+            color: white;
+            text-align: center;
+            padding: 12px 10px;
+            white-space: nowrap;
+            border: none;
+        }
+
+        #tblScheduledJobs tbody td {
+            padding: 10px 12px;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f0f0;
+            border-left: none;
+            border-right: none;
+        }
+
+        #tblScheduledJobs tbody tr:hover {
+            background-color: #f7fbff;
+        }
+
+        #tblScheduledJobs tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+    .paused-row td {
+        background-color: #fff8e1 !important;
+    }
+
+    /* Last Sent badges */
+    .badge-never {
+        background: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #fca5a5;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+    .badge-sent-today {
+        background: #dcfce7;
+        color: #16a34a;
+        border: 1px solid #86efac;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+        display: inline-block;
+    }
+
+    .badge-sent-old {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        border-radius: 20px;
+        padding: 3px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        white-space: nowrap;
+        display: inline-block;
+    }
+    /* Action buttons */
+    .btn-pause {
+        background: #f59e0b;
+        color: #fff;
+        border: none;
+    }
+
+        .btn-pause:hover {
+            background: #d97706;
+            color: #fff;
+        }
+
+    .btn-resume {
+        background: #10b981;
+        color: #fff;
+        border: none;
+    }
+
+        .btn-resume:hover {
+            background: #059669;
+            color: #fff;
+        }
+
+    .btn-del {
+        background: #ef4444;
+        color: #fff;
+        border: none;
+    }
+
+        .btn-del:hover {
+            background: #dc2626;
+            color: #fff;
+        }
+
+    /* Type pill */
+    .type-once {
+        background: #ede9fe;
+        color: #7c3aed;
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    .type-repeat {
+        background: #dbeafe;
+        color: #1d4ed8;
+        border-radius: 20px;
+        padding: 2px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+    }
+
+    /* DataTables overrides */
+    .dataTables_wrapper .dataTables_filter input {
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        padding: 4px 10px;
+    }
+
+    .dataTables_wrapper .dataTables_length select {
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        padding: 3px 8px;
+    }
+
+    div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+        margin-top: 10px;
+    }
+</style>
+
+<div class="page-card">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+        <div>
+            <div class="page-title"><i class="fa fa-calendar-check me-2" style="color:#70b3db;"></i>Scheduled Jobs</div>
+            <div class="page-subtitle">View and manage all active, paused and completed SMS jobs</div>
+        </div>
+        <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+            <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+        </a>
+    </div>
+
+    <!-- Stats row -->
+    <div class="row g-3 mb-4" id="statsRow">
+        <div class="col-6 col-md-3">
+            <div class="rounded-3 p-3 text-center" style="background:#eff6ff; border:1px solid #bfdbfe;">
+                <div style="font-size:1.5rem; font-weight:700; color:#1d4ed8;" id="statTotal">-</div>
+                <div style="font-size:0.8rem; color:#64748b;">Total Jobs</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="rounded-3 p-3 text-center" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                <div style="font-size:1.5rem; font-weight:700; color:#16a34a;" id="statActive">-</div>
+                <div style="font-size:0.8rem; color:#64748b;">Active</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="rounded-3 p-3 text-center" style="background:#fffbeb; border:1px solid #fde68a;">
+                <div style="font-size:1.5rem; font-weight:700; color:#d97706;" id="statPaused">-</div>
+                <div style="font-size:0.8rem; color:#64748b;">Paused</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="rounded-3 p-3 text-center" style="background:#f0fdf4; border:1px solid #bbf7d0;">
+                <div style="font-size:1.5rem; font-weight:700; color:#16a34a;" id="statSent">-</div>
+                <div style="font-size:0.8rem; color:#64748b;">Sent</div>
+            </div>
+        </div>
+    </div>
+
+    <table class="table" id="tblScheduledJobs">
+        <thead>
+            <tr>
+                <th>Job ID</th>
+                <th>Phone Number</th>
+                <th>Name</th>
+                <th>Template Name</th>
+                <th>Type</th>
+                <th>Booked Date</th>
+                <th>Completed Date</th>
+                <th>Last Sent</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+    </table>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white">
+                <h6 class="modal-title"><i class="fa fa-trash me-2"></i>Confirm Delete</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fa fa-exclamation-triangle fa-2x text-danger mb-3"></i>
+                <p class="mb-1">Are you sure you want to delete this job?</p>
+                <p class="text-danger small fw-bold mb-0">This job will not execute anymore.</p>
+                <input type="hidden" id="deleteJobId" />
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="btnConfirmDelete" class="btn btn-danger btn-sm">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header">
+                <h6 class="modal-title" id="resultTitle">Notification</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-3" id="resultBody"></div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        var JobsDatatable;
+        var allData = [];
+
+        $(document).ready(function () {
+            JobsDatatable = $('#tblScheduledJobs').DataTable({
+                "ajax": {
+                    "url": "/Sms/GetScheduledJobsData",
+                    "type": "GET",
+                    "dataSrc": function (json) {
+                        if (json.error) {
+                            alert("Backend Error: " + json.error);
+                            return [];
+                        }
+                        allData = json.aaData || [];
+                        updateStats(allData);
+                        return allData;
+                    }
+                },
+                "bProcessing": true,
+                "scrollX": true,
+                "order": [[0, 'desc']],
+                "language": {
+                    "emptyTable": "No scheduled jobs found.",
+                    "processing": '<div class="text-center py-3"><i class="fa fa-spinner fa-spin fa-2x" style="color:#70b3db;"></i></div>'
+                },
+                "rowCallback": function (row, data) {
+                    if (data.isPaused) $(row).addClass('paused-row');
+                },
+                "columns": [
+                    {
+                        "data": "jobId",
+                        "width": "60px",
+                        "render": function(data) {
+                            return '<span style="font-weight:600; color:#70b3db;">#' + data + '</span>';
+                        }
+                    },
+                    { "data": "phoneNumber" },
+                    {
+                        "data": "name",
+                        "render": function(data) {
+                            return '<span style="font-weight:500;">' + (data || 'N/A') + '</span>';
+                        }
+                    },
+                    { "data": "schedulerName" },
+                    {
+                        "data": "onceOrRepeat",
+                        "render": function(data) {
+                            if (!data || data === 'N/A') return 'N/A';
+                            var cls = data.toLowerCase() === 'once' ? 'type-once' : 'type-repeat';
+                            var icon = data.toLowerCase() === 'once' ? 'fa-bolt' : 'fa-sync-alt';
+                            return '<span class="' + cls + '"><i class="fa ' + icon + ' me-1"></i>' + data + '</span>';
+                        }
+                    },
+                    { "data": "jobBookDate" },
+                    { "data": "jobCompletedDate" },
+                    {
+                        "data": "lastExecutedAt",
+                        "render": function (data) {
+                            if (!data) return '<span class="badge-never"><i class="fa fa-clock me-1"></i>Never Sent</span>';
+                            var sentDate  = new Date(data);
+                            var today     = new Date();
+                            var isToday   = sentDate.toDateString() === today.toDateString();
+                            var timeStr   = sentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            var formatted = sentDate.toLocaleDateString() + ' ' + timeStr;
+                            if (isToday) {
+                                return '<span class="badge-sent-today"><i class="fa fa-check-circle me-1"></i>Today ' + timeStr + '</span>';
+                            }
+                            return '<span class="badge-sent-old"><i class="fa fa-calendar-alt me-1"></i>' + formatted + '</span>';
+                        }
+                    },
+                    {
+                        "data": "status",
+                        "render": function (data, type, row) {
+                            if (row.isPaused)
+                                return '<span class="badge bg-warning text-dark"><i class="fa fa-pause me-1"></i>Paused</span>';
+                            if (row.onceOrRepeat && row.onceOrRepeat.toLowerCase() === 'once' && data && data.toLowerCase() === 'sent')
+                                return '<span class="badge bg-success"><i class="fa fa-check me-1"></i>Sent</span>';
+                            return '<span class="badge bg-primary"><i class="fa fa-play me-1"></i>Active</span>';
+                        }
+                    },
+                    {
+                        "data": null,
+                        "searchable": false,
+                        "orderable": false,
+                        "render": function (data, type, row) {
+                            var deleteBtn = '<button class="btn btn-del btn-sm rounded-2" onclick="showDeleteConfirm(' + row.jobId + ')"><i class="fa fa-trash"></i></button>';
+
+                            if (row.onceOrRepeat && row.onceOrRepeat.toLowerCase() === 'once' && row.status && row.status.toLowerCase() === 'sent') {
+                                return '<div class="d-flex gap-1 align-items-center"><span class="text-success fw-bold small"><i class="fa fa-check-circle"></i> Sent</span>' + deleteBtn + '</div>';
+                            }
+
+                            var pauseBtn = row.isPaused
+                                ? '<button class="btn btn-resume btn-sm rounded-2" onclick="togglePause(' + row.jobId + ')"><i class="fa fa-play me-1"></i>Resume</button>'
+                                : '<button class="btn btn-pause btn-sm rounded-2" onclick="togglePause(' + row.jobId + ')"><i class="fa fa-pause me-1"></i>Pause</button>';
+
+                            return '<div class="d-flex gap-1">' + pauseBtn + deleteBtn + '</div>';
+                        }
+                    }
+                ]
+            });
+        });
+
+        function updateStats(data) {
+            var total   = data.length;
+            var paused  = data.filter(function(r) { return r.isPaused; }).length;
+            var sent    = data.filter(function(r) { return r.status && r.status.toLowerCase() === 'sent'; }).length;
+            var active  = total - paused - sent;
+            $('#statTotal').text(total);
+            $('#statActive').text(active < 0 ? 0 : active);
+            $('#statPaused').text(paused);
+            $('#statSent').text(sent);
+        }
+
+        function togglePause(jobId) {
+            $.post("/Sms/TogglePauseJob", { jobId: jobId }, function (res) {
+                if (res.success) {
+                    showResult("Success", "Job has been " + (res.isPaused ? "Paused" : "Resumed") + ".", "text-success");
+                    JobsDatatable.ajax.reload(null, false);
+                } else {
+                    showResult("Error", res.message || "Failed to update status.", "text-danger");
+                }
+            });
+        }
+
+        function showDeleteConfirm(jobId) {
+            $('#deleteJobId').val(jobId);
+            $('#confirmDeleteModal').modal('show');
+        }
+
+        $('#btnConfirmDelete').click(function () {
+            var jobId = $('#deleteJobId').val();
+            $('#confirmDeleteModal').modal('hide');
+            $.post("/Sms/DeleteScheduledJob", { jobId: jobId }, function (res) {
+                if (res.success) {
+                    showResult("Success", "Scheduled job deleted successfully.", "text-success");
+                    JobsDatatable.ajax.reload(null, false);
+                } else {
+                    showResult("Error", res.message || "Failed to delete job.", "text-danger");
+                }
+            });
+        });
+
+        function showResult(title, msg, colorClass) {
+            $('#resultTitle').text(title).removeClass("text-success text-danger text-warning").addClass(colorClass);
+            $('#resultBody').text(msg);
+            $('#resultModal').modal('show');
+        }
+    </script>
+}

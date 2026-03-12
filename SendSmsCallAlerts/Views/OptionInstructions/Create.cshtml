@@ -1,0 +1,54 @@
+﻿@model SendSmsCallAlerts.Models.OptionInstructions
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<h1>Add a new Option's Instruction</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="IvrId" class="control-label">Option</label>
+                @if (ViewBag.IvrOptList != null)
+                {
+                    <select asp-for="IvrId" class="form-control">
+                        @foreach (var option in @ViewBag.IvrOptList)
+                        {
+                            <option value="@option.Value">@option.Text</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <select asp-for="IvrId" class="form-control">
+                        <option value="">Options does not exist(please create)</option>
+                    </select>
+                }
+               
+                <span asp-validation-for="IvrId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="InstructionOrder" class="control-label">Instruction Order</label>
+                <input asp-for="InstructionOrder" type="number" class="form-control" />
+                <span asp-validation-for="InstructionOrder" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Instruction" class="control-label"></label>
+                <input asp-for="Instruction" class="form-control" />
+                <span asp-validation-for="Instruction" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+

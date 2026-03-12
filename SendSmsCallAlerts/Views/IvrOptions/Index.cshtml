@@ -1,0 +1,50 @@
+﻿@model IEnumerable<SendSmsCallAlerts.Models.IvrOptions>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Options List</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayName("Option Number")
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.keyword)
+            </th>
+            <th>
+                @Html.DisplayName("Twilio Number")
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Num)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.keyword)
+            </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.TwilioNum)
+                </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
+                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+
+<p>
+    <a asp-controller="SMS" asp-action="IncomingLogs">Go back</a>
+</p>

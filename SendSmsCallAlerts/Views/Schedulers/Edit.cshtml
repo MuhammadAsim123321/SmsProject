@@ -1,0 +1,263 @@
+﻿@model SendSmsCallAlerts.Models.Scheduler
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<h1>Edit Scheduler</h1>
+<hr />
+
+@if (ViewBag.ErMsg != null)
+{
+    <div class="alert alert-danger">
+        <b>@ViewBag.ErMsg </b>
+    </div>
+}
+
+<div class="row">
+    <div class="col-md-4">
+        @* <form asp-action="Edit">*@
+        @using (Html.BeginForm("Edit", "Schedulers", FormMethod.Post, new { enctype = "multipart/form-data", @role = "form", @id = "registerForm", @class = "form-horizontal" }))
+        {
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" />
+            <div class="form-group">
+                <label asp-for="name" class="control-label">Name</label>
+                <input asp-for="name" class="form-control" required />
+                <span asp-validation-for="name" class="text-danger"></span>
+            </div>
+
+
+            @*      <div class="form-group">
+                <label asp-for="templateOrAudioId" class="control-label">Template</label>
+                <select class="form-control" name="templateOrAudioId" id="templateOrAudioId" required>
+                </select>
+            </div>*@
+            <div class="form-group">
+                <label asp-for="fromNum" class="control-label">From</label>
+                <input asp-for="fromNum" class="form-control" required />
+
+            </div>
+            <div class="form-group">
+                <label asp-for="toNum" class="control-label">To</label>
+                <input asp-for="toNum" class="form-control" required />
+
+            </div>
+            <div class="form-group">
+                <label asp-for="smsBody" class="control-label">Body</label>
+                <input asp-for="smsBody" class="form-control" required />
+
+            </div>
+
+            <div class="form-group">
+                <label for="single-append-text" class="control-label"><b>Choose Image:</b></label>
+                <input type="file" name="file" multiple />
+
+            </div>
+
+
+            <div class="form-group">
+                <label class="control-label">Run From</label>
+                <select class="form-control" name="RunFromId" id="RunFromId" required>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label">Time To Run</label>
+                <select class="form-control" name="TimeToRunId" id="TimeToRunId" required>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="onceOrRepeat" class="control-label">Execution</label>
+                <select class="form-control" name="onceOrRepeat" id="onceOrRepeat">
+                    <option value="">Choose Execution</option>
+                    <option value="Once">Once</option>
+                    <option value="Repeat">Repeat</option>
+                </select>
+                <span asp-validation-for="onceOrRepeat" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="status" class="control-label">Status</label>
+                <select class="form-control" name="status" id="status">
+                    <option value="Active">Active</option>
+                    <option value="Deactivate">Deactivate</option>
+                </select>
+                <span asp-validation-for="status" class="text-danger"></span>
+            </div>
+            @*  <div class="form-group">
+            <label asp-for="createdOn" class="control-label"></label>
+            <input asp-for="createdOn" class="form-control" />
+            <span asp-validation-for="createdOn" class="text-danger"></span>
+            </div>*@
+            <div class="form-group">
+                <input type="submit" value="Update" class="btn btn-primary" />
+            </div>
+        }
+@*</form>*@
+
+    </div>
+</div>
+
+<p>
+    <a asp-controller="SMS" asp-action="IncomingLogs">Go back</a>
+</p>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+
+@* <script src="https://code.jquery.com/jquery-3.6.0.js"></script> *@
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+@* 
+<script>
+    // Get references to the elements
+    //const schedulerForSelect = document.getElementById('schedulerFor');
+    const onceOrRepeat = document.getElementById('onceOrRepeat');
+    //const templateOrAudioDiv = document.getElementById('templateOrAudioDiv');
+    const DateAndTimeDiv = document.getElementById('DateAndTimeDiv');
+    const TimeDiv = document.getElementById('TimeDiv');
+    //const templateOrAudioLabel = document.querySelector('#templateOrAudioDiv label');
+
+    //templateOrAudioDiv.style.display = 'none';
+    DateAndTimeDiv.style.display = 'none';
+    TimeDiv.style.display = 'none';
+
+    // Add event listener to schedulerFor select
+    //schedulerForSelect.addEventListener('change', function () {
+    //    const selectedValue = this.value;
+
+    //    if (selectedValue === 'Call') {
+    //        templateOrAudioLabel.textContent = 'Choose Audio';
+    //        loadAudios();
+    //    }
+    //    else if (selectedValue === 'Sms') {
+    //        templateOrAudioLabel.textContent = 'Choose Template';
+    //        loadTemplates();
+    //    }
+    //    else if (selectedValue === 'TTS') {
+    //        templateOrAudioLabel.textContent = 'Choose Text-To-Speech';
+    //        loadTTS();
+    //    }
+    //    else {
+    //        templateOrAudioLabel.textContent = '';
+    //    }
+
+    //    if (selectedValue) {
+    //        templateOrAudioDiv.style.display = 'block';
+    //    } else {
+    //        templateOrAudioDiv.style.display = 'none';
+    //    }
+    //});
+
+    onceOrRepeat.addEventListener('change', function () {
+        const selectedValue = this.value;
+
+        if (selectedValue === 'Once') {
+            DateAndTimeDiv.style.display = 'block';
+            TimeDiv.style.display = 'none';
+        }
+        else if (selectedValue === 'Repeat') {
+            DateAndTimeDiv.style.display = 'none';
+            TimeDiv.style.display = 'block';
+        }
+
+    });
+
+
+    //function loadTemplates() {
+
+    //    $.ajax({
+    //        type: "GET",
+    //        url: "/SmsTemplates/GetTemplates",
+    //        datatype: "Json",
+    //        success: function (data) {
+    //            $('#templateOrAudioId').empty();
+
+    //            $('#templateOrAudioId').append('<option value="" selected="true" disabled>Choose Template</option>');
+
+    //            $.each(data, function (index, value) {
+    //                $('#templateOrAudioId').append('<option value="' + value.id + '">' + value.name + '</option>');
+
+    //            });
+    //        }
+    //    });
+    //}
+
+    //loadTemplates();
+
+
+
+</script> *@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    const onceOrRepeat = document.getElementById('onceOrRepeat');
+
+    function updateExecutionFields(value) {
+        if (value === 'Once') {
+
+        } else if (value === 'Repeat') {
+
+        }
+    }
+
+    updateExecutionFields(onceOrRepeat.value);
+
+    onceOrRepeat.addEventListener('change', function () {
+        updateExecutionFields(this.value);
+    });
+</script>
+
+<script>
+    $(document).ready(function () {
+
+        // MODIFIED: Capture saved model values to use for pre-selection after AJAX loads
+        var savedTimeToRunId = @Model.TimeToRunId;
+        var savedRunFromId = @Model.RunFromId;
+
+        $.ajax({
+            type: "GET",
+            url: "/Schedulers/GetTimeToRunData",
+            success: function (data) {
+                $('#TimeToRunId').empty();
+                $('#TimeToRunId').append('<option value="" selected disabled>Choose Time To Run</option>');
+                $.each(data, function (index, item) {
+                    // MODIFIED: Pre-select the option that matches the saved model value
+                    var selected = (item.id == savedTimeToRunId) ? 'selected="selected"' : '';
+                    $('#TimeToRunId').append('<option value="' + item.id + '" ' + selected + '>' + item.name + '</option>');
+                });
+            }
+        });
+
+        $.ajax({
+            type: "GET",
+            url: "/Schedulers/GetRunFromData",
+            success: function (data) {
+                $('#RunFromId').empty();
+                $('#RunFromId').append('<option value="" selected disabled>Choose Run From</option>');
+                $.each(data, function (index, item) {
+                    // MODIFIED: Pre-select the option that matches the saved model value
+                    var selected = (item.id == savedRunFromId) ? 'selected="selected"' : '';
+                    $('#RunFromId').append('<option value="' + item.id + '" ' + selected + '>' + item.runFromName + '</option>');
+                });
+            }
+        });
+    });
+</script>

@@ -1,0 +1,86 @@
+﻿@model SendSmsCallAlerts.Models.Conversation
+@{
+    ViewData["Title"] = "SMS";
+}
+
+@if (TempData["StMsg"] != null)
+{
+    <div class="alert alert-success">
+        <b>@TempData["StMsg"]</b>
+    </div>
+}
+else if (TempData["ErMsg"] != null)
+{
+    <div class="alert alert-warning">
+        <b>@TempData["ErMsg"]</b>
+    </div>
+}
+
+<div class="row" style="padding:20px;">
+    <div class="col-md-12">
+        <div class="">
+            @using (Html.BeginForm("SendSms", "Conversations", FormMethod.Post, new { enctype = "multipart/form-data", @role = "form", @id = "registerForm", @class = "form-horizontal" }))
+            {
+                <h1>Send SMS</h1>
+                <div class="portlet-body">
+
+                    <div class="row">
+                        <div class="col-md-10">
+
+                            <label for="single-append-text" class="control-label"><b>Twilio#:</b></label>
+                            <label for="single-append-text" class="control-label"><b>@ViewBag.FromNumber</b></label>
+                            
+                        </div>
+                    </div>
+
+                <div class="row">
+                    <div class="col-md-10">
+
+                        <label for="single-append-text" class="control-label"><b>To:</b></label>
+                            <input type="number" name="toNum" value="@ViewBag.ToNumber" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-10">
+
+                        <label for="single-append-text" class="control-label"><b>SMS Body:</b></label>
+                        <textarea cols="10" rows="5" class="form-control" name="smsBody"></textarea>
+                    </div>
+                </div>
+
+                    <div class="row">
+                        <div class="col-md-10">
+
+                            <label for="single-append-text" class="control-label"><b>Choose Image:</b></label>
+                            <input type="file" name="file" multiple />
+                        </div>
+                    </div>
+                    
+
+                <div class="row">
+                    <div class="col-md-8">
+                        <button type="submit" style="margin:10px;" class="btn btn-info">
+                            <i class="fa fa-check"></i> Send
+                        </button>
+                    </div>
+                </div>
+
+                    <a asp-action="IncomingLogs" asp-controller="Sms">Go back</a>
+
+                </div>
+
+
+
+            }
+
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+

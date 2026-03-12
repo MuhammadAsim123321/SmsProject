@@ -1,0 +1,88 @@
+﻿
+@{
+    ViewData["Title"] = "OpenAttachments";
+}
+
+@model List<MmsLinks>
+
+    <div style="padding:30px;">
+    <div class="jumbotron">
+        <h2>@ViewBag.SmsBody</h2>
+    </div>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>File</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var attachment in Model)
+            {
+                <tr>
+                    <td>
+                       @* @attachment.FileName.Substring(10)*@
+                        @if (IsImage(attachment.FileName))
+                        {
+                            <img src="@attachment.Location" alt="Image" style="max-width: 300px; max-height: 300px;" />
+                        }
+                        else if (IsAudio(attachment.FileName))
+                        {
+                            <audio controls>
+                                <source src="@attachment.Location" type="audio/mpeg">
+                                Your browser does not support the audio tag.
+                            </audio>
+                        }
+                        else if (IsVideo(attachment.FileName))
+                        {
+                            <video width="320" height="240" controls>
+                                <source src="@attachment.Location" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        }
+                        else
+                        {
+                            @attachment.FileName
+                        }
+                    </td>
+                    <td>
+                        <button onclick="downloadAttachment('@attachment.FileName')">Download</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    </div>
+
+<script>
+    @functions {
+        bool IsImage(string fileName)
+        {
+            string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" };
+            return imageExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+        }
+
+        bool IsAudio(string fileName)
+        {
+            string[] audioExtensions = { ".mp3", ".wav", ".ogg", ".flac", ".aac" };
+            return audioExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+        }
+
+        bool IsVideo(string fileName)
+        {
+            string[] videoExtensions = { ".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv" };
+            return videoExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+
+    function downloadAttachment(id) {
+        // Assuming you have a DownloadAttachment action in your controller
+        debugger;
+        window.location.href = '@Url.Action("DownloadMMSFileDirect", "Sms")' + '?fileName=' + id;
+    }
+</script>
+
+

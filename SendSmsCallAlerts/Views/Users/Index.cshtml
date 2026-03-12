@@ -1,0 +1,190 @@
+﻿@model IEnumerable<SendSmsCallAlerts.Models.User>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Users List</h1>
+@if (TempData["StMsg"] != null)
+{
+    <div class="alert alert-success">
+        <b>@TempData["StMsg"]</b>
+    </div>
+}
+
+<link href="~/css/bootstrapcopyfromlive.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+<p style="text-align:right;">
+    <a asp-action="Create" style="padding: 8px;
+    background: lightblue;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-right: 2px;
+    color: black;">Create New</a>
+</p>
+
+<table class="table table-bordered table-striped" id="tblRPM">
+    <thead style="background: #70b3db;">
+        <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Password</th>
+            <th>Email</th>
+            <th>Twilio#</th>
+          @*  <th>Action&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+       *@
+        </tr>
+
+
+    </thead>
+</table>
+
+<div>
+    <a asp-controller="Sms" asp-action="IncomingLogs">Back to List</a>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+
+
+
+<script>
+
+    var RpmDatatable = $('#tblRPM').on('error.dt', function (e, settings, techNote, message) {
+        //SessionExpiredRedirect();
+
+    }).DataTable({
+        "drawCallback": function (settings) {
+            $(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
+        },
+        //"initComplete": function (settings, json) {
+        //    //$(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
+
+
+        //    //$('#tblRPM thead th:eq(1)').css({
+        //    //    'position': 'sticky',
+        //    //    'left': 102,
+        //    //    'background-color': '#70b3db',
+        //    //    'z-index': 2
+        //    //});
+
+        //    //this.api().columns.adjust();
+        //},
+        //"rowCallback": function (row, data, index) {
+
+        //    $("table > thead > tr > th:first-child").css({
+        //        'position': 'sticky',
+        //        'left': 0,
+        //        'background-color': '#70b3db',
+        //        'z-index': 2
+        //    });
+
+        //    $("table > thead > tr > th:nth-child(2)").css({
+        //        'position': 'sticky',
+        //        'left': 102,
+        //        'background-color': '#70b3db',
+        //        'z-index': 2
+        //    });
+
+        //    $('td:eq(0)', row).css({
+        //        'position': 'sticky',
+        //        'left': 0,
+        //        'background-color': '#70b3db',
+        //        'z-index': 1  // Ensure that it's above the other cells
+        //    });
+        //    $('td:eq(1)', row).css({
+        //        'position': 'sticky',
+        //        'left': 102,
+        //        'background-color': '#70b3db',
+        //        'z-index': 1
+        //    });
+        //},
+        "autoWidth": false,
+        "sAjaxSource": "/Users/GetUsersTbl",
+        //"fnServerParams": function (aoData) {
+        //    aoData.push(
+        //        { "name": "storeId", "value": $('#StoreId').val() }
+        //    );
+        //},
+        "sServerMethod": "POST",
+        "bServerSide": false,
+        "bProcessing": true,
+        "bSearchable": true,
+        "scrollX": true,
+        "scrollY": "400px",
+        "pageLength": 100,
+        //"fixedColumns": {
+        //    "leftColumns": 2 // Number of columns to freeze on the left
+        //},
+        "order": [],
+        //"order": [[0, 'asc']],
+        "language": {
+            "emptyTable": "No record found.",
+            "processing":
+                '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+        },
+        "columns": [
+            {
+                "data": "name",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "username",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "password",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "email",
+                "autoWidth": true,
+                "searchable": true
+            },
+            {
+                "data": "phone",
+                "autoWidth": true,
+                "searchable": true
+            }
+            //{
+            //    "render": function (data, type, row) {
+
+            //        return '<button style="background: #52aadf;margin: 2px" onclick="EditRecord(' + row.id + ')"> Edit </button>' +
+            //            '<button style="background: #52aadf;" onclick="DeleteRecord(' + row.id + ')"> Delete </button>';
+
+
+            //    },
+            //    "searchable": true
+            //}
+
+
+        ]
+    });
+
+    //RpmDatatable.on('draw.dt', function () {
+    //    $(".dtfc-fixed-left").css("background-color", "#66b7d1");
+    //});
+
+
+
+    function EditRecord(id) {
+        var url = '@Url.Action("Edit", "Users")';
+        url += '?id=' + id;
+        window.location.href = url;
+    }
+
+
+    function DeleteRecord(id) {
+        var url = '@Url.Action("Delete", "Users")';
+        url += '?id=' + id;
+        window.location.href = url;
+    }
+
+</script>
+
