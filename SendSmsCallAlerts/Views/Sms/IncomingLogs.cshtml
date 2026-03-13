@@ -7,47 +7,32 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
 <style>
-    #tblRPM {
-        width: 100% !important;
-        border-collapse: collapse;
+    #tblRPM { width: 100% !important; border-collapse: collapse; }
+    #tblRPM thead th {
+        background-color: #70b3db;
+        color: white;
+        padding: 10px 8px;
+        white-space: nowrap;
+        border: 1px solid #5a9fc7;
+        text-align: left;
     }
-
-        #tblRPM thead th {
-            background-color: #70b3db;
-            color: white;
-            padding: 10px 8px;
-            white-space: nowrap;
-            border: 1px solid #5a9fc7;
-            text-align: left;
-        }
-
-        #tblRPM tbody td {
-            padding: 6px 8px;
-            vertical-align: middle;
-            border: 1px solid #dee2e6;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-            #tblRPM tbody td:nth-child(3) {
-                white-space: normal;
-                word-break: break-word;
-                min-width: 180px;
-                max-width: 220px;
-            }
-
-        #tblRPM tbody tr:nth-child(odd) {
-            background-color: #fff;
-        }
-
-        #tblRPM tbody tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        #tblRPM tbody tr:hover {
-            background-color: #e8f4fc;
-        }
+    #tblRPM tbody td {
+        padding: 6px 8px;
+        vertical-align: middle;
+        border: 1px solid #dee2e6;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    #tblRPM tbody td:nth-child(3) {
+        white-space: normal;
+        word-break: break-word;
+        min-width: 180px;
+        max-width: 220px;
+    }
+    #tblRPM tbody tr:nth-child(odd)  { background-color: #fff; }
+    #tblRPM tbody tr:nth-child(even) { background-color: #f2f2f2; }
+    #tblRPM tbody tr:hover { background-color: #e8f4fc; }
 
     div.dataTables_wrapper div.dataTables_length select {
         width: 70px !important;
@@ -60,72 +45,25 @@
         appearance: menulist !important;
         background-image: none !important;
     }
-
     .dataTables_wrapper .dataTables_filter input {
         border-radius: 4px;
         border: 1px solid #ced4da;
         padding: 4px 8px;
     }
-
-    .btn-toolbar-wrap {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        margin-bottom: 12px;
-    }
-
-        .btn-toolbar-wrap .btn {
-            font-size: 0.85rem;
-            padding: 5px 12px;
-        }
-
-    .active-job-tag {
-        background-color: #e9ecef;
-        border: 1px solid #ced4da;
-        color: #495057;
-        border-radius: 20px;
-        padding: 5px 12px;
-        font-size: 0.85rem;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 5px;
-        margin-right: 5px;
-    }
-
-        .active-job-tag i {
-            color: #dc3545;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-            .active-job-tag i:hover {
-                transform: scale(1.2);
-            }
-
-    footer.border-top {
-        margin-top: 40px;
-        padding: 16px 0;
-        color: #888;
-        font-size: 0.85rem;
-    }
+    .btn-toolbar-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .btn-toolbar-wrap .btn { font-size: 0.85rem; padding: 5px 12px; }
+    .active-job-tag { background-color: #e9ecef; border: 1px solid #ced4da; color: #495057; border-radius: 20px; padding: 5px 12px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 5px; margin-right: 5px; }
+    .active-job-tag i { color: #dc3545; cursor: pointer; transition: 0.2s; }
+    .active-job-tag i:hover { transform: scale(1.2); }
+    footer.border-top { margin-top: 40px; padding: 16px 0; color: #888; font-size: 0.85rem; }
 </style>
 
 <div style="padding:20px">
     <h1 class="mb-3">Incoming SMS</h1>
 
-    @if (TempData["SucSms"] != null)
-    {
-        <div class="alert alert-success"><b>@TempData["SucSms"]</b></div>
-    }
-    @if (TempData["SucMsg"] != null)
-    {
-        <div class="alert alert-success"><b>@TempData["SucMsg"]</b></div>
-    }
-    @if (TempData["ErrMsg"] != null)
-    {
-        <div class="alert alert-danger"><b>@TempData["ErrMsg"]</b></div>
-    }
+    @if (TempData["SucSms"] != null) { <div class="alert alert-success"><b>@TempData["SucSms"]</b></div> }
+    @if (TempData["SucMsg"] != null) { <div class="alert alert-success"><b>@TempData["SucMsg"]</b></div> }
+    @if (TempData["ErrMsg"] != null) { <div class="alert alert-danger"><b>@TempData["ErrMsg"]</b></div> }
 
     <div class="btn-toolbar-wrap">
         <a asp-action="SMS" asp-controller="Conversations" class="btn btn-info">Send SMS</a>
@@ -159,6 +97,7 @@
                 <th>Category</th>
                 <th>Scheduler</th>
                 <th>Job Booked Date</th>
+                <th>Job Booked Time</th>
                 <th></th>
             </tr>
         </thead>
@@ -198,10 +137,28 @@
                                     <option value="">-- Select a Scheduler Template --</option>
                                 </select>
                             </div>
+
+                            <!-- Custom Date Field (RunFromId = 2) -->
                             <div class="mb-3" id="customDateFieldContainer" style="display:none;">
                                 <label>Custom Date</label>
                                 <input type="date" id="mCustomDate" class="form-control m-input" />
                             </div>
+
+                            <!-- Custom Days & Hours Field (HourCount = -1) -->
+                            <div class="mb-3" id="customDaysHoursContainer" style="display:none;">
+                                <label>Custom Days &amp; Hours</label>
+                                <div class="d-flex gap-2">
+                                    <div class="input-group">
+                                        <input type="number" id="mCustomDays" class="form-control m-input" placeholder="0" min="0" max="30" />
+                                        <span class="input-group-text">Days</span>
+                                    </div>
+                                    <div class="input-group">
+                                        <input type="number" id="mCustomHoursVal" class="form-control m-input" placeholder="0" min="0" max="23" />
+                                        <span class="input-group-text">Hours</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mb-3">
                                 <label>Job Book Date</label>
                                 <input type="datetime-local" id="mJobBookDate" class="form-control m-input" />
@@ -295,210 +252,239 @@
     var currentRowData = null;
 
     function formatFiveItems(data) {
-    if (data && data !== "N/A" && typeof data === 'string') {
-    var items = data.split(',').map(function (i) { return i.trim(); });
-    var showText = items.length > 5 ? items.slice(0, 5).join(', ') + ' ...' : items.join(', ');
-    return '<span title="' + data + '" style="cursor:help; text-decoration:underline dotted #70b3db 2px; text-underline-offset:4px;">' + showText + '</span>';
-    }
-    return data;
+        if (data && data !== "N/A" && typeof data === 'string') {
+            var items = data.split(',').map(function (i) { return i.trim(); });
+            var showText = items.length > 5 ? items.slice(0, 5).join(', ') + ' ...' : items.join(', ');
+            return '<span title="' + data + '" style="cursor:help; text-decoration:underline dotted #70b3db 2px; text-underline-offset:4px;">' + showText + '</span>';
+        }
+        return data;
     }
 
     var RpmDatatable = $('#tblRPM').DataTable({
-    "autoWidth": false,
-    "sAjaxSource": "/SMS/GetData",
-    "sServerMethod": "POST",
-    "bServerSide": false,
-    "bProcessing": true,
-    "order": [],
-    "columnDefs": [
-    { "width": "90px",  "targets": 0 },
-    { "width": "110px", "targets": 1 },
-    { "width": "200px", "targets": 2 },
-    { "width": "50px",  "targets": 3 },
-    { "width": "70px",  "targets": 4 },
-    { "width": "80px",  "targets": 5 },
-    { "width": "80px",  "targets": 6 },
-    { "width": "120px", "targets": 7 },
-    { "width": "60px",  "targets": 8 },
-    { "width": "70px",  "targets": 9 },
-    { "width": "90px",  "targets": 10 },
-    { "width": "100px", "targets": 11 }
-    ],
-    "language": {
-    "emptyTable": "No record found.",
-    "processing": '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>'
-    },
-    "initComplete": function () {
-    $.get("/SMS/GetIvrOptions", function (data) {
-    var ddl = $("#mCategory");
-    ddl.find('option:not(:first)').remove();
-    $.each(data, function (i, item) {
-    ddl.append($("<option></option>").val(item.id).html(item.keyword));
-    });
-    });
-    $.get("/Sms/GetSchedulers", function (data) {
-    var ddl = $("#mSchedularTemplate");
-    ddl.find('option:not(:first)').remove();
-    $.each(data, function (i, item) {
-    // Store the RunFromId as a data attribute on the option
-    ddl.append($("<option></option>").val(item.id).attr('data-runfromid', item.runFromId || '').html(item.name));
-    });
-    });
-    },
-    "columns": [
-    { "data": "dt",             "searchable": true },
-    { "data": "fromNum",        "searchable": true },
-    { "data": "smsBody",        "searchable": true },
-    {
-    "data": "links",
-    "render": function (data, type, row) {
-    return row.attchmentsCount > 0
-    ? '<button class="btn btn-sm btn-outline-dark" onclick="event.stopPropagation(); openAttachments(\'' + row.id + '\')">See attachments</button>'
-    : "N/A";
-    }
-    },
-    { "data": "smsDirection",     "searchable": true },
-    { "data": "name",             "searchable": true, "defaultContent": "N/A" },
-    { "data": "address",          "searchable": true, "defaultContent": "N/A" },
-    { "data": "email",            "searchable": true, "defaultContent": "N/A" },
-    { "data": "category",         "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
-    { "data": "scheduler",        "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
-    { "data": "jobBookDatesList", "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
-    {
-    "render": function (data, type, row) {
-    return '<button class="btn btn-sm" style="background:#52aadf; color:#fff; margin:2px;" onclick="event.stopPropagation(); EditRecord(\'' + row.fromNum + '\')">Reply</button>' +
-    '<button class="btn btn-sm btn-danger" style="margin:2px;" onclick="event.stopPropagation(); DeleteRecord(' + row.id + ')">Delete</button>';
-    },
-    "searchable": false
-    }
-    ]
+        "autoWidth": false,
+        "sAjaxSource": "/SMS/GetData",
+        "sServerMethod": "POST",
+        "bServerSide": false,
+        "bProcessing": true,
+        "order": [],
+        "columnDefs": [
+            { "width": "90px",  "targets": 0 },
+            { "width": "110px", "targets": 1 },
+            { "width": "200px", "targets": 2 },
+            { "width": "50px",  "targets": 3 },
+            { "width": "70px",  "targets": 4 },
+            { "width": "80px",  "targets": 5 },
+            { "width": "80px",  "targets": 6 },
+            { "width": "120px", "targets": 7 },
+            { "width": "60px",  "targets": 8 },
+            { "width": "70px",  "targets": 9 },
+            { "width": "90px",  "targets": 10 },
+            { "width": "100px", "targets": 11 }
+        ],
+        "language": {
+            "emptyTable": "No record found.",
+            "processing": '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>'
+        },
+        "initComplete": function () {
+            $.get("/SMS/GetIvrOptions", function (data) {
+                var ddl = $("#mCategory");
+                ddl.find('option:not(:first)').remove();
+                $.each(data, function (i, item) {
+                    ddl.append($("<option></option>").val(item.id).html(item.keyword));
+                });
+            });
+            $.get("/Sms/GetSchedulers", function (data) {
+                var ddl = $("#mSchedularTemplate");
+                ddl.find('option:not(:first)').remove();
+                $.each(data, function (i, item) {
+                    ddl.append($("<option></option>")
+                        .val(item.id)
+                        .attr('data-runfromid',   item.runFromId  || '')
+                        .attr('data-timetorunid', item.timeToRunId || '')
+                        .attr('data-hourcount',   item.hourCount  || '')  // HourCount 
+                        .html(item.name));
+                });
+            });
+        },
+        "columns": [
+            { "data": "dt",             "searchable": true },
+            { "data": "fromNum",        "searchable": true },
+            { "data": "smsBody",        "searchable": true },
+            {
+                "data": "links",
+                "render": function (data, type, row) {
+                    return row.attchmentsCount > 0
+                        ? '<button class="btn btn-sm btn-outline-dark" onclick="event.stopPropagation(); openAttachments(\'' + row.id + '\')">See attachments</button>'
+                        : "N/A";
+                }
+            },
+            { "data": "smsDirection",     "searchable": true },
+            { "data": "name",             "searchable": true, "defaultContent": "N/A" },
+            { "data": "address",          "searchable": true, "defaultContent": "N/A" },
+            { "data": "email",            "searchable": true, "defaultContent": "N/A" },
+            { "data": "category",         "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
+            { "data": "scheduler",        "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
+            { "data": "jobBookDatesList", "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
+            { "data": "jobBookTimesList", "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
+            {
+                "render": function (data, type, row) {
+                    return '<button class="btn btn-sm" style="background:#52aadf; color:#fff; margin:2px;" onclick="event.stopPropagation(); EditRecord(\'' + row.fromNum + '\')">Reply</button>' +
+                        '<button class="btn btn-sm btn-danger" style="margin:2px;" onclick="event.stopPropagation(); DeleteRecord(' + row.id + ')">Delete</button>';
+                },
+                "searchable": false
+            }
+        ]
     });
 
     $('#tblRPM tbody').on('click', 'tr', function () {
-    var data = RpmDatatable.row(this).data();
-    if (!data) return;
-    currentRowData = data;
+        var data = RpmDatatable.row(this).data();
+        if (!data) return;
+        currentRowData = data;
 
-    var isOutgoing = data.smsDirection === "Outgoing";
-    $('#mSmsDirection').val(data.smsDirection);
-    $('#mFromNum').val(data.fromNum);
-    $('#mOriginalFromNum').val(data.fromNum);
-    $('#mOriginalToNum').val(data.toNum);
-    $('#mSchedulerId').val(data.schedulerId || 0);
+        var isOutgoing = data.smsDirection === "Outgoing";
+        $('#mSmsDirection').val(data.smsDirection);
+        $('#mFromNum').val(data.fromNum);
+        $('#mOriginalFromNum').val(data.fromNum);
+        $('#mOriginalToNum').val(data.toNum);
+        $('#mSchedulerId').val(data.schedulerId || 0);
 
-    if (isOutgoing) { $('#jobScheduleSection').hide(); $('#outgoingAlert').show(); }
-    else { $('#jobScheduleSection').show(); $('#outgoingAlert').hide(); }
+        // Reset dynamic fields on modal open
+        $('#customDateFieldContainer').hide();
+        $('#customDaysHoursContainer').hide();
+        $('#mCustomDate').val('');
+        $('#mCustomDays').val('');
+        $('#mCustomHoursVal').val('');
 
-    $.get("/SMS/GetContactDetailsByPhone", { phoneNumber: data.fromNum }, function (res) {
-    $('#activeJobsContainer').empty();
-    if (res.success && res.found) {
-    $('#mName').val(res.name || "");
-    $('#mEmail').val(res.email || "");
-    $('#mAddress').val(res.address || "");
-    if (!isOutgoing && res.activeJobs && res.activeJobs.length > 0) {
-    res.activeJobs.forEach(function (job) {
-    $('#activeJobsContainer').append(
-    '<div class="active-job-tag">' + job.schedulerName +
-    '<i class="fa-solid fa-times-circle" onclick="removeActiveJob(' + job.jobId + ', this)"></i></div>'
-    );
-    });
-    }
-    } else {
-    $('#mName').val(data.name === "N/A" ? "" : data.name);
-    $('#mEmail').val(data.email === "N/A" ? "" : data.email);
-    $('#mAddress').val(data.address === "N/A" ? "" : data.address);
-    }
-    $('#btnUpdate').prop('disabled', true);
-    $('#editModal').modal('show');
-    });
+        if (isOutgoing) { $('#jobScheduleSection').hide(); $('#outgoingAlert').show(); }
+        else { $('#jobScheduleSection').show(); $('#outgoingAlert').hide(); }
+
+        $.get("/SMS/GetContactDetailsByPhone", { phoneNumber: data.fromNum }, function (res) {
+            $('#activeJobsContainer').empty();
+            if (res.success && res.found) {
+                $('#mName').val(res.name || "");
+                $('#mEmail').val(res.email || "");
+                $('#mAddress').val(res.address || "");
+                if (!isOutgoing && res.activeJobs && res.activeJobs.length > 0) {
+                    res.activeJobs.forEach(function (job) {
+                        $('#activeJobsContainer').append(
+                            '<div class="active-job-tag">' + job.schedulerName +
+                            '<i class="fa-solid fa-times-circle" onclick="removeActiveJob(' + job.jobId + ', this)"></i></div>'
+                        );
+                    });
+                }
+            } else {
+                $('#mName').val(data.name === "N/A" ? "" : data.name);
+                $('#mEmail').val(data.email === "N/A" ? "" : data.email);
+                $('#mAddress').val(data.address === "N/A" ? "" : data.address);
+            }
+            $('#btnUpdate').prop('disabled', true);
+            $('#editModal').modal('show');
+        });
     });
 
     $('.m-input').on('input change', function () { $('#btnUpdate').prop('disabled', false); });
 
     $('#btnUpdate').click(function () {
-    var model = {
-    fromNum:          $('#mOriginalFromNum').val(),
-    smsDirection:     $('#mSmsDirection').val(),
-    name:             $('#mName').val(),
-    email:            $('#mEmail').val(),
-    address:          $('#mAddress').val(),
-    category:         $('#mCategory').val(),
-    schedulerId:      $('#mSchedularTemplate').val(),
-    jobBookDate:      $('#mJobBookDate').val(),
-    jobCompletedDate: $('#mJobCompletedDate').val(),
-     customDate:       $('#mCustomDate').val()  // ADD
-    };
-    var $btn = $(this);
-    $btn.prop('disabled', true);
-    $.post("/SMS/UpdateSmsDetails", model, function (res) {
-    $btn.prop('disabled', false);
-    if (res.success) {
-    $('#editModal').modal('hide');
-    showResult("Success", res.isOutgoing ? (res.message || "Contact updated.") : "Details updated successfully.", "text-success");
-    RpmDatatable.ajax.reload(null, false);
-    } else {
-    showResult("Update Failed", res.message || "Unknown error.", "text-danger");
-    }
-    });
+        var days        = parseInt($('#mCustomDays').val())     || 0;
+        var hrs         = parseInt($('#mCustomHoursVal').val()) || 0;
+        var customHours = (days * 24) + hrs;
+
+        var model = {
+            fromNum:          $('#mOriginalFromNum').val(),
+            smsDirection:     $('#mSmsDirection').val(),
+            name:             $('#mName').val(),
+            email:            $('#mEmail').val(),
+            address:          $('#mAddress').val(),
+            category:         $('#mCategory').val(),
+            schedulerId:      $('#mSchedularTemplate').val(),
+            jobBookDate:      $('#mJobBookDate').val(),
+            jobCompletedDate: $('#mJobCompletedDate').val(),
+            customDate:       $('#mCustomDate').val(),
+            customHours:      customHours > 0 ? customHours : null
+        };
+        var $btn = $(this);
+        $btn.prop('disabled', true);
+        $.post("/SMS/UpdateSmsDetails", model, function (res) {
+            $btn.prop('disabled', false);
+            if (res.success) {
+                $('#editModal').modal('hide');
+                showResult("Success", res.isOutgoing ? (res.message || "Contact updated.") : "Details updated successfully.", "text-success");
+                RpmDatatable.ajax.reload(null, false);
+            } else {
+                showResult("Update Failed", res.message || "Unknown error.", "text-danger");
+            }
+        });
     });
 
-    function removeActiveJob(jobId, element) {
-    if (confirm("Remove this scheduler?")) {
-    $.post("/Sms/DeleteScheduledJob", { jobId: jobId }, function (res) {
-    if (res.success) { $(element).parent().fadeOut(); RpmDatatable.ajax.reload(null, false); }
-    else { alert("Error removing job."); }
-    });
+    function handleTemplateChange() {
+        var selectedOption = $('#mSchedularTemplate option:selected');
+        var runFromId  = parseInt(selectedOption.attr('data-runfromid'),  10);
+        var hourCount  = parseInt(selectedOption.attr('data-hourcount'),  10);  // HourCount 
+
+        // Custom Date — RunFromId = 2
+        if (runFromId === 2) {
+            $('#customDateFieldContainer').show();
+        } else {
+            $('#customDateFieldContainer').hide();
+            $('#mCustomDate').val('');
+        }
+
+        // Custom Days & Hours — HourCount = -1
+        if (hourCount === -1) {
+            $('#customDaysHoursContainer').show();
+        } else {
+            $('#customDaysHoursContainer').hide();
+            $('#mCustomDays').val('');
+            $('#mCustomHoursVal').val('');
+        }
     }
+
+    function removeActiveJob(jobId, element) {
+        if (confirm("Remove this scheduler?")) {
+            $.post("/Sms/DeleteScheduledJob", { jobId: jobId }, function (res) {
+                if (res.success) { $(element).parent().fadeOut(); RpmDatatable.ajax.reload(null, false); }
+                else { alert("Error removing job."); }
+            });
+        }
     }
 
     $('#btnShowConfirm').click(function () {
-    if (!$('#dFromDate').val() || !$('#dToDate').val()) {
-    showResult("Missing Info", "Please select both dates.", "text-warning"); return;
-    }
-    $('#confirmModal').modal('show');
+        if (!$('#dFromDate').val() || !$('#dToDate').val()) {
+            showResult("Missing Info", "Please select both dates.", "text-warning"); return;
+        }
+        $('#confirmModal').modal('show');
     });
 
     $('#btnFinalDelete').click(function () {
-    $('#confirmModal').modal('hide');
-    $.post("/SMS/DeleteLogsByDate", { fromDate: $('#dFromDate').val(), toDate: $('#dToDate').val() }, function (res) {
-    if (res.success) {
-    $('#deleteRangeModal').modal('hide');
-    showResult("Success", res.count + " records deleted.", "text-success");
-    RpmDatatable.ajax.reload();
-    } else {
-    showResult("Error", res.message, "text-danger");
-    }
-    });
+        $('#confirmModal').modal('hide');
+        $.post("/SMS/DeleteLogsByDate", { fromDate: $('#dFromDate').val(), toDate: $('#dToDate').val() }, function (res) {
+            if (res.success) {
+                $('#deleteRangeModal').modal('hide');
+                showResult("Success", res.count + " records deleted.", "text-success");
+                RpmDatatable.ajax.reload();
+            } else {
+                showResult("Error", res.message, "text-danger");
+            }
+        });
     });
 
     function showResult(title, msg, colorClass) {
-    $('#resultTitle').text(title).removeClass("text-success text-danger text-warning").addClass(colorClass);
-    $('#resultBody').text(msg);
-    $('#resultModal').modal('show');
-    }
-
-    function handleTemplateChange() {
-    var selectedOption = $('#mSchedularTemplate option:selected');
-    var runFromId = parseInt(selectedOption.attr('data-runfromid'), 10);
-
-    if (runFromId === 2) {
-    $('#customDateFieldContainer').show();
-    } else {
-    $('#customDateFieldContainer').hide();
-    $('#mCustomDate').val('');
-    }
+        $('#resultTitle').text(title).removeClass("text-success text-danger text-warning").addClass(colorClass);
+        $('#resultBody').text(msg);
+        $('#resultModal').modal('show');
     }
 
     function openAttachments(id) { window.open("@Url.Action("OpenAttachments", "Sms")?id=" + id, '_blank'); }
     function EditRecord(num) { window.location.href = '@Url.Action("SMS", "Conversations")?num=' + num; }
     function DeleteRecord(id) {
-    $.post('/Sms/DeleteMsg', { id: id }, function (response) {
-    if (response == "success") {
-    RpmDatatable.row(function (idx, data) { return data.id === id; }).remove().draw(false);
-    }
-    });
+        $.post('/Sms/DeleteMsg', { id: id }, function (response) {
+            if (response == "success") {
+                RpmDatatable.row(function (idx, data) { return data.id === id; }).remove().draw(false);
+            }
+        });
     }
 </script>
+
 
 @* <script>
 

@@ -21,5 +21,6 @@
         public string? executionTime { get; set; }
         public int? schedulerId { get; set; }
         public DateTime? CustomDate { get; set; }
+        public int? CustomHours { get; set; }  // ADD
     }
 }

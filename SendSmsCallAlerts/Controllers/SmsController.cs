@@ -368,11 +368,15 @@ namespace SendSmsCallAlerts.Controllers
         public IActionResult GetSchedulers()
         {
             var schedulers = _context.Schedulers
+                .Include(s => s.TimeToRun)
                 .Select(s => new
                 {
                     s.Id,
                     s.name,
-                    s.RunFromId
+                    RunFromId = s.RunFromId ?? 0,
+                    TimeToRunId = s.TimeToRunId ?? 0,
+                    HourCount = s.TimeToRun != null ? s.TimeToRun.HourCount : 0  // ADD
+
                 })
                 .ToList();
 
@@ -563,7 +567,7 @@ namespace SendSmsCallAlerts.Controllers
             var allJobs = await (from j in _context.AllScheduledJobs
                                  join s in _context.Schedulers on j.SchedulerId equals s.Id
                                  where contactIds.Contains(j.ContactDetailId ?? 0)
-                                       && j.LastExecutedAt != null
+                                      
                                  select new { Job = j, Scheduler = s }).ToListAsync();
 
             var categories = await _context.IvrOption.ToListAsync();
@@ -595,6 +599,9 @@ namespace SendSmsCallAlerts.Controllers
                     var bookDates = contactJobs
                         .Select(c => c.Job.JobBookDate == DateTime.MinValue ? "N/A" : c.Job.JobBookDate.ToString("dd/MM/yyyy"))
                         .ToList();
+                    var bookTimes = contactJobs
+                                .Select(c => c.Job.JobBookDate == DateTime.MinValue ? "N/A" : c.Job.JobBookDate.ToString("hh:mm tt"))
+                                    .ToList();
 
                     result.Add(new SmsDetailsVm
                     {
@@ -614,6 +621,7 @@ namespace SendSmsCallAlerts.Controllers
                         category = string.Join(", ", categoryNames),
                         scheduler = string.Join(", ", schedulerNames),
                         jobBookDatesList = string.Join(", ", bookDates),
+                        jobBookTimesList = string.Join(", ", bookTimes),
                         JobBookDate = contactJobs.FirstOrDefault()?.Job.JobBookDate,
                         SchedulerId = contactJobs.FirstOrDefault()?.Scheduler.Id ?? 0
                     });
@@ -638,6 +646,7 @@ namespace SendSmsCallAlerts.Controllers
                         category = "N/A",
                         scheduler = "N/A",
                         jobBookDatesList = "N/A",
+                        jobBookTimesList = "N/A",
                         JobBookDate = null,
                         SchedulerId = 0
                     });
@@ -762,7 +771,8 @@ namespace SendSmsCallAlerts.Controllers
                         AssignedDate = GetTime(),
                         JobBookDate = model.JobBookDate ?? DateTime.Now,
                         JobCompletedDate = model.JobCompletedDate ?? DateTime.Now,
-                        CustomDate = model.CustomDate  // ✅ ADD: Custom Date save karo
+                        CustomDate = model.CustomDate,
+                        CustomHours = model.CustomHours
                     };
                     _context.AllScheduledJobs.Add(newScheduledJob);
                 }
@@ -875,6 +885,7 @@ namespace SendSmsCallAlerts.Controllers
                 conversation.category,
                 conversation.scheduler,
                 conversation.jobBookDatesList,
+                conversation.jobBookTimesList,
                 conversation.JobBookDate,
                 conversation.SchedulerId
             });

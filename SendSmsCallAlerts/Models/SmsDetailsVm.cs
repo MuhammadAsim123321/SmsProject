@@ -23,5 +23,6 @@
         public DateTime? JobBookDate { get; set; }
         public int SchedulerId { get; set; }
         public string? jobBookDatesList { get; set; }
+        public string jobBookTimesList { get; set; }
     }
 }

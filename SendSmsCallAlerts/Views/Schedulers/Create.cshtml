@@ -54,7 +54,7 @@
                 <label asp-for="smsBody" class="control-label">Body</label>
 
                 <p class="text-primary" style="font-size: 13px; margin-bottom: 5px;">
-                    <em>Placeholders: <b>{name}</b> <b>,{email}</b> <b>{address}</b> <b>{jobBookDate}</b> <b>{jobCompletedDate}</b> </em>
+                    <em>Placeholders: <b>{name}</b> <b>,{email}</b> <b>{address}</b> <b>{jobBookDate}</b> <b>{jobBookedTime}</b> <b>{jobCompletedDate}</b> <b>{category}</b> </em>
                 </p>
 
                 <textarea asp-for="smsBody" class="form-control" required rows="4"></textarea>
@@ -89,10 +89,10 @@
 
 
 
+          
 
 
-
-
+         
 
             <div class="form-group">
                 <label asp-for="status" class="control-label">Status</label>

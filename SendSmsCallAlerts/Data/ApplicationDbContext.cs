@@ -56,6 +56,7 @@ namespace SendSmsCallAlerts.Data
                 new TimeToRun { Id = 10, Name = "6 Months", HourCount = 4320 },
                 new TimeToRun { Id = 11, Name = "1 Year", HourCount = 8760 },
                 new TimeToRun { Id = 12, Name = "Enter Custom Days and Hours", HourCount = -1 }
+                 
             );
 
             modelBuilder.Entity<RunFrom>().HasData(

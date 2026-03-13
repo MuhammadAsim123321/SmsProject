@@ -19,6 +19,7 @@ namespace SendSmsCallAlerts.Models
         public bool IsPaused { get; set; } = false;
         public DateTime? LastExecutedAt { get; set; }
         public DateTime? CustomDate { get; set; }
+        public int? CustomHours { get; set; }  // Days+Hours calculate
 
 
     }
