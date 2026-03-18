@@ -1,0 +1,101 @@
+﻿@{
+    var role = Context?.Request?.HttpContext?.Session?.GetString("UserRole") ?? "";
+    var isAdmin = role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
+}
+
+<style>
+    .sidebar-menu ul li a {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        white-space: normal; /* allow text to wrap */
+        word-break: break-word;
+        line-height: 1.4;
+        padding: 8px 20px;
+    }
+
+        .sidebar-menu ul li a i {
+            margin-top: 2px; 
+            flex-shrink: 0;
+            width: 16px;
+            text-align: center;
+        }
+
+        .sidebar-menu ul li a span {
+            flex: 1;
+        }
+</style>
+
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-inner slimscroll">
+        <div id="sidebar-menu" class="sidebar-menu">
+            <ul>
+                <li class="menu-title">SMS</li>
+
+                <li>
+                    <a asp-controller="Sms" asp-action="IncomingLogs">
+                        <i class="fa fa-inbox"></i> <span>Incoming SMS</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Conversations" asp-action="SMS">
+                        <i class="fa fa-paper-plane"></i> <span>Send SMS</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="Sms" asp-action="ScheduledJobs">
+                        <i class="fa fa-clock-o"></i> <span>View Scheduled Jobs</span>
+                    </a>
+                </li>
+
+                <li class="menu-title">IVR</li>
+                <li>
+                    <a asp-controller="IvrOptions" asp-action="Index">
+                        <i class="fa fa-list-alt"></i> <span>Main Options</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="OptionInstructions" asp-action="Index">
+                        <i class="fa fa-info-circle"></i> <span>Options Instructions</span>
+                    </a>
+                </li>
+                <li>
+                    <a asp-controller="IntroSms" asp-action="Create">
+                        <i class="fa fa-commenting-o"></i> <span>Intro SMS</span>
+                    </a>
+                </li>
+
+                @if (isAdmin)
+                {
+                    <li class="menu-title">Admin</li>
+                    <li>
+                        <a asp-controller="Twilio" asp-action="Index">
+                            <i class="fa fa-phone"></i> <span>Update Twilio Number</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="ForwardNum" asp-action="Index">
+                            <i class="fa fa-random"></i> <span>Forward Numbers</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Users" asp-action="Index">
+                            <i class="fa fa-users"></i> <span>Users</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Twilio" asp-action="BuyNumber">
+                            <i class="fa fa-shopping-cart"></i>
+                            <span>Buy &amp; Configure<br>Twilio Number</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a asp-controller="Schedulers" asp-action="Index">
+                            <i class="fa fa-calendar"></i> <span>Schedulers</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>
