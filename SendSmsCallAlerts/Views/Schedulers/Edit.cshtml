@@ -4,7 +4,12 @@
     ViewData["Title"] = "Edit";
 }
 
-<h1>Edit Scheduler</h1>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h1>Edit Scheduler</h1>
+    <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+        <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+    </a>
+</div>
 <hr />
 
 @if (ViewBag.ErMsg != null)
@@ -94,14 +99,10 @@
                 <input type="submit" value="Update" class="btn btn-primary" />
             </div>
         }
-@*</form>*@
+        @*</form>*@
 
     </div>
 </div>
-
-<p>
-    <a asp-controller="SMS" asp-action="IncomingLogs">Go back</a>
-</p>
 
 @section Scripts {
     @{

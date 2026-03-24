@@ -4,7 +4,12 @@
     ViewData["Title"] = "Create";
 }
 
-<h1>Create Scheduler</h1>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h1>Create Scheduler</h1>
+    <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+        <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+    </a>
+</div>
 
 <hr />
 
@@ -115,10 +120,6 @@
     </div>
 </div>
 
-<p>
-    <a asp-controller="SMS" asp-action="IncomingLogs">Go back</a>
-</p>
-
 @section Scripts {
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
@@ -156,6 +157,107 @@
         });
     });
 </script>
+@* This script I comment was showing dynamic input fields   *@
+@* <script>
+    const onceOrRepeat = document.getElementById('onceOrRepeat');
+    const DateAndTimeDiv = document.getElementById('DateAndTimeDiv');
+    const TimeDiv = document.getElementById('TimeDiv');
+    const JobBookDateDiv = document.getElementById('JobBookDateDiv');
+
+    function updateExecutionFields(value) {
+        DateAndTimeDiv.style.display = value === 'Once' ? 'block' : 'none';
+        TimeDiv.style.display = value === 'Repeat' ? 'block' : 'none';
+        JobBookDateDiv.style.display = value === 'Repeat' ? 'block' : 'none';
+    }
+
+    updateExecutionFields(onceOrRepeat.value);
+
+    onceOrRepeat.addEventListener('change', function () {
+        updateExecutionFields(this.value);
+    });
+</script> *@
+
+@* 
+<script>
+    // Get references to the elements
+    //const schedulerForSelect = document.getElementById('schedulerFor');
+    const onceOrRepeat = document.getElementById('onceOrRepeat');
+    //const templateOrAudioDiv = document.getElementById('templateOrAudioDiv');
+    const DateAndTimeDiv = document.getElementById('DateAndTimeDiv');
+    const TimeDiv = document.getElementById('TimeDiv');
+    //const templateOrAudioLabel = document.querySelector('#templateOrAudioDiv label');
+
+    //templateOrAudioDiv.style.display = 'none';
+    DateAndTimeDiv.style.display = 'none';
+    TimeDiv.style.display = 'none';
+    // Add event listener to schedulerFor select
+
+
+    //schedulerForSelect.addEventListener('change', function () {
+    //    const selectedValue = this.value;
+
+    //    if (selectedValue === 'Call') {
+    //        templateOrAudioLabel.textContent = 'Choose Audio';
+    //        loadAudios();
+    //    }
+    //    else if (selectedValue === 'Sms') {
+    //        templateOrAudioLabel.textContent = 'Choose Template';
+    //        loadTemplates();
+    //    }
+    //    else if (selectedValue === 'TTS') {
+    //        templateOrAudioLabel.textContent = 'Choose Text-To-Speech';
+    //        loadTTS();
+    //    }
+    //    else {
+    //        templateOrAudioLabel.textContent = '';
+    //    }
+
+    //    if (selectedValue) {
+    //        templateOrAudioDiv.style.display = 'block';
+    //    } else {
+    //        templateOrAudioDiv.style.display = 'none';
+    //    }
+    //});
+
+    onceOrRepeat.addEventListener('change', function () {
+        const selectedValue = this.value;
+
+        if (selectedValue === 'Once') {
+            DateAndTimeDiv.style.display = 'block';
+            TimeDiv.style.display = 'none';
+        }
+        else if (selectedValue === 'Repeat') {
+            DateAndTimeDiv.style.display = 'none';
+            TimeDiv.style.display = 'block';
+        }
+
+    });
+
+
+    //function loadTemplates() {
+
+    //    $.ajax({
+    //        type: "GET",
+    //        url: "/SmsTemplates/GetTemplates",
+    //        datatype: "Json",
+    //        success: function (data) {
+    //            $('#templateOrAudioId').empty();
+
+    //            $('#templateOrAudioId').append('<option value="" selected="true" disabled>Choose Template</option>');
+
+    //            $.each(data, function (index, value) {
+    //                $('#templateOrAudioId').append('<option value="' + value.id + '">' + value.name + '</option>');
+
+    //            });
+    //        }
+    //    });
+    //}
+
+    //loadTemplates();
+
+
+
+</script>  *@
 @* This script I comment was showing dynamic input fields   *@
 @* <script>
     const onceOrRepeat = document.getElementById('onceOrRepeat');

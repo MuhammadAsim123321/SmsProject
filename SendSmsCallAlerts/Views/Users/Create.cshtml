@@ -4,7 +4,12 @@
     ViewData["Title"] = "Create";
 }
 
-<h1>Create User</h1>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h1>Create User</h1>
+    <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+        <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+    </a>
+</div>
 
 @if (ViewBag.ErMsg != null)
 {
@@ -30,7 +35,7 @@
                 <input type="Password" name="Password" class="form-control" />
                 <span asp-validation-for="Password" class="text-danger"></span>
             </div>
-@*            <div class="form-group">
+            @*            <div class="form-group">
                 <label asp-for="Role" class="control-label"></label>
                 <input asp-for="Role" class="form-control" />
                 <span asp-validation-for="Role" class="text-danger"></span>
@@ -42,7 +47,7 @@
             </div>
             <div class="form-group">
                 <label asp-for="Email" class="control-label"></label>
-             @*   <input asp-for="Email" class="form-control" />*@
+                @*   <input asp-for="Email" class="form-control" />*@
                 <input asp-for="Email" class="form-control" type="email" data-val-email="Invalid email address" data-val="true" />
 
                 <span asp-validation-for="Email" class="text-danger"></span>
@@ -60,6 +65,5 @@
 </div>
 
 <div>
-    <a asp-controller="Sms" asp-action="IncomingLogs">Back to List</a>
 </div>
 

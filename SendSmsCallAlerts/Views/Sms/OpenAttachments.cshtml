@@ -1,11 +1,10 @@
-﻿
-@{
+﻿@{
     ViewData["Title"] = "OpenAttachments";
 }
 
 @model List<MmsLinks>
 
-    <div style="padding:30px;">
+<div style="padding:30px;">
     <div class="jumbotron">
         <h2>@ViewBag.SmsBody</h2>
     </div>
@@ -22,7 +21,7 @@
             {
                 <tr>
                     <td>
-                       @* @attachment.FileName.Substring(10)*@
+                        @* @attachment.FileName.Substring(10)*@
                         @if (IsImage(attachment.FileName))
                         {
                             <img src="@attachment.Location" alt="Image" style="max-width: 300px; max-height: 300px;" />
@@ -54,35 +53,35 @@
         </tbody>
     </table>
 
-    </div>
+</div>
 
 <script>
-    @functions {
+@functions {
         bool IsImage(string fileName)
         {
-            string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" };
-            return imageExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+                string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" };
+                return imageExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
         }
 
         bool IsAudio(string fileName)
         {
-            string[] audioExtensions = { ".mp3", ".wav", ".ogg", ".flac", ".aac" };
-            return audioExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+                string[] audioExtensions = { ".mp3", ".wav", ".ogg", ".flac", ".aac" };
+                return audioExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
         }
 
         bool IsVideo(string fileName)
         {
-            string[] videoExtensions = { ".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv" };
-            return videoExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+                string[] videoExtensions = { ".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv" };
+                return videoExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
         }
-    }
+}
 
 
-    function downloadAttachment(id) {
-        // Assuming you have a DownloadAttachment action in your controller
-        debugger;
-        window.location.href = '@Url.Action("DownloadMMSFileDirect", "Sms")' + '?fileName=' + id;
-    }
+function downloadAttachment(id) {
+    // Assuming you have a DownloadAttachment action in your controller
+    debugger;
+    window.location.href = '@Url.Action("DownloadMMSFileDirect", "Sms")' + '?fileName=' + id;
+}
 </script>
 
 

@@ -4,7 +4,12 @@
     ViewData["Title"] = "Index";
 }
 
-<h1>Users List</h1>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h1>Users List</h1>
+    <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+        <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+    </a>
+</div>
 @if (TempData["StMsg"] != null)
 {
     <div class="alert alert-success">
@@ -32,7 +37,7 @@
             <th>Password</th>
             <th>Email</th>
             <th>Twilio#</th>
-          @*  <th>Action&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
+            @*  <th>Action&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
        *@
         </tr>
 
@@ -41,7 +46,6 @@
 </table>
 
 <div>
-    <a asp-controller="Sms" asp-action="IncomingLogs">Back to List</a>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
@@ -54,117 +58,117 @@
 <script>
 
     var RpmDatatable = $('#tblRPM').on('error.dt', function (e, settings, techNote, message) {
-        //SessionExpiredRedirect();
+    //SessionExpiredRedirect();
 
     }).DataTable({
-        "drawCallback": function (settings) {
-            $(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
-        },
-        //"initComplete": function (settings, json) {
-        //    //$(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
+    "drawCallback": function (settings) {
+    $(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
+    },
+    //"initComplete": function (settings, json) {
+    //    //$(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
 
 
-        //    //$('#tblRPM thead th:eq(1)').css({
-        //    //    'position': 'sticky',
-        //    //    'left': 102,
-        //    //    'background-color': '#70b3db',
-        //    //    'z-index': 2
-        //    //});
+    //    //$('#tblRPM thead th:eq(1)').css({
+    //    //    'position': 'sticky',
+    //    //    'left': 102,
+    //    //    'background-color': '#70b3db',
+    //    //    'z-index': 2
+    //    //});
 
-        //    //this.api().columns.adjust();
-        //},
-        //"rowCallback": function (row, data, index) {
+    //    //this.api().columns.adjust();
+    //},
+    //"rowCallback": function (row, data, index) {
 
-        //    $("table > thead > tr > th:first-child").css({
-        //        'position': 'sticky',
-        //        'left': 0,
-        //        'background-color': '#70b3db',
-        //        'z-index': 2
-        //    });
+    //    $("table > thead > tr > th:first-child").css({
+    //        'position': 'sticky',
+    //        'left': 0,
+    //        'background-color': '#70b3db',
+    //        'z-index': 2
+    //    });
 
-        //    $("table > thead > tr > th:nth-child(2)").css({
-        //        'position': 'sticky',
-        //        'left': 102,
-        //        'background-color': '#70b3db',
-        //        'z-index': 2
-        //    });
+    //    $("table > thead > tr > th:nth-child(2)").css({
+    //        'position': 'sticky',
+    //        'left': 102,
+    //        'background-color': '#70b3db',
+    //        'z-index': 2
+    //    });
 
-        //    $('td:eq(0)', row).css({
-        //        'position': 'sticky',
-        //        'left': 0,
-        //        'background-color': '#70b3db',
-        //        'z-index': 1  // Ensure that it's above the other cells
-        //    });
-        //    $('td:eq(1)', row).css({
-        //        'position': 'sticky',
-        //        'left': 102,
-        //        'background-color': '#70b3db',
-        //        'z-index': 1
-        //    });
-        //},
-        "autoWidth": false,
-        "sAjaxSource": "/Users/GetUsersTbl",
-        //"fnServerParams": function (aoData) {
-        //    aoData.push(
-        //        { "name": "storeId", "value": $('#StoreId').val() }
-        //    );
-        //},
-        "sServerMethod": "POST",
-        "bServerSide": false,
-        "bProcessing": true,
-        "bSearchable": true,
-        "scrollX": true,
-        "scrollY": "400px",
-        "pageLength": 100,
-        //"fixedColumns": {
-        //    "leftColumns": 2 // Number of columns to freeze on the left
-        //},
-        "order": [],
-        //"order": [[0, 'asc']],
-        "language": {
-            "emptyTable": "No record found.",
-            "processing":
-                '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
-        },
-        "columns": [
-            {
-                "data": "name",
-                "autoWidth": true,
-                "searchable": true
-            },
-            {
-                "data": "username",
-                "autoWidth": true,
-                "searchable": true
-            },
-            {
-                "data": "password",
-                "autoWidth": true,
-                "searchable": true
-            },
-            {
-                "data": "email",
-                "autoWidth": true,
-                "searchable": true
-            },
-            {
-                "data": "phone",
-                "autoWidth": true,
-                "searchable": true
-            }
-            //{
-            //    "render": function (data, type, row) {
+    //    $('td:eq(0)', row).css({
+    //        'position': 'sticky',
+    //        'left': 0,
+    //        'background-color': '#70b3db',
+    //        'z-index': 1  // Ensure that it's above the other cells
+    //    });
+    //    $('td:eq(1)', row).css({
+    //        'position': 'sticky',
+    //        'left': 102,
+    //        'background-color': '#70b3db',
+    //        'z-index': 1
+    //    });
+    //},
+    "autoWidth": false,
+    "sAjaxSource": "/Users/GetUsersTbl",
+    //"fnServerParams": function (aoData) {
+    //    aoData.push(
+    //        { "name": "storeId", "value": $('#StoreId').val() }
+    //    );
+    //},
+    "sServerMethod": "POST",
+    "bServerSide": false,
+    "bProcessing": true,
+    "bSearchable": true,
+    "scrollX": true,
+    "scrollY": "400px",
+    "pageLength": 100,
+    //"fixedColumns": {
+    //    "leftColumns": 2 // Number of columns to freeze on the left
+    //},
+    "order": [],
+    //"order": [[0, 'asc']],
+    "language": {
+    "emptyTable": "No record found.",
+    "processing":
+    '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
+    },
+    "columns": [
+    {
+    "data": "name",
+    "autoWidth": true,
+    "searchable": true
+    },
+    {
+    "data": "username",
+    "autoWidth": true,
+    "searchable": true
+    },
+    {
+    "data": "password",
+    "autoWidth": true,
+    "searchable": true
+    },
+    {
+    "data": "email",
+    "autoWidth": true,
+    "searchable": true
+    },
+    {
+    "data": "phone",
+    "autoWidth": true,
+    "searchable": true
+    }
+    //{
+    //    "render": function (data, type, row) {
 
-            //        return '<button style="background: #52aadf;margin: 2px" onclick="EditRecord(' + row.id + ')"> Edit </button>' +
-            //            '<button style="background: #52aadf;" onclick="DeleteRecord(' + row.id + ')"> Delete </button>';
-
-
-            //    },
-            //    "searchable": true
-            //}
+    //        return '<button style="background: #52aadf;margin: 2px" onclick="EditRecord(' + row.id + ')"> Edit </button>' +
+    //            '<button style="background: #52aadf;" onclick="DeleteRecord(' + row.id + ')"> Delete </button>';
 
 
-        ]
+    //    },
+    //    "searchable": true
+    //}
+
+
+    ]
     });
 
     //RpmDatatable.on('draw.dt', function () {
@@ -174,16 +178,16 @@
 
 
     function EditRecord(id) {
-        var url = '@Url.Action("Edit", "Users")';
-        url += '?id=' + id;
-        window.location.href = url;
+    var url = '@Url.Action("Edit", "Users")';
+    url += '?id=' + id;
+    window.location.href = url;
     }
 
 
     function DeleteRecord(id) {
-        var url = '@Url.Action("Delete", "Users")';
-        url += '?id=' + id;
-        window.location.href = url;
+    var url = '@Url.Action("Delete", "Users")';
+    url += '?id=' + id;
+    window.location.href = url;
     }
 
 </script>

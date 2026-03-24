@@ -4,7 +4,12 @@
     ViewData["Title"] = "Edit";
 }
 
-<h1>Edit Intro SMS</h1>
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h1>Edit Intro SMS</h1>
+    <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+        <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+    </a>
+</div>
 
 <hr />
 <div class="row">
@@ -14,7 +19,7 @@
             <input type="hidden" asp-for="Id" />
             <div class="form-group">
                 <label asp-for="Message" class="control-label"></label>
-               @* <input asp-for="Message" class="form-control" />*@
+                @* <input asp-for="Message" class="form-control" />*@
                 <textarea name="Message" class="form-control" rows="10">@Model.Message</textarea>
                 <span asp-validation-for="Message" class="text-danger"></span>
             </div>
@@ -26,6 +31,5 @@
 </div>
 
 <div>
-    <a asp-controller="Sms" asp-action="IncomingLogs">Back to List</a>
 </div>
 
