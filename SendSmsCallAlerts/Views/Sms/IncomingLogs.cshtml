@@ -60,6 +60,15 @@
         overflow-x: auto !important;
     }
 
+    .dataTables_wrapper {
+        width: 100%;
+    }
+
+    #tblRPM_wrapper {
+        width: 100%;
+        overflow-x: hidden;
+    }
+
     .action-btns { white-space: nowrap; }
     .action-btns .btn { font-size: 0.8rem; padding: 3px 10px; margin: 1px; }
 
@@ -85,13 +94,14 @@
     .page-wrapper { transition: margin-left 0.3s ease; }
 </style>
 
-<div style="padding:20px">
+<div style="padding:20px; max-width:100%; box-sizing:border-box;">
     <h1 class="mb-3">Incoming SMS</h1>
 
     @if (TempData["SucSms"] != null) { <div class="alert alert-success"><b>@TempData["SucSms"]</b></div> }
     @if (TempData["SucMsg"] != null) { <div class="alert alert-success"><b>@TempData["SucMsg"]</b></div> }
     @if (TempData["ErrMsg"] != null) { <div class="alert alert-danger"><b>@TempData["ErrMsg"]</b></div> }
 
+    <div style="margin: 0 16px;">
     <table class="table table-bordered table-striped" id="tblRPM">
         <thead>
             <tr>
@@ -111,6 +121,7 @@
             </tr>
         </thead>
     </table>
+    </div>
 
     <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -491,6 +502,17 @@
         });
     }
 </script>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
