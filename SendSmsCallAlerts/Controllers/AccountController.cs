@@ -38,6 +38,7 @@ namespace SendSmsCallAlerts.Controllers
                 {
                     //if (usr.Username == "Snowbro")
                     //{
+                    // Just for check that it work good 
                         HttpContext.Session.SetString("UserRole", usr.Role.ToString());
                         HttpContext.Session.SetString("UserName", usr.Username);
                         HttpContext.Session.SetString("UserId", usr.Id.ToString());
