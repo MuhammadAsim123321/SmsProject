@@ -133,6 +133,15 @@ namespace SendSmsCallAlerts.Controllers
             scheduler.templateOrAudioId = 0;
             scheduler.IsPaused = false;
 
+            // FIX: createdOn / executionDateAndTime / executionTime ke form fields
+            // Create.cshtml me comment hain aur yahan bhi set nahi ho rahe thay,
+            // is liye DB me default 0001-01-01 save ho raha tha aur Schedulers list
+            // me "01/01/01 00:00" dikh raha tha. Ab asli creation time record hota hai.
+            DateTime createdNow = GetTime();
+            scheduler.createdOn = createdNow;
+            scheduler.executionDateAndTime = createdNow;
+            scheduler.executionTime = createdNow;
+
             _context.Add(scheduler);
             await _context.SaveChangesAsync();
 
@@ -338,6 +347,13 @@ namespace SendSmsCallAlerts.Controllers
                 existingScheduler.schedulerFor = null;
                 existingScheduler.templateOrAudioId = 0;
                 existingScheduler.JobBookDate = null;
+
+                // FIX: purane records jinki createdOn / execution date-time kabhi save hi nahi hui
+                // (un me DateTime ka default 0001-01-01 para hai) unhe Edit par repair kar dete hain,
+                // warna list me "01/01/01 00:00" hi dikhta rehta hai.
+                if (existingScheduler.createdOn == DateTime.MinValue) existingScheduler.createdOn = GetTime();
+                if (existingScheduler.executionDateAndTime == DateTime.MinValue) existingScheduler.executionDateAndTime = GetTime();
+                if (existingScheduler.executionTime == DateTime.MinValue) existingScheduler.executionTime = GetTime();
 
                 _context.Update(existingScheduler);
                 await _context.SaveChangesAsync();
