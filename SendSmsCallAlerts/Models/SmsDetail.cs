@@ -23,5 +23,9 @@ namespace SendSmsCallAlerts.Models
         public virtual ContactDetail? ContactDetail { get; set; }
         public int? ScheduledJobId { get; set; }
 
+        // NEW: Split address fields (for backward compatibility and direct storage)
+        public string? StreetAddress { get; set; }
+        public string? CityState { get; set; }
+        public string? ZipCode { get; set; }
     }
 }

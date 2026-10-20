@@ -111,7 +111,9 @@
                 <th>Media</th>
                 <th>Direction</th>
                 <th>Name</th>
-                <th>Address</th>
+                <th>Street Address</th>
+                <th>City/State</th>
+                <th>ZIP Code</th>
                 <th>Email</th>
                 <th>Category</th>
                 <th>Scheduler</th>
@@ -139,17 +141,45 @@
                         <div class="mb-3"><label>Phone</label><input type="text" id="mFromNum" class="form-control" readonly /></div>
                         <div class="mb-3"><label>Name</label><input type="text" id="mName" class="form-control m-input" /></div>
                         <div class="mb-3"><label>Email</label><input type="email" id="mEmail" class="form-control m-input" /></div>
-                        <div class="mb-3"><label>Address</label><input type="text" id="mAddress" class="form-control m-input" /></div>
+                        
+                        <!-- NEW: Split Address Fields -->
+                        <div class="mb-3"><label>Street Address</label><input type="text" id="mStreetAddress" class="form-control m-input" placeholder="123 Main Street" /></div>
+                        <div class="row mb-3">
+                            <div class="col-8">
+                                <label>City/State</label>
+                                <input type="text" id="mCityState" class="form-control m-input" placeholder="City, State" />
+                            </div>
+                            <div class="col-4">
+                                <label>ZIP Code</label>
+                                <input type="text" id="mZipCode" class="form-control m-input" placeholder="12345" />
+                            </div>
+                        </div>
+
                         <div id="jobScheduleSection">
                             <hr />
                             <h6>Scheduler Details</h6>
                             <div id="activeJobsContainer" class="mb-3 d-flex flex-wrap gap-2"></div>
                             <div class="mb-3">
                                 <label>Category</label>
-                                <select id="mCategory" class="form-select m-input">
+                                <select id="mCategory" class="form-select m-input" onchange="handleCategoryChange()">
                                     <option value="">Select Category</option>
                                 </select>
                             </div>
+                            
+                            <!-- NEW: Technician Assignment Section -->
+                            <div class="mb-3" id="technicianSection">
+                                <label>Assign Technician</label>
+                                <div class="input-group">
+                                    <select id="mTechnician" class="form-select">
+                                        <option value="">-- Select a Technician --</option>
+                                    </select>
+                                    <button type="button" class="btn btn-success" id="btnAssignTechnician">
+                                        <i class="fa fa-user-check"></i> Assign
+                                    </button>
+                                </div>
+                                <small class="form-text text-muted" id="currentTechnicianInfo"></small>
+                            </div>
+
                             <div class="mb-3">
                                 <label>Scheduler Template</label>
                                 <select id="mSchedularTemplate" class="form-select m-input" onchange="handleTemplateChange()">
@@ -285,13 +315,15 @@
             { "width": "50px",  "targets": 3 },
             { "width": "70px",  "targets": 4 },
             { "width": "80px",  "targets": 5 },
-            { "width": "80px",  "targets": 6 },
-            { "width": "120px", "targets": 7 },
-            { "width": "60px",  "targets": 8 },
-            { "width": "70px",  "targets": 9 },
+            { "width": "120px", "targets": 6 },
+            { "width": "100px", "targets": 7 },
+            { "width": "80px",  "targets": 8 },
+            { "width": "120px", "targets": 9 },
             { "width": "90px",  "targets": 10 },
-            { "width": "100px", "targets": 11 },
-            { "width": "140px", "targets": 12, "orderable": false }
+            { "width": "90px",  "targets": 11 },
+            { "width": "90px",  "targets": 12 },
+            { "width": "100px", "targets": 13 },
+            { "width": "140px", "targets": 14, "orderable": false }
         ],
         "language": {
             "emptyTable": "No record found.",
@@ -336,7 +368,9 @@
             },
             { "data": "smsDirection",     "searchable": true },
             { "data": "name",             "searchable": true, "defaultContent": "N/A" },
-            { "data": "address",          "searchable": true, "defaultContent": "N/A" },
+            { "data": "streetAddress",    "searchable": true, "defaultContent": "N/A" },
+            { "data": "cityState",        "searchable": true, "defaultContent": "N/A" },
+            { "data": "zipCode",          "searchable": true, "defaultContent": "N/A" },
             { "data": "email",            "searchable": true, "defaultContent": "N/A" },
             { "data": "category",         "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
             { "data": "scheduler",        "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
@@ -383,16 +417,56 @@
         $('#mCustomDate').val('');
         $('#mCustomDays').val('');
         $('#mCustomHoursVal').val('');
+        $('#mTechnician').val('');
+        window.assignedTechnicianId = null;
+        window.currentCategoryId = null;
 
-        if (isOutgoing) { $('#jobScheduleSection').hide(); $('#outgoingAlert').show(); }
-        else            { $('#jobScheduleSection').show(); $('#outgoingAlert').hide(); }
+        if (isOutgoing) { 
+            $('#jobScheduleSection').hide(); 
+            $('#outgoingAlert').show(); 
+            $('#technicianSection').hide();
+        }
+        else { 
+            $('#jobScheduleSection').show(); 
+            $('#outgoingAlert').hide();
+            $('#technicianSection').show();
+        }
 
-        $.get("/SMS/GetContactDetailsByPhone", { phoneNumber: data.fromNum }, function (res) {
+        $.get("/Sms/GetContactDetailsByPhone", { phoneNumber: data.fromNum }, function (res) {
             $('#activeJobsContainer').empty();
             if (res.success && res.found) {
                 $('#mName').val(res.name || "");
                 $('#mEmail').val(res.email || "");
-                $('#mAddress').val(res.address || "");
+                $('#mStreetAddress').val(res.streetAddress || "");
+                $('#mCityState').val(res.cityState || "");
+                $('#mZipCode').val(res.zipCode || "");
+                
+                // Store values
+                window.currentCustomerZip = res.zipCode || "";
+                window.assignedTechnicianId = res.assignedTechnicianId || null;
+                window.currentCategoryId = res.categoryId || null;
+                
+                console.log('Contact loaded:', {
+                    technicianId: window.assignedTechnicianId,
+                    categoryId: window.currentCategoryId,
+                    zip: window.currentCustomerZip
+                });
+                
+                // PRE-SELECT CATEGORY if it exists
+                if (res.categoryId) {
+                    $('#mCategory').val(res.categoryId);
+                }
+                
+                // Show assigned technician indicator
+                if (res.assignedTechnicianId && res.assignedTechnicianName) {
+                    $('#currentTechnicianInfo').html(
+                        '<i class="fa fa-check-circle text-success"></i> <strong style="color: #28a745;">Currently assigned to: ' + 
+                        res.assignedTechnicianName + '</strong>'
+                    );
+                } else {
+                    $('#currentTechnicianInfo').html('');
+                }
+                
                 if (!isOutgoing && res.activeJobs && res.activeJobs.length > 0) {
                     res.activeJobs.forEach(function (job) {
                         $('#activeJobsContainer').append(
@@ -402,12 +476,27 @@
                     });
                 }
             } else {
-                $('#mName').val(data.name    === "N/A" ? "" : data.name);
-                $('#mEmail').val(data.email  === "N/A" ? "" : data.email);
-                $('#mAddress').val(data.address === "N/A" ? "" : data.address);
+                $('#mName').val(data.name === "N/A" ? "" : data.name);
+                $('#mEmail').val(data.email === "N/A" ? "" : data.email);
+                $('#mStreetAddress').val("");
+                $('#mCityState').val("");
+                $('#mZipCode').val("");
+                window.currentCustomerZip = "";
+                window.assignedTechnicianId = null;
+                window.currentCategoryId = null;
             }
+            
             $('#btnUpdate').prop('disabled', true);
             $('#editModal').modal('show');
+            
+            // Trigger category change to load technicians immediately after modal shows
+            setTimeout(function() {
+                var categoryId = $('#mCategory').val();
+                if (categoryId) {
+                    console.log('Calling handleCategoryChange with category:', categoryId);
+                    handleCategoryChange();
+                }
+            }, 300);
         });
     });
 
@@ -423,7 +512,9 @@
             smsDirection:     $('#mSmsDirection').val(),
             name:             $('#mName').val(),
             email:            $('#mEmail').val(),
-            address:          $('#mAddress').val(),
+            streetAddress:    $('#mStreetAddress').val(),
+            cityState:        $('#mCityState').val(),
+            zipCode:          $('#mZipCode').val(),
             category:         $('#mCategory').val(),
             schedulerId:      $('#mSchedularTemplate').val(),
             jobBookDate:      $('#mJobBookDate').val(),
@@ -491,6 +582,85 @@
         $('#resultBody').text(msg);
         $('#resultModal').modal('show');
     }
+
+    // NEW: Handle category change to load technicians
+    function handleCategoryChange() {
+        var categoryId = $('#mCategory').val();
+        var customerZip = window.currentCustomerZip || $('#mZipCode').val();
+        
+        // Store current category for reference
+        window.currentCategoryId = categoryId;
+        
+        if (categoryId && customerZip) {
+            $('#mTechnician').html('<option value="">Loading technicians...</option>');
+            
+            $.get('/Technicians/GetFilteredTechnicians', { 
+                customerZip: customerZip, 
+                categoryId: categoryId 
+            }, function(technicians) {
+                $('#mTechnician').empty();
+                
+                if (technicians && technicians.length > 0) {
+                    $('#mTechnician').append('<option value="">-- Select a Technician --</option>');
+                    
+                    var assignedFound = false;
+                    technicians.forEach(function(tech) {
+                        var option = $('<option></option>')
+                            .val(tech.id)
+                            .text(tech.label);
+                        
+                        // Check if this is the assigned technician
+                        if (window.assignedTechnicianId && window.assignedTechnicianId == tech.id) {
+                            option.prop('selected', true);
+                            assignedFound = true;
+                        }
+                        
+                        $('#mTechnician').append(option);
+                    });
+                    
+                    // Extra safety: manually set the value if assigned technician found
+                    if (assignedFound && window.assignedTechnicianId) {
+                        $('#mTechnician').val(window.assignedTechnicianId);
+                    }
+                } else {
+                    $('#mTechnician').append('<option value="">No technicians available for this category</option>');
+                }
+            });
+        } else {
+            $('#mTechnician').html('<option value="">-- Select Category First --</option>');
+        }
+    }
+
+    // NEW: Assign technician button handler
+    $('#btnAssignTechnician').click(function() {
+        var technicianId = $('#mTechnician').val();
+        var phoneNumber = $('#mFromNum').val();
+        
+        if (!technicianId) {
+            alert('Please select a technician first.');
+            return;
+        }
+        
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Assigning...');
+        
+        $.post('/Sms/AssignTechnician', { 
+            phoneNumber: phoneNumber, 
+            technicianId: technicianId 
+        }, function(res) {
+            $btn.prop('disabled', false).html('<i class="fa fa-user-check"></i> Assign');
+            
+            if (res.success) {
+                $('#currentTechnicianInfo').html(
+                    '<i class="fa fa-check-circle text-success"></i> Currently assigned to: <strong>' + 
+                    res.technicianName + '</strong>'
+                );
+                showResult("Success", res.message, "text-success");
+            } else {
+                alert('Error: ' + res.message);
+            }
+        });
+    });
 
     function openAttachments(id) { window.open("@Url.Action("OpenAttachments", "Sms")?id=" + id, '_blank'); }
     function EditRecord(num)     { window.location.href = '@Url.Action("SMS", "Conversations")?num=' + num; }

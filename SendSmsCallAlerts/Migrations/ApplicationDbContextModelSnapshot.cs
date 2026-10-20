@@ -76,7 +76,10 @@ namespace SendSmsCallAlerts.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Address")
+                    b.Property<int?>("AssignedTechnicianId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CityState")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
@@ -90,7 +93,15 @@ namespace SendSmsCallAlerts.Migrations
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("StreetAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ZipCode")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("AssignedTechnicianId");
 
                     b.ToTable("ContactDetail");
                 });
@@ -204,6 +215,48 @@ namespace SendSmsCallAlerts.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("IvrOption");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Num = 1,
+                            TwilioNum = "",
+                            UserId = 0,
+                            keyword = "HVAC Services"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Num = 2,
+                            TwilioNum = "",
+                            UserId = 0,
+                            keyword = "Plumbing Repair"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Num = 3,
+                            TwilioNum = "",
+                            UserId = 0,
+                            keyword = "Electrical Work"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Num = 4,
+                            TwilioNum = "",
+                            UserId = 0,
+                            keyword = "Appliance Repair"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Num = 5,
+                            TwilioNum = "",
+                            UserId = 0,
+                            keyword = "General Maintenance"
+                        });
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.JobSchedule", b =>
@@ -431,6 +484,9 @@ namespace SendSmsCallAlerts.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("CityState")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("ContactDetailId")
                         .HasColumnType("int");
 
@@ -439,6 +495,12 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.Property<int?>("ScheduledJobId")
                         .HasColumnType("int");
+
+                    b.Property<string>("StreetAddress")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ZipCode")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("createdOn")
                         .HasColumnType("datetime2");
@@ -498,6 +560,49 @@ namespace SendSmsCallAlerts.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SmsTemplates");
+                });
+
+            modelBuilder.Entity("SendSmsCallAlerts.Models.Technician", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CityState")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ContactNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("SelectedCategoryIds")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StreetAddress")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ZipCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Technicians");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.TimeToRun", b =>
@@ -646,6 +751,15 @@ namespace SendSmsCallAlerts.Migrations
                     b.Navigation("Scheduler");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>
+                {
+                    b.HasOne("SendSmsCallAlerts.Models.Technician", "AssignedTechnician")
+                        .WithMany("AssignedContacts")
+                        .HasForeignKey("AssignedTechnicianId");
+
+                    b.Navigation("AssignedTechnician");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.JobSchedule", b =>
                 {
                     b.HasOne("SendSmsCallAlerts.Models.ContactDetail", "ContactDetail")
@@ -688,6 +802,11 @@ namespace SendSmsCallAlerts.Migrations
             modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>
                 {
                     b.Navigation("JobSchedules");
+                });
+
+            modelBuilder.Entity("SendSmsCallAlerts.Models.Technician", b =>
+                {
+                    b.Navigation("AssignedContacts");
                 });
 #pragma warning restore 612, 618
         }

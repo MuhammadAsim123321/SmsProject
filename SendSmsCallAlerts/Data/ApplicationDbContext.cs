@@ -37,6 +37,9 @@ namespace SendSmsCallAlerts.Data
         public DbSet<OptOut> OptOuts { get; set; }
         public DbSet<TimeToRun> TimeToRun { get; set; }
         public DbSet<RunFrom> RunFrom { get; set; }
+        
+        // NEW: Technician DbSet
+        public DbSet<Technician> Technicians { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -64,6 +67,15 @@ namespace SendSmsCallAlerts.Data
                 new RunFrom { Id = 2, RunFromName = "Custom Date" },
                 new RunFrom { Id = 3, RunFromName = "Job Book Date" },
                 new RunFrom { Id = 4, RunFromName = "Job Created Date" }
+            );
+
+            // NEW: Seed IVR Category Options
+            modelBuilder.Entity<IvrOptions>().HasData(
+                new IvrOptions { Id = 1, Num = 1, keyword = "HVAC Services", UserId = 0, TwilioNum = "" },
+                new IvrOptions { Id = 2, Num = 2, keyword = "Plumbing Repair", UserId = 0, TwilioNum = "" },
+                new IvrOptions { Id = 3, Num = 3, keyword = "Electrical Work", UserId = 0, TwilioNum = "" },
+                new IvrOptions { Id = 4, Num = 4, keyword = "Appliance Repair", UserId = 0, TwilioNum = "" },
+                new IvrOptions { Id = 5, Num = 5, keyword = "General Maintenance", UserId = 0, TwilioNum = "" }
             );
         }
 

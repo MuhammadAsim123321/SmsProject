@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Jobs;
+using SendSmsCallAlerts.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +17,9 @@ option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection
 
 builder.Services.AddSession();
 builder.Services.AddHttpClient();
+
+// NEW: Register GoogleDistanceService
+builder.Services.AddScoped<GoogleDistanceService>();
 
 builder.Services.Configure<FormOptions>(options =>
 {

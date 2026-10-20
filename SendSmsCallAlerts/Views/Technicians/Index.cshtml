@@ -1,0 +1,138 @@
+@model IEnumerable<SendSmsCallAlerts.Models.Technician>
+
+@{
+    ViewData["Title"] = "Technicians";
+    var technicianViewModels = ViewBag.TechnicianViewModels as List<dynamic>;
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+<style>
+    .category-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        margin: 2px;
+        background-color: #e3f2fd;
+        border: 1px solid #90caf9;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        color: #1976d2;
+    }
+</style>
+
+<div style="padding:20px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Technicians</h1>
+        <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+            <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            <b>@TempData["SuccessMessage"]</b>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <p style="text-align:right;">
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fa fa-plus me-1"></i> Create New Technician
+        </a>
+    </p>
+
+    <table class="table table-bordered table-striped" id="tblTechnicians">
+        <thead style="background: #70b3db; color: white;">
+            <tr>
+                <th>Name</th>
+                <th>Contact Number</th>
+                <th>Street Address</th>
+                <th>City/State</th>
+                <th>ZIP Code</th>
+                <th>Categories</th>
+                <th style="width: 150px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+    @if (technicianViewModels != null && technicianViewModels.Count > 0)
+    {
+        @foreach (var item in technicianViewModels)
+        {
+            var tech = (SendSmsCallAlerts.Models.Technician)item.Technician;
+            var categoryNames = (List<string>)item.CategoryNames;
+            
+            <tr>
+                <td>@tech.FullName</td>
+                <td>@tech.ContactNumber</td>
+                <td>@(tech.StreetAddress ?? "N/A")</td>
+                <td>@(tech.CityState ?? "N/A")</td>
+                <td>@(tech.ZipCode ?? "N/A")</td>
+                <td>
+                    @if (categoryNames != null && categoryNames.Any())
+                    {
+                        @foreach (var category in categoryNames)
+                        {
+                            <span class="category-badge">@category</span>
+                        }
+                    }
+                    else
+                    {
+                        <span class="text-muted">No categories assigned</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@tech.Id" class="btn btn-sm btn-primary">
+                        <i class="fa fa-edit"></i> Edit
+                    </a>
+                    <button onclick="deleteTechnician(@tech.Id)" class="btn btn-sm btn-danger">
+                        <i class="fa fa-trash"></i> Delete
+                    </button>
+                </td>
+            </tr>
+        }
+    }
+    else
+    {
+        <tr>
+            <td colspan="7" style="text-align: center; padding: 20px; color: #999;">
+                <i class="fa fa-inbox"></i> No technicians found. 
+                <a asp-action="Create" style="color: #007bff; text-decoration: underline;">Create one now</a>
+            </td>
+        </tr>
+    }
+        </tbody>
+    </table>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#tblTechnicians').DataTable({
+            "order": [[0, 'asc']],
+            "pageLength": 25,
+            "language": {
+                "emptyTable": "No technicians found."
+            }
+        });
+    });
+
+    function deleteTechnician(id) {
+        if (confirm('Are you sure you want to delete this technician?')) {
+            $.post('@Url.Action("Delete", "Technicians")', { id: id }, function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    location.reload();
+                } else {
+                    alert(response.message);
+                }
+            });
+        }
+    }
+</script>

@@ -582,6 +582,9 @@ namespace SendSmsCallAlerts.Controllers
 
                 string displayName = item.contact?.Name ?? "N/A";
                 string displayAddress = item.contact?.Address ?? "N/A";
+                string displayStreetAddress = item.contact?.StreetAddress ?? item.sms.StreetAddress ?? "N/A";
+                string displayCityState = item.contact?.CityState ?? item.sms.CityState ?? "N/A";
+                string displayZipCode = item.contact?.ZipCode ?? item.sms.ZipCode ?? "N/A";
                 string displayEmail = item.contact?.Email ?? "N/A";
 
                 if (contactJobs.Any())
@@ -617,6 +620,9 @@ namespace SendSmsCallAlerts.Controllers
                         attchmentsCount = item.attchmentsCount,
                         name = displayName,
                         address = displayAddress,
+                        streetAddress = displayStreetAddress,
+                        cityState = displayCityState,
+                        zipCode = displayZipCode,
                         email = displayEmail,
                         category = string.Join(", ", categoryNames),
                         scheduler = string.Join(", ", schedulerNames),
@@ -642,6 +648,9 @@ namespace SendSmsCallAlerts.Controllers
                         attchmentsCount = item.attchmentsCount,
                         name = displayName,
                         address = displayAddress,
+                        streetAddress = displayStreetAddress,
+                        cityState = displayCityState,
+                        zipCode = displayZipCode,
                         email = displayEmail,
                         category = "N/A",
                         scheduler = "N/A",
@@ -734,13 +743,24 @@ namespace SendSmsCallAlerts.Controllers
                 if (contact != null)
                 {
                     contact.Name = model.name;
-                    contact.Address = model.address;
                     contact.Email = model.email;
+                    // Update split address fields
+                    contact.StreetAddress = model.streetAddress;
+                    contact.CityState = model.cityState;
+                    contact.ZipCode = model.zipCode;
                     _context.ContactDetail.Update(contact);
                 }
                 else
                 {
-                    contact = new ContactDetail { Name = model.name, Address = model.address, Email = model.email, PhoneNumber = phoneNumber };
+                    contact = new ContactDetail 
+                    { 
+                        Name = model.name, 
+                        Email = model.email, 
+                        PhoneNumber = phoneNumber,
+                        StreetAddress = model.streetAddress,
+                        CityState = model.cityState,
+                        ZipCode = model.zipCode
+                    };
                     _context.ContactDetail.Add(contact);
                     await _context.SaveChangesAsync();
                 }
@@ -793,6 +813,7 @@ namespace SendSmsCallAlerts.Controllers
             try
             {
                 var contact = await _context.ContactDetail
+                    .Include(c => c.AssignedTechnician)
                     .FirstOrDefaultAsync(c => c.PhoneNumber == phoneNumber);
 
                 if (contact == null)
@@ -809,6 +830,15 @@ namespace SendSmsCallAlerts.Controllers
                                             schedulerName = s.name
                                         }).ToListAsync();
 
+                // Get the first scheduler's category ID if exists
+                var firstScheduler = await (from j in _context.AllScheduledJobs
+                                            join s in _context.Schedulers on j.SchedulerId equals s.Id
+                                            where j.ContactDetailId == contact.Id
+                                            select s)
+                                            .FirstOrDefaultAsync();
+
+                int? categoryId = firstScheduler?.templateOrAudioId;
+
                 return Json(new
                 {
                     success = true,
@@ -816,6 +846,12 @@ namespace SendSmsCallAlerts.Controllers
                     name = contact.Name ?? "",
                     email = contact.Email ?? "",
                     address = contact.Address ?? "",
+                    streetAddress = contact.StreetAddress ?? "",
+                    cityState = contact.CityState ?? "",
+                    zipCode = contact.ZipCode ?? "",
+                    assignedTechnicianId = contact.AssignedTechnicianId,
+                    assignedTechnicianName = contact.AssignedTechnician?.FullName ?? "",
+                    categoryId = categoryId,
                     activeJobs = activeJobs
                 });
             }
@@ -881,6 +917,9 @@ namespace SendSmsCallAlerts.Controllers
                 conversation.attchmentsCount,
                 conversation.name,
                 conversation.address,
+                conversation.streetAddress,
+                conversation.cityState,
+                conversation.zipCode,
                 conversation.email,
                 conversation.category,
                 conversation.scheduler,
@@ -902,6 +941,41 @@ namespace SendSmsCallAlerts.Controllers
             TimeZoneInfo easternTimeZone = TimeZoneInfo.FindSystemTimeZoneById(TmZn);
             DateTime usEastCoastNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternTimeZone);
             return usEastCoastNow;
+        }
+
+        // NEW: Assign Technician to Contact
+        [HttpPost]
+        public async Task<JsonResult> AssignTechnician(string phoneNumber, int technicianId)
+        {
+            try
+            {
+                var contact = await _context.ContactDetail
+                    .FirstOrDefaultAsync(c => c.PhoneNumber == phoneNumber);
+
+                if (contact == null)
+                {
+                    return Json(new { success = false, message = "Contact not found." });
+                }
+
+                var technician = await _context.Technicians.FindAsync(technicianId);
+                if (technician == null)
+                {
+                    return Json(new { success = false, message = "Technician not found." });
+                }
+
+                contact.AssignedTechnicianId = technicianId;
+                await _context.SaveChangesAsync();
+
+                return Json(new { 
+                    success = true, 
+                    message = $"Technician {technician.FullName} assigned successfully.",
+                    technicianName = technician.FullName
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Error: " + ex.Message });
+            }
         }
 
     }

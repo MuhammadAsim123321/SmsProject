@@ -17,6 +17,10 @@
 
         public string name { get; set; }
         public string address { get; set; }
+        // NEW: Split address fields
+        public string? streetAddress { get; set; }
+        public string? cityState { get; set; }
+        public string? zipCode { get; set; }
         public string email { get; set; }
         public string category { get; set; }
         public string scheduler { get; set; }
