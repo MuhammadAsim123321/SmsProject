@@ -28,5 +28,24 @@
         public int SchedulerId { get; set; }
         public string? jobBookDatesList { get; set; }
         public string jobBookTimesList { get; set; }
+
+        // Task 4: Response time tracking
+        public DateTime? RespondedOn { get; set; }
+        public double? WaitingMinutes { get; set; }
+
+        /// <summary>
+        /// "gold" | "orange" | "red" | "" based on WaitingMinutes for incoming messages
+        /// </summary>
+        public string WaitingColor
+        {
+            get
+            {
+                if (smsDirection != "Incoming" || WaitingMinutes == null) return "";
+                if (WaitingMinutes >= 20) return "red";
+                if (WaitingMinutes >= 15) return "orange";
+                if (WaitingMinutes >= 10) return "gold";
+                return "";
+            }
+        }
     }
 }

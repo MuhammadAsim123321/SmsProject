@@ -571,6 +571,15 @@ namespace SendSmsCallAlerts.Controllers
                                  select new { Job = j, Scheduler = s }).ToListAsync();
 
             var categories = await _context.IvrOption.ToListAsync();
+
+            // Task 4: Load all outgoing messages for response-time matching.
+            // For each incoming SMS (fromNum = customer), find the earliest outgoing reply
+            // sent TO that same customer number AFTER the incoming message arrived.
+            var allOutgoing = await _context.SmsDetails
+                .Where(s => s.smsDirection == "Outgoing")
+                .Select(s => new { s.toNum, s.createdOn })
+                .ToListAsync();
+
             var result = new List<SmsDetailsVm>();
 
             foreach (var item in rawData)
@@ -586,6 +595,27 @@ namespace SendSmsCallAlerts.Controllers
                 string displayCityState = item.contact?.CityState ?? item.sms.CityState ?? "N/A";
                 string displayZipCode = item.contact?.ZipCode ?? item.sms.ZipCode ?? "N/A";
                 string displayEmail = item.contact?.Email ?? "N/A";
+
+                // Task 4: Calculate response time for incoming messages only.
+                DateTime? respondedOn = null;
+                double? waitingMinutes = null;
+                if (isIncoming)
+                {
+                    // The customer's number is in fromNum for incoming messages.
+                    // We look for an outgoing message sent TO that customer after this message arrived.
+                    var customerNum = item.sms.fromNum;
+                    var incomingTime = item.sms.createdOn;
+                    var reply = allOutgoing
+                        .Where(o => o.toNum == customerNum && o.createdOn > incomingTime)
+                        .OrderBy(o => o.createdOn)
+                        .FirstOrDefault();
+
+                    if (reply != null)
+                    {
+                        respondedOn = reply.createdOn;
+                        waitingMinutes = (reply.createdOn - incomingTime).TotalMinutes;
+                    }
+                }
 
                 if (contactJobs.Any())
                 {
@@ -629,7 +659,9 @@ namespace SendSmsCallAlerts.Controllers
                         jobBookDatesList = string.Join(", ", bookDates),
                         jobBookTimesList = string.Join(", ", bookTimes),
                         JobBookDate = contactJobs.FirstOrDefault()?.Job.JobBookDate,
-                        SchedulerId = contactJobs.FirstOrDefault()?.Scheduler.Id ?? 0
+                        SchedulerId = contactJobs.FirstOrDefault()?.Scheduler.Id ?? 0,
+                        RespondedOn = respondedOn,
+                        WaitingMinutes = waitingMinutes
                     });
                 }
                 else
@@ -657,7 +689,9 @@ namespace SendSmsCallAlerts.Controllers
                         jobBookDatesList = "N/A",
                         jobBookTimesList = "N/A",
                         JobBookDate = null,
-                        SchedulerId = 0
+                        SchedulerId = 0,
+                        RespondedOn = respondedOn,
+                        WaitingMinutes = waitingMinutes
                     });
                 }
             }
@@ -926,7 +960,19 @@ namespace SendSmsCallAlerts.Controllers
                 conversation.jobBookDatesList,
                 conversation.jobBookTimesList,
                 conversation.JobBookDate,
-                conversation.SchedulerId
+                conversation.SchedulerId,
+                // Task 4: response time fields
+                incomingDate = conversation.smsDirection == "Incoming"
+                    ? conversation.createdOn.ToString("MM-dd-yyyy") : "",
+                incomingTime = conversation.smsDirection == "Incoming"
+                    ? conversation.createdOn.ToString("hh:mm:ss tt") : "",
+                respondedDate = conversation.RespondedOn.HasValue
+                    ? conversation.RespondedOn.Value.ToString("MM-dd-yyyy") : "",
+                respondedTime = conversation.RespondedOn.HasValue
+                    ? conversation.RespondedOn.Value.ToString("hh:mm:ss tt") : "",
+                waitingDisplay = conversation.WaitingMinutes.HasValue
+                    ? FormatWaitingTime(conversation.WaitingMinutes.Value) : (conversation.smsDirection == "Incoming" ? "Pending" : ""),
+                waitingColor = conversation.WaitingColor
             });
 
             return Json(new
@@ -976,6 +1022,14 @@ namespace SendSmsCallAlerts.Controllers
             {
                 return Json(new { success = false, message = "Error: " + ex.Message });
             }
+        }
+
+        // Task 4: Format waiting time as "Xm Ys"
+        private static string FormatWaitingTime(double totalMinutes)
+        {
+            int minutes = (int)Math.Floor(totalMinutes);
+            int seconds = (int)Math.Round((totalMinutes - minutes) * 60);
+            return $"{minutes}m {seconds}s";
         }
 
     }

@@ -18,7 +18,6 @@ namespace SendSmsCallAlerts.Controllers
         private readonly IConfiguration _configuration;
         private readonly string filePath;
         private readonly ApplicationDbContext _context;
-        // private const MaxFileSize = 10L * 1024L * 1024L * 1024L; // 10GB, adjust to your need
 
         public ConversationsController(IConfiguration configuration, IWebHostEnvironment hostingEnvironment, ApplicationDbContext context)
         {
@@ -31,42 +30,28 @@ namespace SendSmsCallAlerts.Controllers
         public IActionResult SMS(string num = "")
         {
             ViewBag.ToNumber = GetFormattedNumber(num);
-            ViewBag.FromNumber= GetTwilioNumber();
+            ViewBag.FromNumber = GetTwilioNumber();
             return View();
         }
 
         private string GetFormattedNumber(string num)
         {
-            num = num.Trim();
-            if (num.Length < 10)
-            {
-                return num;
-            }
-            if (num.Length == 10)
-            {
-                return num;
-            }
-
+            num = (num ?? "").Trim();
+            if (num.Length <= 10) return num;
             return num.Substring(num.Length - 10);
-
         }
 
+        // Task 5: Chat view — kept for backward compatibility but SMS.cshtml is the main UI
         public IActionResult Chat(string num)
         {
-            
             ViewBag.CustomerNumber = num;
-            
-            List<Conversation> convs = GetConversation(num);
-
-            return convs != null ?
-                        View(convs) :
-                        Problem("Entity set 'ApplicationDbContext.Conversations'  is null.");
+            var convs = GetConversation(num);
+            return View(convs ?? new List<SmsDetail>());
         }
 
         private string GetTwilioNumber()
         {
             return RetrieveData();
-           // return _configuration["AppSettings:TwilioNumber"];   
         }
 
         public string RetrieveData()
@@ -75,29 +60,92 @@ namespace SendSmsCallAlerts.Controllers
             {
                 int uId = Convert.ToInt32(HttpContext.Session.GetString("UserId"));
                 return _context.User.Where(r => r.Id == uId).First().Phone;
-
-                //// Read data from the text file
-                //if (System.IO.File.Exists(filePath))
-                //{
-                //    string data = System.IO.File.ReadAllText(filePath);
-                //    return data;
-                //}
-                //else
-                //{
-                //    return "File does not exist. No data to retrieve.";
-                //}
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return "Error";
             }
         }
 
-
-        private List<Conversation> GetConversation(string num)
+        // Task 5: Fixed — queries SmsDetails for all messages with this customer phone number.
+        // Looks at both fromNum and toNum so the full thread is captured regardless of direction.
+        private List<SmsDetail> GetConversation(string customerNum)
         {
-            
-            return null;
+            if (string.IsNullOrWhiteSpace(customerNum)) return new List<SmsDetail>();
+
+            // Normalise: ensure E.164 with +1 prefix for comparison
+            string e164 = NormaliseToE164(customerNum);
+
+            return _context.SmsDetails
+                .Where(s => s.fromNum == e164 || s.toNum == e164)
+                .OrderBy(s => s.createdOn)
+                .ToList();
+        }
+
+        // Task 5: JSON endpoint consumed by SMS.cshtml via AJAX to load the conversation thread.
+        // Returns messages plus the customer's ContactDetail name if available.
+        [HttpGet]
+        public async Task<IActionResult> GetConversationJson(string num)
+        {
+            if (string.IsNullOrWhiteSpace(num))
+                return Json(new { success = false, messages = new List<object>(), customerName = "" });
+
+            string e164 = NormaliseToE164(num);
+            string twilioNum = GetTwilioNumber();
+            string twilioE164 = NormaliseToE164(twilioNum ?? "");
+
+            var messages = await _context.SmsDetails
+                .Where(s => s.fromNum == e164 || s.toNum == e164)
+                .OrderBy(s => s.createdOn)
+                .ToListAsync();
+
+            // Resolve customer name from ContactDetail
+            var contact = await _context.ContactDetail
+                .FirstOrDefaultAsync(c => c.PhoneNumber == e164);
+
+            // Attach MMS link counts
+            var msgIds = messages.Select(m => m.Id).ToList();
+            var mmsCounts = await _context.MmsLinkss
+                .Where(m => msgIds.Contains(m.SmsId))
+                .GroupBy(m => m.SmsId)
+                .Select(g => new { SmsId = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var result = messages.Select(m => new
+            {
+                id           = m.Id,
+                body         = m.smsBody ?? "",
+                direction    = m.smsDirection,          // "Incoming" | "Outgoing"
+                date         = m.createdOn.ToString("MM-dd-yyyy"),
+                time         = m.createdOn.ToString("hh:mm tt"),
+                dateTimeFull = m.createdOn.ToString("MM-dd-yyyy hh:mm tt"),
+                fromNum      = m.fromNum,
+                toNum        = m.toNum,
+                attachments  = mmsCounts.FirstOrDefault(x => x.SmsId == m.Id)?.Count ?? 0
+            }).ToList();
+
+            return Json(new
+            {
+                success      = true,
+                messages     = result,
+                customerName = contact?.Name ?? "",
+                customerNum  = e164,
+                twilioNum    = twilioE164
+            });
+        }
+
+        // Normalise any phone format to E.164 (+1XXXXXXXXXX for US numbers)
+        private static string NormaliseToE164(string num)
+        {
+            if (string.IsNullOrWhiteSpace(num)) return num ?? "";
+            num = num.Trim();
+            // Already E.164
+            if (num.StartsWith("+")) return num;
+            // 10-digit US number
+            if (num.Length == 10) return "+1" + num;
+            // 11-digit starting with 1
+            if (num.Length == 11 && num.StartsWith("1")) return "+" + num;
+            return num;
         }
 
         [HttpPost]
@@ -106,174 +154,108 @@ namespace SendSmsCallAlerts.Controllers
         {
             try
             {
-                string accountSid = _configuration["AppSettings:AccountSid"];
-                string authToken = _configuration["AppSettings:AuthToken"];
                 conversation.fromNum = GetTwilioNumber();
-                //TwilioClient.Init(accountSid, authToken);
-
-                //var message = MessageResource.Create(
-                //    body: conversation.smsBody,
-                //    from: new Twilio.Types.PhoneNumber(conversation.fromNum),
-                //    to: new Twilio.Types.PhoneNumber(conversation.toNum)
-                //);
-
                 TempData["StMsg"] = "SMS Sent Successfully!";
                 return RedirectToAction(nameof(Chat), new { num = conversation.toNum });
             }
             catch (Exception e)
             {
-                TempData["ErMsg"] = "Error: "+e.ToString();
+                TempData["ErMsg"] = "Error: " + e.ToString();
             }
-
-
-
             return View(conversation);
         }
 
         private List<string> StoreImageAndGetAddress(List<IFormFile> files)
         {
             var uploads = Path.Combine(_hostingEnvironment.WebRootPath, "uploads");
+            if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
 
-            // Ensure the directory exists
-            if (!Directory.Exists(uploads))
-            {
-                Directory.CreateDirectory(uploads);
-            }
-
-            List<string> fileNames = new List<string>();
+            var fileNames = new List<string>();
             foreach (var file in files)
             {
-                // Check for null (no file selected for this iteration)
                 if (file != null)
                 {
-                    // Create a unique file name
                     var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                    var filePath = Path.Combine(uploads, fileName);
-
-                    // Save the file to the server
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
-                    {
-                        file.CopyTo(fileStream);
-                    }
-
+                    var fp = Path.Combine(uploads, fileName);
+                    using (var fs = new FileStream(fp, FileMode.Create))
+                        file.CopyTo(fs);
                     fileNames.Add(fileName);
-                    //var relativePath = Path.GetRelativePath(_hostingEnvironment.ContentRootPath, filePath);
-
                 }
             }
-
-
             return fileNames;
         }
 
-       
-
         [HttpPost]
-
-        //[DisableFormValueModelBinding]
         [RequestSizeLimit(9223372036854775807)]
         [RequestFormLimits(MultipartBodyLengthLimit = 9223372036854775807)]
         public async Task<IActionResult> SendSms(Conversation conversation, List<IFormFile> file)
         {
             try
             {
-                conversation.toNum = "+1"+GetFormattedNumber(conversation.toNum);
-                
+                conversation.toNum = "+1" + GetFormattedNumber(conversation.toNum);
 
                 string accountSid = _configuration["AppSettings:AccountSid"];
-                string authToken = _configuration["AppSettings:AuthToken"];
+                string authToken  = _configuration["AppSettings:AuthToken"];
                 string WebAddress = _configuration["AppSettings:WebAddress"];
+
                 List<string> mmsImg = null;
-
-                if (file != null && file.Count() > 0)
-                {
+                if (file != null && file.Count > 0)
                     mmsImg = StoreImageAndGetAddress(file);
-                }
 
-
-                    conversation.fromNum = "+1" + GetFormattedNumber(GetTwilioNumber());
+                conversation.fromNum = "+1" + GetFormattedNumber(GetTwilioNumber());
                 TwilioClient.Init(accountSid, authToken);
 
                 if (mmsImg != null)
                 {
-                    var mediaUrl = new List<Uri>();
-                    var mediaName = new List<string>();
+                    var mediaUrl  = mmsImg.Select(r => new Uri("https://" + WebAddress + "/uploads/" + r)).ToList();
+                    var mediaName = mmsImg.ToList();
 
-                    foreach (var rec in mmsImg)
+                    MessageResource.Create(
+                        body:     conversation.smsBody,
+                        from:     new Twilio.Types.PhoneNumber(conversation.fromNum),
+                        to:       new Twilio.Types.PhoneNumber(conversation.toNum),
+                        mediaUrl: mediaUrl);
+
+                    var smsDetail = new SmsDetail
                     {
-                        mediaUrl.Add(new Uri("https://" + WebAddress + "/uploads/" + rec));
-                        mediaName.Add(rec);
-                    }
-                    //var mediaUrl = new[] {
-                    //            new Uri("https://"+WebAddress+"/uploads/" + mmsImg)
-                    //        }.ToList();
-
-                    var message = MessageResource.Create(
-                                  body: conversation.smsBody,
-                                  from: new Twilio.Types.PhoneNumber(conversation.fromNum),
-                                  to: new Twilio.Types.PhoneNumber(conversation.toNum),
-                                  mediaUrl: mediaUrl
-                                  );
-
-                    List<MmsLinks> imgUrlList = new List<MmsLinks>();
-                    for(int i=0 ; i<mediaUrl.Count() ; i++)
-                    {
-                        MmsLinks mmsLnk = new MmsLinks();
-                        mmsLnk.FileName = mediaName[i];
-                        mmsLnk.Location = mediaUrl[i].ToString();
-                        imgUrlList.Add(mmsLnk);
-                    }
-
-                    SmsDetail smsDetail = new SmsDetail();
-                    smsDetail.fromNum = conversation.fromNum;
-                    smsDetail.toNum = conversation.toNum;
-                    smsDetail.imgPath = "";
-                    smsDetail.smsDirection = "Outgoing";
-                    smsDetail.smsBody = conversation.smsBody;
-                    smsDetail.createdOn = DateTime.UtcNow;
-
+                        fromNum      = conversation.fromNum,
+                        toNum        = conversation.toNum,
+                        imgPath      = "",
+                        smsDirection = "Outgoing",
+                        smsBody      = conversation.smsBody,
+                        createdOn    = DateTime.UtcNow
+                    };
                     _context.Add(smsDetail);
                     _context.SaveChanges();
 
-                    if (imgUrlList != null && imgUrlList.Count() > 0)
+                    var imgUrlList = mediaUrl.Select((u, i) => new MmsLinks
                     {
-                        // List<MmsLinks> mmsLinks = new List<MmsLinks>();
+                        SmsId    = smsDetail.Id,
+                        FileName = mediaName[i],
+                        Location = u.ToString()
+                    }).ToList();
 
-                        foreach (var rec in imgUrlList)
-                        {
-                            rec.SmsId = smsDetail.Id;
-                            // MmsLinks mmsLinks1 = new MmsLinks();
-                            //mmsLinks1.SmsId = smsDetail.Id;
-                            //mmsLinks1.Location = rec;
-
-                            //mmsLinks.Add(mmsLinks1);
-                        }
-
-                        _context.AddRange(imgUrlList);
-                        _context.SaveChanges();
-
-                    }
-
+                    _context.AddRange(imgUrlList);
+                    _context.SaveChanges();
                 }
                 else
                 {
-                    var message = MessageResource.Create(
-                                   body: conversation.smsBody,
-                                   from: new Twilio.Types.PhoneNumber(conversation.fromNum),
-                                   to: new Twilio.Types.PhoneNumber(conversation.toNum)
-                                    );
+                    MessageResource.Create(
+                        body: conversation.smsBody,
+                        from: new Twilio.Types.PhoneNumber(conversation.fromNum),
+                        to:   new Twilio.Types.PhoneNumber(conversation.toNum));
 
-                    SmsDetail smsDetail = new SmsDetail();
-                    smsDetail.fromNum = conversation.fromNum;
-                    smsDetail.toNum = conversation.toNum;
-                    smsDetail.imgPath = "";
-                    smsDetail.smsDirection = "Outgoing";
-                    smsDetail.smsBody = conversation.smsBody;
-                    smsDetail.createdOn = DateTime.UtcNow;
-
+                    var smsDetail = new SmsDetail
+                    {
+                        fromNum      = conversation.fromNum,
+                        toNum        = conversation.toNum,
+                        imgPath      = "",
+                        smsDirection = "Outgoing",
+                        smsBody      = conversation.smsBody,
+                        createdOn    = DateTime.UtcNow
+                    };
                     _context.Add(smsDetail);
                     _context.SaveChanges();
-
                 }
 
                 TempData["StMsg"] = "SMS Sent Successfully!";
@@ -281,15 +263,9 @@ namespace SendSmsCallAlerts.Controllers
             }
             catch (Exception e)
             {
-                TempData["ErMsg"] = "Error: "+e.ToString();
+                TempData["ErMsg"] = "Error: " + e.ToString();
                 return RedirectToAction(nameof(SMS), new { num = conversation.toNum });
             }
-
-
-
-            
         }
-
-
     }
 }

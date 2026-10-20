@@ -101,11 +101,24 @@
     @if (TempData["SucMsg"] != null) { <div class="alert alert-success"><b>@TempData["SucMsg"]</b></div> }
     @if (TempData["ErrMsg"] != null) { <div class="alert alert-danger"><b>@TempData["ErrMsg"]</b></div> }
 
+    @* Response-time color legend *@
+    <div style="margin: 0 16px 10px 16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:0.85rem;">
+        <strong>Waiting Time Key:</strong>
+        <span style="display:inline-flex;align-items:center;gap:6px;">
+            <span style="width:14px;height:14px;background:#FFD700;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Gold — 10–14 min 59 sec
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:6px;">
+            <span style="width:14px;height:14px;background:#FFA500;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Orange — 15–19 min 59 sec
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:6px;">
+            <span style="width:14px;height:14px;background:#FF4444;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Red — 20 min or more
+        </span>
+    </div>
+
     <div style="margin: 0 16px;">
     <table class="table table-bordered table-striped" id="tblRPM">
         <thead>
             <tr>
-                <th>Date</th>
                 <th>From</th>
                 <th>Body</th>
                 <th>Media</th>
@@ -119,6 +132,11 @@
                 <th>Scheduler</th>
                 <th>Job Booked Date</th>
                 <th>Job Booked Time</th>
+                <th>Incoming Date</th>
+                <th>Incoming Time</th>
+                <th>Responded Date</th>
+                <th>Responded Time</th>
+                <th>Waiting Time</th>
                 <th></th>
             </tr>
         </thead>
@@ -309,25 +327,40 @@
         "bProcessing": true,
         "order": [],
         "columnDefs": [
-            { "width": "90px",  "targets": 0 },
-            { "width": "110px", "targets": 1 },
-            { "width": "200px", "targets": 2 },
-            { "width": "50px",  "targets": 3 },
-            { "width": "70px",  "targets": 4 },
-            { "width": "80px",  "targets": 5 },
-            { "width": "120px", "targets": 6 },
-            { "width": "100px", "targets": 7 },
-            { "width": "80px",  "targets": 8 },
-            { "width": "120px", "targets": 9 },
-            { "width": "90px",  "targets": 10 },
-            { "width": "90px",  "targets": 11 },
-            { "width": "90px",  "targets": 12 },
-            { "width": "100px", "targets": 13 },
-            { "width": "140px", "targets": 14, "orderable": false }
+            { "width": "110px", "targets": 0 },   // From
+            { "width": "200px", "targets": 1 },   // Body
+            { "width": "50px",  "targets": 2 },   // Media
+            { "width": "70px",  "targets": 3 },   // Direction
+            { "width": "80px",  "targets": 4 },   // Name
+            { "width": "80px",  "targets": 5 },   // Street Address
+            { "width": "100px", "targets": 6 },   // City/State
+            { "width": "80px",  "targets": 7 },   // ZIP Code
+            { "width": "120px", "targets": 8 },   // Email
+            { "width": "60px",  "targets": 9 },   // Category
+            { "width": "70px",  "targets": 10 },  // Scheduler
+            { "width": "90px",  "targets": 11 },  // Job Booked Date
+            { "width": "100px", "targets": 12 },  // Job Booked Time
+            { "width": "100px", "targets": 13 },  // Incoming Date
+            { "width": "100px", "targets": 14 },  // Incoming Time
+            { "width": "100px", "targets": 15 },  // Responded Date
+            { "width": "100px", "targets": 16 },  // Responded Time
+            { "width": "90px",  "targets": 17 },  // Waiting Time
+            { "width": "140px", "targets": 18, "orderable": false }  // Actions
         ],
         "language": {
             "emptyTable": "No record found.",
             "processing": '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>'
+        },
+        // Task 4: color incoming rows based on waiting time
+        "createdRow": function (row, data) {
+            if (data.smsDirection === "Incoming" && data.waitingColor) {
+                var colorMap = { gold: '#FFF8DC', orange: '#FFE5B4', red: '#FFD0D0' };
+                var borderMap = { gold: '#FFD700', orange: '#FFA500', red: '#FF4444' };
+                $(row).css({
+                    'background-color': colorMap[data.waitingColor] || '',
+                    'border-left': '4px solid ' + (borderMap[data.waitingColor] || 'transparent')
+                });
+            }
         },
         "initComplete": function () {
             $.get("/SMS/GetIvrOptions", function (data) {
@@ -351,7 +384,6 @@
             });
         },
         "columns": [
-            { "data": "dt",           "searchable": true },
             { "data": "fromNum",      "searchable": true },
             { "data": "smsBody",      "searchable": true },
             {
@@ -376,6 +408,51 @@
             { "data": "scheduler",        "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
             { "data": "jobBookDatesList", "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
             { "data": "jobBookTimesList", "searchable": true, "defaultContent": "N/A", "render": formatFiveItems },
+            // Task 4: Response time columns (after Job Booked Time)
+            {
+                "data": "incomingDate",
+                "searchable": true,
+                "defaultContent": "",
+                "render": function (data, type, row) {
+                    return row.smsDirection === "Incoming" ? (data || "") : "";
+                }
+            },
+            {
+                "data": "incomingTime",
+                "searchable": true,
+                "defaultContent": "",
+                "render": function (data, type, row) {
+                    return row.smsDirection === "Incoming" ? (data || "") : "";
+                }
+            },
+            {
+                "data": "respondedDate",
+                "searchable": true,
+                "defaultContent": "",
+                "render": function (data, type, row) {
+                    return row.smsDirection === "Incoming" ? (data || "") : "";
+                }
+            },
+            {
+                "data": "respondedTime",
+                "searchable": true,
+                "defaultContent": "",
+                "render": function (data, type, row) {
+                    return row.smsDirection === "Incoming" ? (data || "") : "";
+                }
+            },
+            {
+                "data": "waitingDisplay",
+                "searchable": false,
+                "defaultContent": "",
+                "render": function (data, type, row) {
+                    if (row.smsDirection !== "Incoming") return "";
+                    var colorMap = { gold: '#B8860B', orange: '#CC6600', red: '#CC0000' };
+                    var color = colorMap[row.waitingColor] || '#555';
+                    var weight = row.waitingColor ? 'bold' : 'normal';
+                    return '<span style="color:' + color + '; font-weight:' + weight + ';">' + (data || "Pending") + '</span>';
+                }
+            },
             {
                 "data": null,
                 "searchable": false,
