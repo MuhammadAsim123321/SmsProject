@@ -40,12 +40,19 @@ namespace SendSmsCallAlerts.Data
         
         // NEW: Technician DbSet
         public DbSet<Technician> Technicians { get; set; }
-
+        public DbSet<TechnicianAvailability> TechnicianAvailabilities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<TechnicianAvailability>(e =>
+            {
+                e.HasIndex(a => new { a.TechnicianId, a.DayOfWeek }).IsUnique()
+                 .HasDatabaseName("UQ_TechnicianAvailability_Tech_Day");
+                e.HasOne(a => a.Technician).WithMany(t => t.Availabilities)
+                 .HasForeignKey(a => a.TechnicianId).OnDelete(DeleteBehavior.Cascade);
+            });
             modelBuilder.Entity<TimeToRun>().HasData(
                 new TimeToRun { Id = 1, Name = "Now", HourCount = 0 },
                 new TimeToRun { Id = 2, Name = "24 Hour", HourCount = 24 },

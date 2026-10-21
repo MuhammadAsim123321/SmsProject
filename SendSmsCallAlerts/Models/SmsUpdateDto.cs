@@ -26,5 +26,6 @@
         public int? schedulerId { get; set; }
         public DateTime? CustomDate { get; set; }
         public int? CustomHours { get; set; }  // ADD
+        public int? technicianId { get; set; }   // NEW
     }
 }

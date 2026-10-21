@@ -1,0 +1,77 @@
+﻿@model List<SendSmsCallAlerts.Models.TechnicianAvailability>
+@using SendSmsCallAlerts.Models
+@using SendSmsCallAlerts.Services
+@{
+    var fullNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
+    var order = TechnicianAvailabilityService.DisplayOrder; // Monday first, Sunday last
+    var rows = Model ?? TechnicianAvailabilityService.DefaultWeek();
+}
+
+<h5 class="mb-2">Weekly Availability</h5>
+<table class="table table-sm table-bordered align-middle" id="availabilityTable">
+    <thead class="table-light">
+        <tr>
+            <th>Day</th>
+            <th class="text-center">Available</th>
+            <th>Start</th>
+            <th>End</th>
+        </tr>
+    </thead>
+    <tbody>
+        @for (int i = 0; i < order.Length; i++)
+        {
+            var d = order[i];
+            var row = rows.FirstOrDefault(r => r.DayOfWeek == d) ?? new TechnicianAvailability { DayOfWeek = d };
+            var start = row.StartTime.HasValue ? row.StartTime.Value.ToString(@"hh\:mm") : "";
+            var end = row.EndTime.HasValue ? row.EndTime.Value.ToString(@"hh\:mm") : "";
+            <tr>
+                <td>
+                    @fullNames[d]
+                    <input type="hidden" name="availability[@i].DayOfWeek" value="@d" />
+                </td>
+                <td class="text-center">
+                    <input type="checkbox" class="av-toggle" name="availability[@i].IsAvailable" value="true"
+                           aria-label="@fullNames[d] available" @(row.IsAvailable ? "checked" : "") />
+                    <input type="hidden" name="availability[@i].IsAvailable" value="false" />
+                </td>
+                <td><input type="time" class="form-control form-control-sm av-time" name="availability[@i].StartTime" value="@start" aria-label="@fullNames[d] start time" /></td>
+                <td><input type="time" class="form-control form-control-sm av-time" name="availability[@i].EndTime" value="@end" aria-label="@fullNames[d] end time" /></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<script>
+    (function () {
+        var table = document.getElementById('availabilityTable');
+        if (!table) return;
+
+        function sync(tr) {
+            var on = tr.querySelector('.av-toggle').checked;
+            tr.querySelectorAll('.av-time').forEach(function (t) {
+                t.disabled = !on;
+                if (on && !t.value) t.value = t.name.indexOf('StartTime') > -1 ? '09:00' : '17:00';
+            });
+        }
+
+        table.querySelectorAll('tbody tr').forEach(function (tr) {
+            sync(tr);
+            tr.querySelector('.av-toggle').addEventListener('change', function () { sync(tr); });
+        });
+    })();
+</script>
+
+@* Usage in Create.cshtml / Edit.cshtml (inside the <form>, before the submit button):
+
+
+
+
+
+
+
+
+   <partial name="_AvailabilityEditor" model="(List<SendSmsCallAlerts.Models.TechnicianAvailability>)ViewBag.Availability" />
+
+   Also show validation errors near the top of the form:
+   <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+*@

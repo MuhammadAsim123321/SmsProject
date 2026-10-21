@@ -21,6 +21,10 @@ builder.Services.AddHttpClient();
 // NEW: Register GoogleDistanceService
 builder.Services.AddScoped<GoogleDistanceService>();
 
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<TechnicianAvailabilityService>();
+
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = long.MaxValue; // Set the maximum form size to a large value.

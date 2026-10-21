@@ -19,8 +19,12 @@ namespace SendSmsCallAlerts.Models
         public bool IsPaused { get; set; } = false;
         public DateTime? LastExecutedAt { get; set; }
         public DateTime? CustomDate { get; set; }
-        public int? CustomHours { get; set; }  // Days+Hours calculate
+        public int? CustomHours { get; set; }
 
-
+        // NEW: technician assignment on the job
+        public int? TechnicianId { get; set; }
+        [ForeignKey("TechnicianId")]
+        public virtual Technician? Technician { get; set; }
+        public double? DistanceMiles { get; set; }   // driving miles, calculated on the server
     }
 }

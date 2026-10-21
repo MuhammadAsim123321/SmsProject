@@ -1,142 +1,146 @@
+using Microsoft.Extensions.Caching.Memory;
+using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace SendSmsCallAlerts.Services
 {
+    /// <summary>
+    /// Driving distance between two US ZIP codes using the Google Routes API (computeRouteMatrix).
+    /// Same public methods as before, so controllers do not need to change.
+    /// </summary>
     public class GoogleDistanceService
     {
+        private const string Endpoint = "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix";
+
         private readonly IConfiguration _configuration;
         private readonly HttpClient _httpClient;
         private readonly ILogger<GoogleDistanceService> _logger;
+        private readonly IMemoryCache _cache;
+
+        private static readonly Regex ZipRegex = new(@"^\d{5}(-\d{4})?$", RegexOptions.Compiled);
 
         public GoogleDistanceService(
-            IConfiguration configuration, 
+            IConfiguration configuration,
             IHttpClientFactory httpClientFactory,
-            ILogger<GoogleDistanceService> logger)
+            ILogger<GoogleDistanceService> logger,
+            IMemoryCache cache)
         {
             _configuration = configuration;
             _httpClient = httpClientFactory.CreateClient();
+            _httpClient.Timeout = TimeSpan.FromSeconds(8);
             _logger = logger;
+            _cache = cache;
         }
 
-        /// <summary>
-        /// Gets the distance in miles between two ZIP codes using Google Distance Matrix API
-        /// </summary>
-        /// <param name="originZip">Origin ZIP code</param>
-        /// <param name="destinationZip">Destination ZIP code</param>
-        /// <returns>Distance in miles, or 0 if unable to calculate</returns>
+        /// <summary>Backward compatible: returns 0 when distance is unknown.</summary>
         public async Task<double> GetDistanceInMiles(string originZip, string destinationZip)
+            => await GetDistanceInMilesOrNull(originZip, destinationZip) ?? 0;
+
+        /// <summary>
+        /// Miles between two ZIP codes, or null if it cannot be calculated.
+        /// Same ZIP returns 0 without calling Google. Results are cached.
+        /// </summary>
+        public async Task<double?> GetDistanceInMilesOrNull(string originZip, string destinationZip)
         {
             try
             {
-                // Validate inputs
-                if (string.IsNullOrWhiteSpace(originZip) || string.IsNullOrWhiteSpace(destinationZip))
+                var origin = NormalizeZip(originZip);
+                var dest = NormalizeZip(destinationZip);
+                if (origin == null || dest == null)
                 {
-                    _logger.LogWarning("Invalid ZIP codes provided: Origin={Origin}, Destination={Destination}", 
-                        originZip, destinationZip);
-                    return 0;
+                    _logger.LogWarning("Invalid ZIP codes: Origin={Origin}, Destination={Destination}", originZip, destinationZip);
+                    return null;
                 }
 
-                // Get API key from configuration
+                if (origin == dest) return 0;
+
+                var cacheKey = $"routes:{origin}:{dest}";
+                if (_cache.TryGetValue(cacheKey, out DistanceResult cached))
+                    return cached.Miles;
+
+                // Accepts GoogleMaps:ApiKey (user-secrets / appsettings) or ROUTE_MAPS_API_KEY (env var)
                 var apiKey = _configuration["GoogleMaps:ApiKey"];
                 if (string.IsNullOrWhiteSpace(apiKey))
+                    apiKey = _configuration["ROUTE_MAPS_API_KEY"];
+
+                if (string.IsNullOrWhiteSpace(apiKey))
                 {
-                    _logger.LogWarning("Google Maps API key not configured in appsettings.json");
-                    return 0;
+                    _logger.LogWarning("Google API key is not configured (GoogleMaps:ApiKey).");
+                    return null;
                 }
 
-                // Build API URL
-                var url = $"https://maps.googleapis.com/maps/api/distancematrix/json" +
-                         $"?origins={Uri.EscapeDataString(originZip)}" +
-                         $"&destinations={Uri.EscapeDataString(destinationZip)}" +
-                         $"&units=imperial" +
-                         $"&key={apiKey}";
+                var payload = new
+                {
+                    origins = new[] { new { waypoint = new { address = origin + ", USA" } } },
+                    destinations = new[] { new { waypoint = new { address = dest + ", USA" } } },
+                    travelMode = "DRIVE"
+                };
 
-                // Make API request
-                var response = await _httpClient.GetAsync(url);
-                
+                using var request = new HttpRequestMessage(HttpMethod.Post, Endpoint)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
+                };
+                request.Headers.Add("X-Goog-Api-Key", apiKey);
+                request.Headers.Add("X-Goog-FieldMask", "originIndex,destinationIndex,distanceMeters,status,condition");
+
+                using var response = await _httpClient.SendAsync(request);
+                var json = await response.Content.ReadAsStringAsync();
+
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError("Google Distance Matrix API returned status code: {StatusCode}", 
-                        response.StatusCode);
-                    return 0;
+                    // e.g. 403 PERMISSION_DENIED (API not enabled / key restriction), 429 quota
+                    _logger.LogError("Routes API HTTP {StatusCode}: {Body}", (int)response.StatusCode, Truncate(json, 500));
+                    _cache.Set(cacheKey, new DistanceResult { Miles = null }, TimeSpan.FromMinutes(5));
+                    return null;
                 }
 
-                var jsonContent = await response.Content.ReadAsStringAsync();
-                var data = JsonSerializer.Deserialize<GoogleDistanceMatrixResponse>(jsonContent, 
+                double? miles = null;
+                var elements = JsonSerializer.Deserialize<List<RouteElement>>(json,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-                // Parse response
-                if (data?.Status == "OK" && 
-                    data.Rows?.Count > 0 && 
-                    data.Rows[0].Elements?.Count > 0)
+                var element = elements?.FirstOrDefault();
+                if (element != null && element.DistanceMeters.HasValue
+                    && string.Equals(element.Condition, "ROUTE_EXISTS", StringComparison.OrdinalIgnoreCase))
                 {
-                    var element = data.Rows[0].Elements[0];
-                    
-                    if (element.Status == "OK" && element.Distance != null)
-                    {
-                        // Distance text is in format "X.X mi"
-                        var distanceText = element.Distance.Text;
-                        var distanceValue = element.Distance.Value; // meters
-                        
-                        // Convert meters to miles (1 mile = 1609.34 meters)
-                        var miles = distanceValue / 1609.34;
-                        
-                        _logger.LogInformation("Distance calculated: {Origin} to {Destination} = {Miles:F2} miles", 
-                            originZip, destinationZip, miles);
-                        
-                        return Math.Round(miles, 1);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Unable to calculate distance. Element status: {Status}", 
-                            element.Status);
-                    }
+                    miles = Math.Round(element.DistanceMeters.Value / 1609.344, 1);
                 }
                 else
                 {
-                    _logger.LogWarning("Invalid response from Google Distance Matrix API. Status: {Status}", 
-                        data?.Status);
+                    _logger.LogWarning("Routes API returned no route. Condition={Condition}", element?.Condition);
                 }
 
-                return 0;
+                // success cached 24h, failure only 5 min
+                _cache.Set(cacheKey, new DistanceResult { Miles = miles },
+                    miles.HasValue ? TimeSpan.FromHours(24) : TimeSpan.FromMinutes(5));
+
+                return miles;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error calculating distance between {Origin} and {Destination}", 
-                    originZip, destinationZip);
-                return 0;
+                _logger.LogError(ex, "Error calculating distance between {Origin} and {Destination}", originZip, destinationZip);
+                return null;
             }
         }
 
-        // Response models for Google Distance Matrix API
-        private class GoogleDistanceMatrixResponse
+        private static string NormalizeZip(string zip)
         {
-            public string Status { get; set; }
-            public List<Row> Rows { get; set; }
+            if (string.IsNullOrWhiteSpace(zip)) return null;
+            zip = zip.Trim();
+            if (!ZipRegex.IsMatch(zip)) return null;
+            return zip.Substring(0, 5);
         }
 
-        private class Row
-        {
-            public List<Element> Elements { get; set; }
-        }
+        private static string Truncate(string s, int max) => string.IsNullOrEmpty(s) || s.Length <= max ? s : s.Substring(0, max);
 
-        private class Element
-        {
-            public string Status { get; set; }
-            public DistanceInfo Distance { get; set; }
-            public DurationInfo Duration { get; set; }
-        }
+        private sealed class DistanceResult { public double? Miles { get; set; } }
 
-        private class DistanceInfo
+        private class RouteElement
         {
-            public string Text { get; set; }
-            public int Value { get; set; } // in meters
-        }
-
-        private class DurationInfo
-        {
-            public string Text { get; set; }
-            public int Value { get; set; } // in seconds
+            public int? OriginIndex { get; set; }
+            public int? DestinationIndex { get; set; }
+            public int? DistanceMeters { get; set; }
+            public string Condition { get; set; }
         }
     }
 }

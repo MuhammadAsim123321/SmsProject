@@ -188,7 +188,7 @@
                             <div class="mb-3" id="technicianSection">
                                 <label>Assign Technician</label>
                                 <div class="input-group">
-                                    <select id="mTechnician" class="form-select">
+                                    <select id="mTechnician" class="form-select m-input">
                                         <option value="">-- Select a Technician --</option>
                                     </select>
                                     <button type="button" class="btn btn-success" id="btnAssignTechnician">
@@ -196,6 +196,7 @@
                                     </button>
                                 </div>
                                 <small class="form-text text-muted" id="currentTechnicianInfo"></small>
+                                <small class="d-block" id="technicianAvailabilityInfo"></small>
                             </div>
 
                             <div class="mb-3">
@@ -495,6 +496,9 @@
         $('#mCustomDays').val('');
         $('#mCustomHoursVal').val('');
         $('#mTechnician').val('');
+        $('#mJobBookDate').val('');
+        $('#mJobCompletedDate').val('');
+        $('#technicianAvailabilityInfo').text('');
         window.assignedTechnicianId = null;
         window.currentCategoryId = null;
 
@@ -597,7 +601,8 @@
             jobBookDate:      $('#mJobBookDate').val(),
             jobCompletedDate: $('#mJobCompletedDate').val(),
             customDate:       $('#mCustomDate').val(),
-            customHours:      customHours > 0 ? customHours : null
+            customHours:      customHours > 0 ? customHours : null,
+            technicianId:     $('#mTechnician').val()
         };
         var $btn = $(this);
         $btn.prop('disabled', true);
@@ -660,53 +665,58 @@
         $('#resultModal').modal('show');
     }
 
-    // NEW: Handle category change to load technicians
     function handleCategoryChange() {
+        var previousTech = $('#mTechnician').val();
         var categoryId = $('#mCategory').val();
-        var customerZip = window.currentCustomerZip || $('#mZipCode').val();
-        
-        // Store current category for reference
+        var customerZip = ($('#mZipCode').val() || '').trim();
+        var jobDate = $('#mJobBookDate').val();   // "2026-10-23T10:00" or ""
         window.currentCategoryId = categoryId;
-        
-        if (categoryId && customerZip) {
-            $('#mTechnician').html('<option value="">Loading technicians...</option>');
-            
-            $.get('/Technicians/GetFilteredTechnicians', { 
-                customerZip: customerZip, 
-                categoryId: categoryId 
-            }, function(technicians) {
-                $('#mTechnician').empty();
-                
-                if (technicians && technicians.length > 0) {
-                    $('#mTechnician').append('<option value="">-- Select a Technician --</option>');
-                    
-                    var assignedFound = false;
-                    technicians.forEach(function(tech) {
-                        var option = $('<option></option>')
-                            .val(tech.id)
-                            .text(tech.label);
-                        
-                        // Check if this is the assigned technician
-                        if (window.assignedTechnicianId && window.assignedTechnicianId == tech.id) {
-                            option.prop('selected', true);
-                            assignedFound = true;
-                        }
-                        
-                        $('#mTechnician').append(option);
-                    });
-                    
-                    // Extra safety: manually set the value if assigned technician found
-                    if (assignedFound && window.assignedTechnicianId) {
-                        $('#mTechnician').val(window.assignedTechnicianId);
-                    }
-                } else {
-                    $('#mTechnician').append('<option value="">No technicians available for this category</option>');
-                }
+
+        if (!categoryId) { $('#mTechnician').html('<option value="">-- Select Category First --</option>'); showTechnicianHint(); return; }
+        if (!customerZip) { $('#mTechnician').html('<option value="">-- Enter customer ZIP first --</option>'); showTechnicianHint(); return; }
+
+        $('#mTechnician').html('<option value="">Loading technicians...</option>');
+
+        var query = { customerZip: customerZip, categoryId: categoryId };
+        if (jobDate) query.jobDateTime = jobDate;
+
+        $.get('/Technicians/GetFilteredTechnicians', query, function (technicians) {
+            var $ddl = $('#mTechnician').empty();
+            if (!Array.isArray(technicians)) { $ddl.append('<option value="">Error loading technicians</option>'); return; }
+            if (technicians.length === 0) { $ddl.append('<option value="">No technicians for this category</option>'); return; }
+
+            $ddl.append('<option value="">-- Select a Technician --</option>');
+            technicians.forEach(function (t) {
+                var text = t.label + (t.isAvailable ? '' : ' - NOT available at selected time');
+                $('<option></option>').val(t.id).text(text)
+                    .attr('data-summary', t.availabilitySummary || '')
+                    .attr('data-available', t.isAvailable ? '1' : '0')
+                    .attr('data-message', t.availabilityMessage || '')
+                    .appendTo($ddl);
             });
+
+            var keep = previousTech || window.assignedTechnicianId;
+            if (keep) $ddl.val(keep);
+            showTechnicianHint();
+        });
+    }
+    function showTechnicianHint() {
+        var $opt = $('#mTechnician option:selected');
+        var $info = $('#technicianAvailabilityInfo');
+        if (!$opt.val()) { $info.text('').removeClass('text-danger text-muted'); return; }
+
+        var text = 'Working hours: ' + ($opt.attr('data-summary') || 'Not configured');
+        if ($opt.attr('data-available') === '0') {
+            text += ' | ' + ($opt.attr('data-message') || 'Not available at the selected time.');
+            $info.text(text).removeClass('text-muted').addClass('text-danger');
         } else {
-            $('#mTechnician').html('<option value="">-- Select Category First --</option>');
+            $info.text(text).removeClass('text-danger').addClass('text-muted');
         }
     }
+
+    $('#mTechnician').on('change', showTechnicianHint);
+    $('#mJobBookDate').on('change', handleCategoryChange);  // re-check availability for the new date/time
+    $('#mZipCode').on('change', handleCategoryChange);      // reload when ZIP is edited
 
     // NEW: Assign technician button handler
     $('#btnAssignTechnician').click(function() {

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace SendSmsCallAlerts.Models
 {
@@ -38,5 +39,10 @@ namespace SendSmsCallAlerts.Models
 
         // Navigation property for assigned contacts
         public virtual ICollection<ContactDetail>? AssignedContacts { get; set; }
+
+        // NEW: weekly availability (7 rows)
+        [ValidateNever]
+        public virtual ICollection<TechnicianAvailability>? Availabilities { get; set; } = new List<TechnicianAvailability>();
+
     }
 }

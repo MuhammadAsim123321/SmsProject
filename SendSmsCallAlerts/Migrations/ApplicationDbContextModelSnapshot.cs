@@ -43,6 +43,9 @@ namespace SendSmsCallAlerts.Migrations
                     b.Property<int?>("CustomHours")
                         .HasColumnType("int");
 
+                    b.Property<double?>("DistanceMiles")
+                        .HasColumnType("float");
+
                     b.Property<bool>("IsPaused")
                         .HasColumnType("bit");
 
@@ -59,11 +62,16 @@ namespace SendSmsCallAlerts.Migrations
                         .IsRequired()
                         .HasColumnType("int");
 
+                    b.Property<int?>("TechnicianId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ContactDetailId");
 
                     b.HasIndex("SchedulerId");
+
+                    b.HasIndex("TechnicianId");
 
                     b.ToTable("AllScheduledJobs");
                 });
@@ -605,6 +613,38 @@ namespace SendSmsCallAlerts.Migrations
                     b.ToTable("Technicians");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.TechnicianAvailability", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan?>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<bool>("IsAvailable")
+                        .HasColumnType("bit");
+
+                    b.Property<TimeSpan?>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("TechnicianId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TechnicianId", "DayOfWeek")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_TechnicianAvailability_Tech_Day");
+
+                    b.ToTable("TechnicianAvailabilities");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.TimeToRun", b =>
                 {
                     b.Property<int>("Id")
@@ -746,9 +786,15 @@ namespace SendSmsCallAlerts.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("SendSmsCallAlerts.Models.Technician", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId");
+
                     b.Navigation("ContactDetail");
 
                     b.Navigation("Scheduler");
+
+                    b.Navigation("Technician");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>
@@ -799,6 +845,17 @@ namespace SendSmsCallAlerts.Migrations
                     b.Navigation("ContactDetail");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.TechnicianAvailability", b =>
+                {
+                    b.HasOne("SendSmsCallAlerts.Models.Technician", "Technician")
+                        .WithMany("Availabilities")
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Technician");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>
                 {
                     b.Navigation("JobSchedules");
@@ -807,6 +864,8 @@ namespace SendSmsCallAlerts.Migrations
             modelBuilder.Entity("SendSmsCallAlerts.Models.Technician", b =>
                 {
                     b.Navigation("AssignedContacts");
+
+                    b.Navigation("Availabilities");
                 });
 #pragma warning restore 612, 618
         }

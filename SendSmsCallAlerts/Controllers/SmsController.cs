@@ -16,6 +16,7 @@ using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Rest.Api.V2010.Account.Message;
 using Twilio.TwiML.Voice;
+using SendSmsCallAlerts.Services;
 
 namespace SendSmsCallAlerts.Controllers
 {
@@ -29,14 +30,20 @@ namespace SendSmsCallAlerts.Controllers
 
         private readonly HttpClient _httpClient;
 
+        private readonly GoogleDistanceService _distanceService;
+        private readonly TechnicianAvailabilityService _availabilityService;
+
         public SmsController(IConfiguration configuration, IWebHostEnvironment hostingEnvironment,
-            IHttpClientFactory httpClientFactory, ApplicationDbContext dbContext)
+            IHttpClientFactory httpClientFactory, ApplicationDbContext dbContext,
+            GoogleDistanceService distanceService, TechnicianAvailabilityService availabilityService)
         {
             _configuration = configuration;
             _hostingEnvironment = hostingEnvironment;
             filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "data.txt");
             _httpClient = httpClientFactory.CreateClient();
             _context = dbContext;
+            _distanceService = distanceService;
+            _availabilityService = availabilityService;
         }
 
         public IActionResult IncomingLogs()
@@ -772,6 +779,37 @@ namespace SendSmsCallAlerts.Controllers
                 int categoryId = 0;
                 if (!string.IsNullOrEmpty(model.category)) int.TryParse(model.category, out categoryId);
 
+                // ---- Technician check + distance (only when a job is being scheduled) ----
+                int? technicianIdForJob = null;
+                double? technicianDistanceMiles = null;
+                if (model.smsDirection != "Outgoing"
+                    && model.schedulerId.HasValue && model.schedulerId.Value > 0
+                    && model.technicianId.HasValue && model.technicianId.Value > 0)
+                {
+                    var tech = await _context.Technicians.AsNoTracking()
+                        .FirstOrDefaultAsync(t => t.Id == model.technicianId.Value);
+                    if (tech == null)
+                        return Json(new { success = false, message = "Selected technician was not found." });
+
+                    if (!model.JobBookDate.HasValue || !model.JobCompletedDate.HasValue)
+                        return Json(new { success = false, message = "Select both Job Book Date and Job Completed Date when assigning a technician." });
+
+                    var existingContactId = await _context.ContactDetail
+                        .Where(c => c.PhoneNumber == model.fromNum)
+                        .Select(c => (int?)c.Id)
+                        .FirstOrDefaultAsync();
+
+                    var slot = await _availabilityService.CheckJobSlotAsync(
+                        tech.Id, model.JobBookDate.Value, model.JobCompletedDate.Value,
+                        existingContactId, model.schedulerId);
+
+                    if (!slot.Allowed)
+                        return Json(new { success = false, message = slot.Message });
+
+                    technicianIdForJob = tech.Id;
+                    technicianDistanceMiles = await _distanceService.GetDistanceInMilesOrNull(model.zipCode, tech.ZipCode);
+                }
+
                 var contact = await _context.ContactDetail.FirstOrDefaultAsync(c => c.PhoneNumber == phoneNumber);
 
                 if (contact != null)
@@ -826,9 +864,12 @@ namespace SendSmsCallAlerts.Controllers
                         JobBookDate = model.JobBookDate ?? DateTime.Now,
                         JobCompletedDate = model.JobCompletedDate ?? DateTime.Now,
                         CustomDate = model.CustomDate,
-                        CustomHours = model.CustomHours
+                        CustomHours = model.CustomHours,
+                        TechnicianId = technicianIdForJob,
+                        DistanceMiles = technicianDistanceMiles
                     };
                     _context.AllScheduledJobs.Add(newScheduledJob);
+                    if (technicianIdForJob.HasValue) contact.AssignedTechnicianId = technicianIdForJob;
                 }
 
                 await _context.SaveChangesAsync();
