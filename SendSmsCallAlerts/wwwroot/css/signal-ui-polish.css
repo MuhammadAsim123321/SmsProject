@@ -1,0 +1,510 @@
+/*
+  Signal Control Center — layout and responsive consistency pass, October 2026.
+  Loaded LAST after legacy per-page styles and signal-ui-overrides.css.
+  Purely presentational. No event handlers, IDs, routes, requests or form names altered.
+*/
+:root {
+    --sg-space-1: 4px;
+    --sg-space-2: 8px;
+    --sg-space-3: 12px;
+    --sg-space-4: 16px;
+    --sg-space-5: 20px;
+    --sg-space-6: 24px;
+    --sg-space-7: 32px;
+    --sg-control-height: 43px;
+    --sg-page-gutter: clamp(16px, 2.2vw, 32px);
+    --sg-card-border: #e2e9f3;
+    --sg-card-radius: 14px;
+}
+
+/* 1. Fixed-width header and sidebar must not force horizontal page scrolling. */
+html { -webkit-text-size-adjust: 100%; }
+body.signal-app, body.signal-login-body { overflow-x: clip; }
+.signal-app .main-wrapper, .signal-app .signal-page-wrapper,
+.signal-app .signal-page-content, .signal-app .signal-view-surface {
+    min-width: 0;
+}
+.signal-app .signal-header { width: 100%; min-width: 0; }
+.signal-app .signal-header .signal-topbar-context { flex: 1 1 auto; min-width: 0; }
+.signal-app .signal-header .signal-user-menu { flex: 0 0 auto; min-width: 0; }
+.signal-app .signal-header .signal-account-toggle { max-width: 220px; }
+.signal-app .signal-header .signal-account-details { min-width: 0; }
+.signal-app .signal-page-content {
+    width: 100%;
+    max-width: 1680px;
+    padding: 27px var(--sg-page-gutter) 38px;
+}
+.signal-app .signal-page-context { margin: 0 0 18px; }
+.signal-app .signal-view-surface { display: flow-root; }
+.signal-app .signal-view-surface > * { max-width: 100%; }
+.signal-app .signal-view-surface img, .signal-app .signal-view-surface video {
+    max-width: 100%; height: auto;
+}
+.signal-app .signal-view-surface pre { max-width: 100%; overflow-x: auto; }
+
+/* 2. Use the same page heading + actions alignment everywhere. */
+.signal-app .signal-view-surface h1 {
+    margin: 0 0 21px;
+    font-size: clamp(23px, 2.2vw, 29px);
+    font-weight: 760;
+    letter-spacing: -.65px;
+    line-height: 1.27;
+    overflow-wrap: anywhere;
+}
+.signal-app .signal-view-surface .signal-heading-row,
+.signal-app .signal-view-surface .sg-page-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 0 0 21px !important;
+    min-width: 0;
+}
+.signal-app .signal-view-surface .signal-heading-row > h1,
+.signal-app .signal-view-surface .sg-page-header > h1 { flex: 1 1 250px; min-width: 0; margin: 0 !important; }
+.signal-app .signal-view-surface .signal-heading-row > .btn,
+.signal-app .signal-view-surface .sg-page-header > .btn { flex: 0 0 auto; }
+.signal-app .signal-view-surface .sg-page-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex: 0 1 auto;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-left: auto;
+    min-width: 0;
+}
+.signal-app .signal-view-surface .sg-page-actions a,
+.signal-app .signal-view-surface .sg-page-actions button { margin: 0 !important; }
+.signal-app .signal-view-surface .signal-create-link,
+.signal-app .signal-view-surface .sg-page-actions .signal-create-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--sg-control-height);
+    margin: 0;
+    padding: 9px 15px;
+    white-space: nowrap;
+    text-align: center;
+    line-height: 1.3;
+}
+.signal-app .signal-view-surface .signal-create-link::before {
+    display: inline-block;
+    padding-right: 8px;
+    font-size: 17px;
+    line-height: 1;
+}
+.signal-app .signal-view-surface .sg-page-actions .btn { min-height: var(--sg-control-height); }
+.signal-app .signal-view-surface > p:has(> .signal-create-link) { margin: 0 0 18px; }
+.signal-app .signal-view-surface > hr,
+.signal-app .signal-view-surface .signal-heading-row + hr { margin: 0 0 22px; }
+.signal-app .signal-view-surface .page-title { margin-bottom: 5px; }
+.signal-app .signal-view-surface .page-subtitle { line-height: 1.55; margin-bottom: 22px; }
+
+/* 3. Consistent padding: remove a second, inherited 20px inset inside pages. */
+.signal-app .signal-view-surface .sg-content-stack,
+.signal-app .signal-view-surface .sg-sms-log-page { padding: 0; width: 100%; min-width: 0; }
+.signal-app .signal-view-surface .page-card.sg-jobs-card,
+.signal-app .signal-view-surface .page-card { margin: 0 0 23px; }
+.signal-app .signal-view-surface .send-card { padding: clamp(17px, 2.5vw, 28px); }
+.signal-app .signal-view-surface .signal-details-form.sg-form-surface {
+    margin: 0 0 22px;
+    width: min(100%, 960px);
+    padding: clamp(17px,2.3vw,27px) !important;
+}
+.signal-app .signal-view-surface .signal-details-form.sg-form-surface > .row { margin-bottom: 0; }
+.signal-app .signal-view-surface .signal-details-form.sg-form-surface > .row > [class*='col-'] { max-width: 100%; }
+.signal-app .signal-view-surface .sg-twilio-editor {
+    padding: 24px;
+    width: min(100%, 620px);
+    background: #fff;
+    border: 1px solid var(--sg-card-border);
+    border-radius: var(--sg-card-radius);
+    box-shadow: var(--sg-shadow);
+}
+.signal-app .signal-view-surface .sg-twilio-editor label { display: block; }
+.signal-app .signal-view-surface .sg-twilio-editor input[type=number] {
+    display: block;
+    width: 100%;
+    max-width: 100% !important;
+    margin: 0 0 19px;
+}
+.signal-app .signal-view-surface .sg-twilio-editor .row,
+.signal-app .signal-view-surface .sg-twilio-editor .col-md-8 { margin: 0; padding: 0; }
+.signal-app .signal-view-surface .sg-twilio-editor button { margin: 0; }
+.signal-app .signal-view-surface[data-controller='Twilio'] > b {
+    display: block; margin: 0 0 17px; color: #4c5f7c;
+}
+
+/* 4. Form rhythm and cross-version Bootstrap field alignment. */
+.signal-app .signal-view-surface form { min-width: 0; }
+.signal-app .signal-view-surface :is(.form-group,.mb-3) { min-width: 0; }
+.signal-app .signal-view-surface .form-group { margin-bottom: 18px; }
+.signal-app .signal-view-surface :is(.form-group,.mb-3) > label:first-child {
+    display: block; width: fit-content; max-width: 100%; margin: 0 0 7px;
+}
+.signal-app .signal-view-surface :is(.form-control,.form-select,.custom-select) {
+    min-height: var(--sg-control-height);
+    max-width: 100%;
+    font-size: 14px;
+    line-height: 1.45;
+}
+.signal-app .signal-view-surface input:not([type='checkbox']):not([type='radio']),
+.signal-app .signal-view-surface select,
+.signal-app .signal-view-surface textarea { min-width: 0; }
+.signal-app .signal-view-surface textarea.form-control { min-height: 110px; }
+.signal-app .signal-view-surface .form-check {
+    position: relative;
+    display: flex; align-items: flex-start;
+    gap: 10px;
+    padding-left: 0;
+}
+.signal-app .signal-view-surface .form-check input.form-check-input {
+    position: static; flex: 0 0 17px; width: 17px; height: 17px;
+    margin: 2px 0 0;
+}
+.signal-app .signal-view-surface .form-check label.form-check-label {
+    min-width: 0; margin: 0; line-height: 1.5;
+}
+.signal-app .signal-view-surface :is(.field-validation-error,.validation-summary-errors) { line-height: 1.5; }
+.signal-app .signal-view-surface .text-danger:not(.btn) { display: inline-block; margin-top: 4px; }
+.signal-app .signal-view-surface .btn,
+.signal-app .signal-view-surface input[type=submit].btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    column-gap: 7px;
+    vertical-align: middle;
+    margin: 0;
+    min-height: 40px;
+    padding: 9px 14px;
+    line-height: 1.35;
+    text-align: center;
+}
+.signal-app .signal-view-surface .btn.btn-sm { min-height: 34px; padding: 7px 11px; }
+.signal-app .signal-view-surface .btn :is(i,.fa) { margin: 0; }
+.signal-app .signal-view-surface .btn + .btn { margin-left: 8px; }
+.signal-app .signal-view-surface form > .btn + .btn,
+.signal-app .signal-view-surface form > .btn + a.btn { margin-left: 8px; }
+.signal-app .signal-view-surface .form-group:has(> [type=submit]) { margin: 5px 0 8px; }
+.signal-app .signal-view-surface .row > [class*='col-'] { min-width: 0; }
+.signal-app .signal-view-surface > .row > [class*='col-md-']:has(form),
+.signal-app .signal-view-surface .sg-wide-editor { 
+    flex: 0 0 100%; width: min(100%, 830px); max-width: min(100%,830px) !important;
+}
+.signal-app .signal-view-surface[data-controller='AutomatedNotifications'][data-action='Create'] .sg-content-stack,
+.signal-app .signal-view-surface[data-controller='AutomatedNotifications'][data-action='Edit'] .sg-content-stack {
+    width: min(100%, 940px); padding: clamp(18px,2.5vw,28px);
+    border: 1px solid var(--sg-card-border); border-radius: var(--sg-card-radius);
+    background: #fff; box-shadow: var(--sg-shadow);
+}
+.signal-app .signal-view-surface[data-controller='AutomatedNotifications'] .sg-content-stack > form > .btn {
+    margin-top: 9px;
+}
+.signal-app .signal-view-surface form :is(.input-group,.input-group-append,.input-group-prepend) { min-width: 0; }
+.signal-app .signal-view-surface .input-group > .form-control { min-width: 0; }
+.signal-app .signal-view-surface .row.g-3 > [class*='col-'] { padding-bottom: 6px; }
+
+/* 5. List pages: dense but balanced rows, visible actions, safe overflow on touch. */
+.signal-app .signal-view-surface .signal-list-card,
+.signal-app .signal-view-surface .table-responsive,
+.signal-app .signal-view-surface .sg-table-scroll {
+    display: block;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+    background: #fff;
+    border: 1px solid var(--sg-card-border);
+    border-radius: var(--sg-card-radius);
+}
+.signal-app .signal-view-surface .signal-list-card { margin: 0 0 25px; }
+.signal-app .signal-view-surface :is(.signal-list-card,.table-responsive,.sg-table-scroll) > .table {
+    width: 100%;
+    min-width: 560px;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+}
+.signal-app .signal-view-surface .table { max-width: 100%; }
+.signal-app .signal-view-surface .table thead th,
+.signal-app .signal-view-surface #tblRPM thead th,
+.signal-app .signal-view-surface #tblScheduledJobs thead th {
+    padding: 12px 15px !important;
+    text-align: left;
+    vertical-align: middle;
+    line-height: 1.45;
+    font-size: 11px;
+}
+.signal-app .signal-view-surface .table tbody td {
+    padding: 12px 15px;
+    vertical-align: middle;
+    line-height: 1.55;
+    overflow-wrap: anywhere;
+}
+.signal-app .signal-view-surface .table td:has(> a[asp-action]),
+.signal-app .signal-view-surface .table td:last-child:has(.btn) { vertical-align: middle; }
+.signal-app .signal-view-surface .sg-table-link {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 32px; padding: 5px 10px; margin: 2px 4px 2px 0;
+    font-weight: 700; font-size: 12px;
+    line-height: 1.3; text-decoration: none !important;
+    border-radius: 7px; white-space: nowrap;
+    background: #f0f4fc; color: #36558c !important; border: 1px solid #e1e8f4;
+}
+.signal-app .signal-view-surface .sg-table-link:hover { background: #e4ecff; }
+.signal-app .signal-view-surface .sg-table-link-danger {
+    background: #fff1f4; border-color: #fbd7df; color: #b83a54 !important;
+}
+.signal-app .signal-view-surface .sg-table-link-danger:hover { background: #ffe3e9; }
+.signal-app .signal-view-surface td form.d-inline,
+.signal-app .signal-view-surface td form[style*='display:inline'] { display: inline-block !important; margin: 2px 3px 2px 0; vertical-align: middle; }
+.signal-app .signal-view-surface .sg-automated-actions { min-width: 265px; }
+.signal-app .signal-view-surface .sg-automated-actions > :is(form,a) { margin: 2px 4px 2px 0; vertical-align: middle; }
+.signal-app .signal-view-surface .sg-automated-actions button { white-space: nowrap; }
+.signal-app .signal-view-surface td .btn { margin: 2px 3px 2px 0; }
+.signal-app .signal-view-surface .table td img { max-width: 96px; max-height: 80px; width: auto; object-fit: cover; border-radius: 8px; }
+
+/* 6. DataTables widgets. Keep scrollX and DataTables callbacks unchanged. */
+.signal-app .signal-view-surface .dataTables_wrapper {
+    width: 100%; max-width: 100%; min-width: 0;
+    overflow: visible;
+    margin: 0 0 25px;
+    padding: 15px 16px;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .row { margin-left: -7px; margin-right: -7px; }
+.signal-app .signal-view-surface .dataTables_wrapper .row > [class*='col-'] { padding-left: 7px; padding-right: 7px; min-width: 0; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_length,
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 15px;
+    min-height: 42px;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter { justify-content: flex-end; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter label,
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_length label {
+    display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    min-width: 0; max-width: 100%; margin: 0;
+    line-height: 1.45; white-space: normal;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter input {
+    width: min(260px, 100%); min-width: 120px; margin: 0 !important;
+    min-height: 38px;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_length select {
+    min-width: 75px; width: auto; margin: 0 !important;
+    min-height: 38px !important;
+    padding: 5px 9px !important;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_scroll {
+    max-width: 100%; width: 100%; min-width: 0;
+    overflow: hidden;
+    border-radius: 9px;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_scrollHead,
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_scrollBody {
+    max-width: 100%;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_scrollBody {
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_info { padding-top: 14px; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_paginate {
+    display: flex; justify-content: flex-end; flex-wrap: wrap;
+    gap: 3px; padding: 8px 0 2px; margin: 0;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_paginate .paginate_button { margin: 2px; }
+.signal-app .signal-view-surface .dataTables_wrapper .table { margin-bottom: 0 !important; }
+/* Some tables are not created with scrollX. They can scroll within their own frame. */
+.signal-app .signal-view-surface #tblRPM_wrapper,
+.signal-app .signal-view-surface #tblTechnicians_wrapper,
+.signal-app .signal-view-surface #tblScheduledJobs_wrapper { max-width: 100%; }
+.signal-app .signal-view-surface #tblRPM_wrapper:not(:has(.dataTables_scroll)) { overflow-x: auto !important; }
+.signal-app .signal-view-surface #tblTechnicians_wrapper:not(:has(.dataTables_scroll)) { overflow-x: auto !important; }
+.signal-app .signal-view-surface .dataTables_wrapper:not(:has(.dataTables_scroll)) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+/* Preserve message visibility instead of truncating content in very narrow data cells. */
+.signal-app .signal-view-surface #tblRPM td:nth-child(3) { white-space: normal; }
+
+/* 7. SMS, scheduling, chat and alert screens. */
+.signal-app .signal-view-surface .sg-response-legend {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px;
+    margin: 0 0 18px; padding: 12px 15px;
+    background: #fff; border: 1px solid var(--sg-card-border); border-radius: 10px;
+    color: #50627f; font-size: 12px;
+}
+.signal-app .signal-view-surface .sg-response-legend strong { color: #233554; margin-right: 4px; }
+.signal-app .signal-view-surface .sg-sms-table-zone { max-width: 100%; min-width: 0; margin: 0; }
+.signal-app .signal-view-surface .active-job-tag { margin: 3px 6px 3px 0; max-width: 100%; }
+.signal-app .signal-view-surface .action-btns { white-space: normal; }
+.signal-app .signal-view-surface .action-btns .btn { margin: 2px 3px; }
+.signal-app .signal-view-surface .page-card.sg-jobs-card { padding: 24px; }
+.signal-app .signal-view-surface .conv-header { gap: 10px; flex-wrap: wrap; }
+.signal-app .signal-view-surface .conv-body { max-height: 60vh; }
+.signal-app .signal-view-surface .bubble { max-width: min(82%, 640px); overflow-wrap: anywhere; }
+.signal-app .signal-view-surface .signal-conversation-heading { align-items: flex-start; }
+.signal-app .signal-view-surface .signal-thread-input-row { align-items: stretch; }
+.signal-app .signal-view-surface .signal-thread-compose { padding: 19px 23px; }
+.signal-app .signal-view-surface .signal-thread-compose .btn { align-self: stretch; }
+
+/* 8. Overlays never extend beyond phone viewport. */
+.signal-app .modal { padding-left: 10px !important; padding-right: 10px !important; }
+.signal-app .modal-dialog { max-width: min(100%, 740px); margin: 25px auto; }
+.signal-app .modal-dialog.modal-lg { max-width: min(100%, 900px); }
+.signal-app .modal-content { max-width: 100%; }
+.signal-app .modal-body { overflow-wrap: anywhere; }
+.signal-app .modal-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; }
+.signal-app .modal-footer > * { margin: 0 !important; }
+.signal-app .modal-header .btn-close { flex-shrink: 0; }
+.signal-app .signal-view-surface .alert-dismissible { padding-right: 46px; }
+
+/* 9. Tablet widths: keep topbar and page toolbar stable. */
+@media (max-width: 1199.98px) {
+    .signal-app .signal-page-content { padding-top: 22px; }
+    .signal-app .signal-header .signal-nav-toggle { margin-left: 13px; margin-right: 13px; }
+}
+@media (max-width: 991.98px) {
+    .signal-app .signal-header .header-left.signal-brand { flex: 0 0 176px; width: 176px; }
+    .signal-app .signal-header .signal-mobile-toggle { flex: 0 0 40px; margin-left: 9px; margin-right: 4px; }
+    .signal-app .signal-topbar-context { margin-left: 6px; }
+    .signal-app .signal-account-toggle { padding-inline: 7px; }
+    .signal-app .signal-page-content { padding: 21px 20px 30px; }
+    .signal-app .signal-sidebar { max-height: calc(100dvh - var(--sg-topbar-height)); }
+    .signal-app .signal-sidebar .sidebar-inner { overscroll-behavior: contain; }
+}
+@media (max-width: 767.98px) {
+    .signal-app .signal-header .header-left.signal-brand { flex: 0 0 68px; width: 68px; padding: 0 15px; }
+    .signal-app .signal-header .signal-brand-text { display: none; }
+    .signal-app .signal-header .signal-mobile-toggle { flex: 0 0 38px; margin-left: 8px; width: 38px; }
+    .signal-app .signal-header .signal-user-menu { margin-left: auto !important; }
+    .signal-app .signal-header .signal-account-details,
+    .signal-app .signal-header .signal-account-chevron { display: none; }
+    .signal-app .signal-header .signal-account-toggle { padding: 4px; }
+    .signal-app .signal-header .signal-avatar { width: 36px; height: 36px; }
+    .signal-app .signal-topbar-context { flex: 1 1 0; overflow: hidden; }
+    .signal-app .signal-location-page { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+    .signal-app .signal-page-content { padding: 20px 16px 27px; }
+    .signal-app .signal-page-context { margin-bottom: 15px; }
+    .signal-app .signal-view-surface .signal-heading-row,
+    .signal-app .signal-view-surface .sg-page-header { align-items: flex-start !important; }
+    .signal-app .signal-view-surface .sg-page-actions { flex: 1 1 100%; margin-left: 0; justify-content: flex-start; }
+    .signal-app .signal-view-surface > .row > [class*='col-md-']:has(form),
+    .signal-app .signal-view-surface .sg-wide-editor { width: 100%; max-width: 100% !important; }
+    .signal-app .signal-view-surface .signal-list-card { margin-bottom: 19px; }
+    .signal-app .signal-view-surface .dataTables_wrapper { padding: 13px 12px; }
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter { justify-content: flex-start; }
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_paginate { justify-content: flex-start; }
+    .signal-app .signal-view-surface .sg-response-legend { padding: 11px 12px; }
+    .signal-app .signal-view-surface .page-card.sg-jobs-card { padding: 18px; }
+    .signal-app .signal-view-surface .modal-dialog { margin: 12px auto; }
+}
+@media (max-width: 575.98px) {
+    .signal-app .signal-header { padding-right: 9px; }
+    .signal-app .signal-header .header-left.signal-brand { flex: 0 0 58px; width: 58px; padding: 0 10px; }
+    .signal-app .signal-header .signal-brand-icon { width: 36px; height: 36px; }
+    .signal-app .signal-header .signal-mobile-toggle { margin-left: 4px; }
+    .signal-app .signal-topbar-context { margin-left: 2px; }
+    .signal-app .signal-page-content { padding: 17px 12px 24px; }
+    .signal-app .signal-page-context { font-size: 10px; }
+    .signal-app .signal-view-surface h1 { font-size: 23px; }
+    .signal-app .signal-view-surface .signal-heading-row,
+    .signal-app .signal-view-surface .sg-page-header { gap: 12px; margin-bottom: 17px !important; }
+    .signal-app .signal-view-surface .signal-heading-row > h1,
+    .signal-app .signal-view-surface .sg-page-header > h1 { flex: 1 1 100%; }
+    .signal-app .signal-view-surface .sg-page-actions { gap: 8px; }
+    .signal-app .signal-view-surface .sg-page-actions .btn,
+    .signal-app .signal-view-surface .sg-page-actions .signal-create-link { flex: 1 1 100%; width: 100%; min-height: 44px; }
+    .signal-app .signal-view-surface .signal-heading-row > .btn { width: 100%; min-height: 44px; }
+    .signal-app .signal-view-surface .signal-create-link { min-height: 44px; }
+    .signal-app .signal-view-surface :is(.form-control,.form-select,.custom-select) { min-height: 44px; font-size: 16px; }
+    .signal-app .signal-view-surface :is(.form-group,.mb-3) > label:first-child { margin-bottom: 6px; }
+    .signal-app .signal-view-surface .signal-details-form.sg-form-surface,
+    .signal-app .signal-view-surface .sg-twilio-editor,
+    .signal-app .signal-view-surface[data-controller='AutomatedNotifications'][data-action='Create'] .sg-content-stack,
+    .signal-app .signal-view-surface[data-controller='AutomatedNotifications'][data-action='Edit'] .sg-content-stack {
+        padding: 16px !important;
+    }
+    .signal-app .signal-view-surface .signal-details-form .row > [class*='col-'] { max-width: 100%; }
+    .signal-app .signal-view-surface .table thead th { padding: 11px 12px !important; }
+    .signal-app .signal-view-surface .table tbody td { padding: 10px 12px; }
+    .signal-app .signal-view-surface .dataTables_wrapper { padding: 12px 9px; }
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter,
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_length { width: 100%; }
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter label { width: 100%; align-items: stretch; }
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter input { width: 100%; min-width: 0; flex: 1 1 100%; }
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_info,
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_paginate { text-align: left; float: none; }
+    .signal-app .signal-view-surface .signal-thread-compose { padding: 15px; }
+    .signal-app .signal-view-surface .signal-thread-header { padding: 13px 15px; }
+    .signal-app .signal-view-surface .signal-thread-input-row .btn { align-self: stretch; width: 100%; }
+    .signal-app .signal-view-surface .signal-thread-bubble { max-width: 92%; }
+    .signal-app .signal-view-surface .conv-header { padding: 13px 15px; }
+    .signal-app .signal-view-surface .conv-body { padding: 13px; }
+    .signal-app .signal-view-surface .bubble { max-width: 92%; }
+    .signal-app .signal-view-surface .modal-header,
+    .signal-app .signal-view-surface .modal-body,
+    .signal-app .signal-view-surface .modal-footer { padding: 15px; }
+    .signal-app .modal-header, .signal-app .modal-body, .signal-app .modal-footer { padding: 14px; }
+    .signal-app .modal-footer > :is(.btn,button) { flex: 1 1 auto; }
+    .signal-login-main { padding: 26px 17px !important; }
+    .signal-login-card { padding-top: 7px !important; }
+    .signal-login-mobile-brand { margin-bottom: 34px; }
+}
+@media (max-width: 390px) {
+    .signal-app .signal-header .signal-location-label,
+    .signal-app .signal-header .signal-location-slash { display: none; }
+    .signal-app .signal-header .signal-location-page { font-size: 11px; }
+    .signal-app .signal-page-content { padding-inline: 10px; }
+    .signal-app .signal-view-surface .sg-page-actions .btn { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .signal-app .signal-view-surface *, .signal-login-body * { scroll-behavior: auto !important; }
+}
+/* Standard record footer links: never orphan an unstyled text link after an editor. */
+.signal-app .signal-view-surface .sg-back-link {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 40px; margin: 0;
+}
+.signal-app .signal-view-surface > div:has(> .sg-back-link) {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+    margin: 13px 0 22px;
+}
+.signal-app .signal-view-surface form > .sg-back-link { margin-left: 8px; }
+@media (max-width: 575.98px) {
+    .signal-app .signal-view-surface > div:has(> .sg-back-link) { margin-top: 12px; }
+    .signal-app .signal-view-surface .sg-back-link { min-height: 44px; }
+}
+/* MMS media and attachment page (historically used raw 30px insets/table markup). */
+.signal-app .signal-view-surface .sg-attachment-page { min-width: 0; width: min(100%, 1040px); padding: 0; }
+.signal-app .signal-view-surface .sg-attachment-page .jumbotron {
+    padding: 18px 21px; margin: 0 0 18px; background: #fff;
+    border: 1px solid var(--sg-card-border); border-radius: var(--sg-card-radius);
+}
+.signal-app .signal-view-surface .sg-attachment-page .jumbotron h2 {
+    margin: 0; font-size: clamp(16px,2vw,21px); overflow-wrap: anywhere;
+}
+.signal-app .signal-view-surface .sg-attachment-table {
+    margin: 0; overflow: hidden;
+    background: #fff; border: 1px solid var(--sg-card-border); border-radius: var(--sg-card-radius);
+}
+.signal-app .signal-view-surface .sg-attachment-table :is(img,video,audio) {
+    max-width: min(100%,460px); height: auto; border-radius: 9px;
+}
+.signal-app .signal-view-surface .sg-attachment-table td:last-child { width: 150px; text-align: right; }
+.signal-app .signal-view-surface[data-controller='Twilio'][data-action='BuyNumber'] #tblRPM button {
+    background: var(--sg-blue) !important; color: #fff; border: 1px solid var(--sg-blue);
+    min-height: 36px; padding: 7px 12px; border-radius: 8px; font-weight: 700;
+}
+@media (max-width: 575.98px) {
+    .signal-app .signal-view-surface .sg-attachment-page .jumbotron { padding: 15px; }
+    .signal-app .signal-view-surface .sg-attachment-table { display: block; overflow-x: auto; }
+    .signal-app .signal-view-surface .sg-attachment-table td:last-child { width: auto; }
+}

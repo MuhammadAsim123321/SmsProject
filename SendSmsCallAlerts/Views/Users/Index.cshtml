@@ -1,14 +1,17 @@
-﻿@model IEnumerable<SendSmsCallAlerts.Models.User>
+@model IEnumerable<SendSmsCallAlerts.Models.User>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Users";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-2">
+<div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
     <h1>Users List</h1>
-    <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+    <div class="sg-page-actions">
+        <a asp-action="Create" class="sg-create-button signal-create-link">Create New</a>
+        <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
         <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
     </a>
+    </div>
 </div>
 @if (TempData["StMsg"] != null)
 {
@@ -20,14 +23,7 @@
 <link href="~/css/bootstrapcopyfromlive.min.css" rel="stylesheet" />
 <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
 
-<p style="text-align:right;">
-    <a asp-action="Create" style="padding: 8px;
-    background: lightblue;
-    border-radius: 5px;
-    font-weight: bold;
-    margin-right: 2px;
-    color: black;">Create New</a>
-</p>
+
 
 <table class="table table-bordered table-striped" id="tblRPM">
     <thead style="background: #70b3db;">

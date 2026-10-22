@@ -1,11 +1,11 @@
-﻿@model SendSmsCallAlerts.Models.AutomatedSmsSetting
+@model SendSmsCallAlerts.Models.AutomatedSmsSetting
 @{
     ViewData["Title"] = "New Automated SMS";
 }
 
 <partial name="_AutoSmsHead" />
 
-<div style="padding:20px;">
+<div class="sg-content-stack">
     <h1>New Automated SMS</h1>
     <form asp-action="Create" method="post">
         <partial name="_Form" model="Model" />

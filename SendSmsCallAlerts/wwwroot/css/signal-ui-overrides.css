@@ -1,0 +1,173 @@
+/* Page-level refinements. Loaded after Razor view content to override older embedded
+   colors without changing JavaScript selectors, form submissions, DataTables or modals. */
+.signal-app .signal-view-surface .table thead th,
+.signal-app .signal-view-surface #tblRPM thead th,
+.signal-app .signal-view-surface #tblScheduledJobs thead th {
+    background: #f0f4fb !important; color: #566784 !important; border-color: #e3eaf3 !important;
+    text-align: left; font-size: 11px; font-weight: 800; letter-spacing: .045em;
+}
+.signal-app .signal-view-surface #tblRPM tbody tr:nth-child(even),
+.signal-app .signal-view-surface #tblScheduledJobs tbody tr:nth-child(even) { background: #f9fbff; }
+.signal-app .signal-view-surface #tblRPM tbody tr:hover,
+.signal-app .signal-view-surface #tblScheduledJobs tbody tr:hover { background: #eff5ff !important; }
+.signal-app .signal-view-surface .table-bordered td, .signal-app .signal-view-surface .table-bordered th { border-color: #ebeff7; }
+.signal-app .signal-view-surface .dataTables_wrapper { overflow-x: auto; }
+.signal-app .signal-view-surface .dataTables_scroll, .signal-app .signal-view-surface .dataTables_scrollBody { width: 100%; }
+.signal-app .signal-view-surface .dataTables_scrollBody { overflow-x: auto !important; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter input { border-radius: 8px !important; border: 1px solid #d3deec !important; padding: 7px 12px !important; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_length select { border-radius: 8px !important; border: 1px solid #d3deec !important; padding: 5px 8px !important; }
+.signal-app .signal-view-surface #tblRPM_wrapper { overflow-x: auto !important; max-width: 100%; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_scrollHeadInner { min-width: 100%; }
+.signal-app .signal-view-surface .action-btns .btn { border-radius: 7px; }
+.signal-app .signal-view-surface .active-job-tag { background: #eaf0ff; border: 1px solid #d7e3fd; color: #36557a; border-radius: 9px; padding: 7px 11px; }
+/* Messaging page / conversation display */
+.signal-app .signal-view-surface .sms-page-wrapper { max-width: 1140px; margin: 0 auto; padding: 0; }
+.signal-app .signal-view-surface .send-card { border: 1px solid #e3e9f2; border-radius: 15px; box-shadow: 0 9px 30px rgba(24,47,89,.045); background: #fff; padding: 27px 30px; margin-bottom: 23px; }
+.signal-app .signal-view-surface .send-card h4 { color: #1d2b45; font-size: 19px; font-weight: 760; letter-spacing: -.3px; }
+.signal-app .signal-view-surface .twilio-label { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 7px; color: #677b96; background: #f4f7fd; border: 1px solid #e6edfa; border-radius: 7px; padding: 8px 10px; margin-bottom: 19px; font-size: 12px; }
+.signal-app .signal-view-surface .twilio-label span { color: #294cc4; }
+.signal-app .signal-view-surface .conv-panel { background: white; border: 1px solid #e3e9f2; border-radius: 15px; box-shadow: 0 9px 30px rgba(24,47,89,.045); overflow: hidden; }
+.signal-app .signal-view-surface .conv-header { background: #f5f8ff; color: #1c3153; border-bottom: 1px solid #e3ebf8; padding: 17px 22px; }
+.signal-app .signal-view-surface .conv-header .customer-name { color: #192b49; }
+.signal-app .signal-view-surface .conv-header .customer-num { color: #617897; }
+.signal-app .signal-view-surface .conv-header .msg-count { color: #2e4c7d; background: #e3edff; }
+.signal-app .signal-view-surface .conv-body { background: #fbfcff; min-height: 320px; max-height: 60vh; padding: 22px; }
+.signal-app .signal-view-surface .bubble-row.outgoing .bubble { background: #335ff4; box-shadow: 0 4px 11px rgba(51,95,244,.10); }
+.signal-app .signal-view-surface .bubble-row.incoming .bubble { background: white; border: 1px solid #e1e8f3; box-shadow: 0 2px 8px rgba(20,43,80,.04); }
+.signal-app .signal-view-surface .bubble { border-radius: 14px; padding: 12px 15px; }
+.signal-app .signal-view-surface .conv-empty { color: #8290a6; }
+/* Scheduler pages and wizard forms */
+.signal-app .signal-view-surface .page-card { margin: 0 0 24px; padding: 24px 27px; background: white; border-radius: 15px; }
+.signal-app .signal-view-surface .page-title { color: #1d2c46; font-size: 25px; font-weight: 760; }
+.signal-app .signal-view-surface .page-subtitle { color: #718199; }
+.signal-app .signal-view-surface .paused-row td { background-color: #fff9eb !important; }
+.signal-app .signal-view-surface .badge-never { background: #fff1f2; color: #b83249; border-color: #ffdde2; }
+.signal-app .signal-view-surface .badge-sent-today { background: #e5f9ef; color: #087b52; border-color: #beeacb; }
+.signal-app .signal-view-surface .badge-sent-old { background: #eef3fb; color: #536987; border-color: #dce5f2; }
+.signal-app .signal-view-surface .btn-pause { background: #fff3df; border: 1px solid #f9e1b5; color: #a76b09; }
+.signal-app .signal-view-surface .btn-resume { background: #e3f8ee; border: 1px solid #b4ead1; color: #0e7650; }
+.signal-app .signal-view-surface .btn-del { background: #fff0f2; border: 1px solid #f8d0d7; color: #b22f4c; }
+.signal-app .signal-view-surface .type-once { background: #f1eafa; color: #7b49ad; }
+.signal-app .signal-view-surface .type-repeat { background: #e8efff; color: #335ac4; }
+/* Forms: normalizing old hand-written inline spacing safely */
+.signal-app .signal-view-surface .signal-details-form { border: 1px solid #e4eaf4; border-radius: 14px; padding: 23px !important; background: white; box-shadow: 0 8px 25px rgba(23,47,84,.04); }
+.signal-app .signal-view-surface .signal-details-form .col-md-8 { max-width: min(100%, 920px); flex: 0 0 auto; }
+.signal-app .signal-view-surface .form-horizontal .form-group { margin-bottom: 18px; }
+.signal-app .signal-view-surface .form-check { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.signal-app .signal-view-surface .form-check-label { margin-bottom: 0; }
+.signal-app .signal-view-surface .form-check-input { margin-top: 0; position: static; }
+.signal-app .signal-view-surface .table td .btn { margin: 2px; }
+.signal-app .signal-view-surface .text-danger { font-size: 12px; }
+/* Automated notifications */
+.signal-app .signal-view-surface[data-controller="AutomatedNotifications"] > div:not(.alert) { max-width: 100%; }
+.signal-app .signal-view-surface[data-controller="AutomatedNotifications"] table td { white-space: normal; }
+.signal-app .signal-view-surface[data-controller="AutomatedNotifications"] table td:last-child { min-width: 180px; }
+.signal-app .signal-view-surface[data-controller="AutomatedNotifications"] .table-responsive { margin-bottom: 22px; }
+/* Twilio number management */
+.signal-app .signal-view-surface[data-controller="Twilio"] input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"]) { max-width: 420px; min-height: 40px; border: 1px solid #d5deea; border-radius: 9px; padding: 8px 12px; background: white; }
+.signal-app .signal-view-surface[data-controller="Twilio"] form { padding: 0; }
+/* Make legacy inline styles from old CRUD screens feel consistently new */
+.signal-app .signal-view-surface .table thead[style*="background"],
+.signal-app .signal-view-surface table thead tr[style*="background"] { background: #f0f4fb !important; }
+.signal-app .signal-view-surface a[style*="background: lightblue"] { background: #335ff4 !important; color: #fff !important; padding: 10px 15px !important; border-radius: 8px !important; text-decoration: none; }
+.signal-app .signal-view-surface div[style*="padding:20px"] { max-width: 100%; }
+/* Minor compatibility utilities for pages using Bootstrap-5 style names with Bootstrap-4 vendor JS */
+.signal-app .signal-view-surface .form-select { background: white; border: 1px solid #d5deea; padding: 9px 12px; border-radius: 9px; color: #17243d; }
+.signal-app .signal-view-surface .btn-close { color: #53657e; }
+.signal-app .signal-view-surface .btn-close:hover { opacity: .8; }
+/* Standalone login: no controller or action names are changed. */
+body.signal-login-body { margin: 0; min-height: 100vh; background: #f6f8fd; color: #192843; font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+.signal-login-shell { min-height: 100vh; display: grid; grid-template-columns: minmax(400px,47%) 1fr; }
+.signal-login-aside { position: relative; min-height: 100vh; background: radial-gradient(circle at 90% 18%,rgba(65,111,237,.17),transparent 40%),linear-gradient(145deg,#152849,#0d1d36 85%); color: #fff; padding: 49px clamp(35px,6vw,90px); display: flex; flex-direction: column; overflow: hidden; }
+.signal-login-aside::after { content: ""; position: absolute; width: 510px; height: 510px; border: 1px solid rgba(175,203,255,.075); border-radius: 50%; right: -240px; bottom: -140px; box-shadow: 0 0 0 90px rgba(156,194,255,.015), 0 0 0 180px rgba(156,194,255,.012); pointer-events: none; }
+.signal-login-product { display: flex; align-items: center; gap: 12px; font-size: 25px; font-weight: 800; letter-spacing: -.6px; }
+.signal-login-product-icon { width: 45px; height: 45px; display: inline-flex; align-items: center; justify-content: center; font-size: 21px; border-radius: 13px; background: linear-gradient(140deg,#5380ff,#3157d8); color: #fff; box-shadow: 0 8px 20px rgba(8,33,110,.22); }
+.signal-login-product small { display: block; color: #94a7ce; font-size: 9px; letter-spacing: 2.3px; margin-top: 2px; }
+.signal-login-hero { margin: auto 0; z-index: 1; }
+.signal-login-overline { display: inline-block; color: #a0b6ff; font-size: 11px; font-weight: 790; letter-spacing: 1.9px; margin-bottom: 23px; }
+.signal-login-hero h1 { font-size: clamp(38px,4.3vw,62px); line-height: 1.13; letter-spacing: -2.5px; margin: 0 0 25px; font-weight: 820; }
+.signal-login-hero h1 span { color: #92afff; }
+.signal-login-hero p { font-size: 15px; max-width: 430px; line-height: 1.85; color: #b6c5df; }
+.signal-login-highlights { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 42px; }
+.signal-login-highlights span { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.09); border-radius: 8px; padding: 10px 12px; color: #e6ecff; font-size: 11px; font-weight: 650; }
+.signal-login-highlights i { color: #a4bfff; }
+.signal-login-aside-footer { font-size: 11px; color: #7187ac; }
+.signal-login-main { display: flex; align-items: center; justify-content: center; padding: 48px 30px; }
+.signal-login-card { width: min(100%,425px); }
+.signal-login-mobile-brand { display: none; }
+.signal-login-tag { color: #315ad7; letter-spacing: 1.6px; font-weight: 850; font-size: 11px; }
+.signal-login-card h2 { margin: 15px 0 10px; color: #162642; letter-spacing: -.9px; font-weight: 800; font-size: 34px; line-height: 1.2; }
+.signal-login-subtitle { color: #7a8ba4; font-size: 14px; line-height: 1.6; margin-bottom: 35px; }
+.signal-login-form { display: block; }
+.signal-login-field { margin-bottom: 23px; }
+.signal-login-field label { display: block; margin-bottom: 9px; font-size: 12px; font-weight: 750; color: #34455e; }
+.signal-login-input { border: 1px solid #dce4ef; background: white; border-radius: 11px; display: flex; align-items: center; min-height: 53px; overflow: hidden; transition: border-color .16s,box-shadow .16s; }
+.signal-login-input:focus-within { border-color: #7291ff; box-shadow: 0 0 0 3px rgba(51,95,244,.12); }
+.signal-login-input > i { font-size: 17px; padding-left: 17px; color: #91a0b5; }
+.signal-login-control { width: 100%; border: none; outline: none; padding: 15px 15px; min-width: 0; color: #172942; font: inherit; font-size: 14px; background: transparent; }
+.signal-login-control::placeholder { color: #a3b0c2; }
+.signal-login-submit { width: 100%; margin-top: 5px; border: 0; border-radius: 11px; color: #fff; background: #335ff4; padding: 15px 19px; font-size: 14px; font-weight: 780; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background .16s,transform .16s; }
+.signal-login-submit:hover { background: #2549d8; transform: translateY(-1px); }
+.signal-login-error { display: flex; gap: 10px; align-items: flex-start; background: #fff0f3; border: 1px solid #ffcbd7; color: #a8324e; border-radius: 9px; padding: 12px 15px; margin-bottom: 22px; font-size: 12px; }
+.signal-login-validation { font-size: 12px; color: #bf3651; }
+.signal-login-secure { display: flex; align-items: center; justify-content: center; gap: 8px; padding-top: 31px; font-size: 11px; color: #9ca9b9; }
+.signal-login-secure i { color: #8193ad; }
+@media (max-width: 900px) { .signal-login-shell { grid-template-columns: 1fr; } .signal-login-aside { display: none; } .signal-login-main { min-height: 100vh; } .signal-login-mobile-brand { display: flex; align-items: center; gap: 12px; font-size: 22px; margin-bottom: 50px; } }
+@media (max-width: 480px) { .signal-login-main { padding: 30px 20px; align-items: flex-start; } .signal-login-card { padding-top: 20px; } .signal-login-card h2 { font-size: 28px; } .signal-login-subtitle { margin-bottom: 24px; } }
+/* Standard static Index lists (new non-interactive wrapper only). */
+.signal-app .signal-view-surface .signal-list-card { background: white; border: 1px solid var(--sg-line); border-radius: 13px; box-shadow: var(--sg-shadow); overflow-x: auto; margin: 16px 0 25px; }
+.signal-app .signal-view-surface .signal-list-card .table { margin: 0; width: 100%; border: 0; border-radius: 0; }
+.signal-app .signal-view-surface .signal-list-card .table thead th:first-child { border-top-left-radius: 12px; }
+.signal-app .signal-view-surface .signal-list-card .table thead th:last-child { border-top-right-radius: 12px; }
+/* Fully restyled conversation page, same controller action and field names. */
+.signal-conversation-page { max-width: 1120px; margin: 0 auto; }
+.signal-conversation-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 24px; }
+.signal-conversation-heading h1 { margin: 5px 0 7px !important; }
+.signal-conversation-heading p { color: #788ba4; margin: 0; font-size: 13px; }
+.signal-conversation-eyebrow, .signal-home-eyebrow { color: #335ff4; font-size: 10px; font-weight: 850; letter-spacing: 1.7px; }
+.signal-thread { border: 1px solid #e2e9f3; border-radius: 16px; background: white; box-shadow: var(--sg-shadow); overflow: hidden; }
+.signal-thread-header { padding: 18px 24px; border-bottom: 1px solid #e8edf5; background: #fafcff; display: flex; gap: 12px; align-items: center; }
+.signal-thread-avatar { background: #e9efff; color: #335ff4; width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 18px; }
+.signal-thread-contact { display: flex; flex-direction: column; gap: 3px; }
+.signal-thread-contact strong { color: #243452; font-size: 14px; }
+.signal-thread-contact span { color: #7e8ea5; font-size: 11px; }
+.signal-thread-count { margin-left: auto; color: #4c64a4; background: #e9efff; padding: 6px 11px; border-radius: 20px; font-size: 11px; font-weight: 750; }
+.signal-thread-messages { background: #f9fbff; min-height: 310px; max-height: 65vh; overflow-y: auto; padding: 25px 22px; display: flex; flex-direction: column; gap: 13px; }
+.signal-thread-line { display: flex; }
+.signal-thread-incoming { justify-content: flex-start; }
+.signal-thread-outgoing { justify-content: flex-end; }
+.signal-thread-bubble { max-width: min(75%,640px); padding: 13px 17px; border-radius: 14px; background: white; color: #243652; border: 1px solid #e5eaf2; box-shadow: 0 3px 13px rgba(21,44,85,.045); overflow-wrap: anywhere; }
+.signal-thread-outgoing .signal-thread-bubble { background: #335ff4; color: white; border-color: #335ff4; }
+.signal-thread-bubble p { margin: 0 0 6px; white-space: pre-wrap; font-size: 13px; }
+.signal-thread-bubble time { display: block; text-align: right; opacity: .66; font-size: 10px; }
+.signal-thread-empty { margin: auto; display: flex; flex-direction: column; align-items: center; gap: 9px; color: #8695ad; }
+.signal-thread-empty i { font-size: 34px; color: #abc0ea; }
+.signal-thread-empty strong { color: #445773; font-size: 14px; }
+.signal-thread-empty span { font-size: 12px; }
+.signal-thread-compose { padding: 20px 23px; border-top: 1px solid #e7edf6; }
+.signal-thread-compose > label { display: block; }
+.signal-thread-input-row { display: flex; gap: 11px; align-items: stretch; }
+.signal-thread-input-row .form-control { flex: 1; min-width: 0; min-height: 65px; }
+.signal-thread-input-row .btn { align-self: flex-end; min-height: 41px; padding: 10px 18px; }
+.signal-thread-input-row .btn i { padding-right: 6px; }
+/* Home landing page, no live metrics or fabricated counters. */
+.signal-home { max-width: 1170px; margin: 0 auto; }
+.signal-home-welcome { padding: 27px 0 26px; }
+.signal-home-welcome h1 { max-width: 800px; font-size: clamp(31px,3vw,41px) !important; margin: 11px 0 9px !important; letter-spacing: -1.3px !important; }
+.signal-home-welcome p { max-width: 650px; color: #72839d; font-size: 14px; }
+.signal-home-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+.signal-app .signal-view-surface .signal-home-tile { display: flex; position: relative; flex-direction: column; min-height: 200px; padding: 27px 30px; background: white; border: 1px solid #e3e9f3; border-radius: 15px; color: #182b46; box-shadow: var(--sg-shadow); transition: transform .15s,border-color .15s,box-shadow .15s; }
+.signal-app .signal-view-surface .signal-home-tile:hover { text-decoration: none; color: #182b46; transform: translateY(-3px); border-color: #bdceff; box-shadow: 0 14px 27px rgba(27,53,96,.09); }
+.signal-home-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #eaf0ff; color: #335ff4; font-size: 20px; margin-bottom: 19px; }
+.signal-home-tile strong { font-size: 17px; margin-bottom: 5px; }
+.signal-home-tile > span:not(.signal-home-icon) { color: #8190a5; font-size: 12px; }
+.signal-home-arrow { color: #7793df; position: absolute; bottom: 30px; right: 30px; }
+@media (max-width: 700px) {
+    .signal-conversation-heading { align-items: flex-start; flex-direction: column; }
+    .signal-thread-bubble { max-width: 91%; }
+    .signal-thread-messages { padding: 15px; }
+    .signal-thread-input-row { flex-direction: column; }
+    .signal-thread-input-row .btn { align-self: flex-end; }
+    .signal-home-grid { grid-template-columns: 1fr; }
+    .signal-home-tile { min-height: 185px; }
+}

@@ -1,8 +1,36 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Workspace";
 }
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="signal-home">
+    <div class="signal-home-welcome">
+        <span class="signal-home-eyebrow">YOUR WORKSPACE</span>
+        <h1>Messaging, made manageable.</h1>
+        <p>Jump into conversations, manage incoming requests, and review scheduled activity from one place.</p>
+    </div>
+    <div class="signal-home-grid">
+        <a class="signal-home-tile" asp-controller="Sms" asp-action="IncomingLogs">
+            <span class="signal-home-icon"><i class="fa fa-inbox" aria-hidden="true"></i></span>
+            <strong>Incoming SMS</strong>
+            <span>Review incoming messages and take action.</span>
+            <i class="fa fa-arrow-right signal-home-arrow" aria-hidden="true"></i>
+        </a>
+        <a class="signal-home-tile" asp-controller="Conversations" asp-action="SMS">
+            <span class="signal-home-icon"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></span>
+            <strong>Send SMS</strong>
+            <span>Compose messages and view conversations.</span>
+            <i class="fa fa-arrow-right signal-home-arrow" aria-hidden="true"></i>
+        </a>
+        <a class="signal-home-tile" asp-controller="Sms" asp-action="ScheduledJobs">
+            <span class="signal-home-icon"><i class="fa fa-clock-o" aria-hidden="true"></i></span>
+            <strong>Scheduled jobs</strong>
+            <span>Track planned and historical message activity.</span>
+            <i class="fa fa-arrow-right signal-home-arrow" aria-hidden="true"></i>
+        </a>
+        <a class="signal-home-tile" asp-controller="Technicians" asp-action="Index">
+            <span class="signal-home-icon"><i class="fa fa-wrench" aria-hidden="true"></i></span>
+            <strong>Technicians</strong>
+            <span>Manage your team and their availability.</span>
+            <i class="fa fa-arrow-right signal-home-arrow" aria-hidden="true"></i>
+        </a>
+    </div>
 </div>

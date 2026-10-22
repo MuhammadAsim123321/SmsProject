@@ -1,7 +1,7 @@
-﻿@model SendSmsCallAlerts.Models.ForwardNum
+@model SendSmsCallAlerts.Models.ForwardNum
 
 @{
-    ViewData["Title"] = "Delete";
+    ViewData["Title"] = "Delete forward number";
 }
 
 <h1>Delete</h1>
@@ -30,7 +30,7 @@
     
     <form asp-action="Delete">
         <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
-        <a asp-action="Index">Back to List</a>
+        <input type="submit" value="Delete" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-outline-secondary sg-back-link">Back to List</a>
     </form>
 </div>

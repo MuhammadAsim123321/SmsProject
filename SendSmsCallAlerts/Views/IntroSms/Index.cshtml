@@ -1,11 +1,12 @@
-﻿@model IEnumerable<SendSmsCallAlerts.Models.IntroSms>
+@model IEnumerable<SendSmsCallAlerts.Models.IntroSms>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Intro SMS";
 }
 
 <h1>Intro SMS</h1>
 
+<div class="signal-list-card">
 <table class="table">
     <thead>
         <tr>
@@ -23,11 +24,12 @@
                     @Html.DisplayFor(modelItem => item.Message)
                 </td>
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
-                    @*  <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>*@
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="sg-table-link sg-table-link-edit">Edit</a>
+                    @*  <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="sg-table-link sg-table-link-danger">Delete</a>*@
                 </td>
             </tr>
         }
     </tbody>
 </table>
+</div>

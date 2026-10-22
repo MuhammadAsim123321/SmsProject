@@ -1,14 +1,17 @@
-﻿@model List<SchedulerViewModel>
+@model List<SchedulerViewModel>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Schedulers";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-2">
+<div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
     <h1>All Schedulers</h1>
-    <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+    <div class="sg-page-actions">
+        <a asp-action="Create" class="btn btn-primary">Create New Template</a>
+        <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
         <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
     </a>
+    </div>
 </div>
 @if (TempData["ErrMsg"] != null)
 {
@@ -19,9 +22,8 @@
     <div class="alert alert-success"><b>@TempData["SucMsg"]</b></div>
 }
 
-<p>
-    <a asp-action="Create" class="btn btn-primary">Create New Template</a>
-</p>
+
+<div class="signal-list-card">
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
@@ -94,3 +96,4 @@
         }
     </tbody>
 </table>
+</div>

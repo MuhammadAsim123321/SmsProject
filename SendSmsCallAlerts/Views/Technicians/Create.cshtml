@@ -1,14 +1,14 @@
 @model SendSmsCallAlerts.Models.Technician
 
 @{
-    ViewData["Title"] = "Create Technician";
+    ViewData["Title"] = "Create technician";
     var categories = ViewBag.Categories as List<SendSmsCallAlerts.Models.IvrOptions>;
     var availability = ViewBag.Availability as List<SendSmsCallAlerts.Models.TechnicianAvailability>;
 }
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<div style="padding:20px;">
+<div class="signal-details-form sg-form-surface">
     <h1>Create New Technician</h1>
     <hr />
 

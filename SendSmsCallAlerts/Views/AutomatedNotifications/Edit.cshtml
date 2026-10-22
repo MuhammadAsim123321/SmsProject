@@ -1,11 +1,11 @@
-﻿@model SendSmsCallAlerts.Models.AutomatedSmsSetting
+@model SendSmsCallAlerts.Models.AutomatedSmsSetting
 @{
     ViewData["Title"] = "Edit Automated SMS";
 }
 
 <partial name="_AutoSmsHead" />
 
-<div style="padding:20px;">
+<div class="sg-content-stack">
     <h1>Edit Automated SMS</h1>
     <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
         <input type="hidden" asp-for="Id" />
