@@ -87,6 +87,9 @@ namespace SendSmsCallAlerts.Migrations
                     b.Property<int?>("AssignedTechnicianId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int");
+
                     b.Property<string>("CityState")
                         .HasColumnType("nvarchar(max)");
 

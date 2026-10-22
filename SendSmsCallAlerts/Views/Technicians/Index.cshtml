@@ -129,8 +129,13 @@
 <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    $(document).ready(function () {
-        $('#tblTechnicians').DataTable({
+    // The shared layout loads its own jQuery after the page body. Keep a reference
+    // to the jQuery instance that has DataTables attached so that the plugin is
+    // still available when this page's ready handler runs.
+    var techTableJQuery = window.jQuery;
+
+    techTableJQuery(function () {
+        techTableJQuery('#tblTechnicians').DataTable({
             "order": [[0, 'asc']],
             "pageLength": 25,
             "columnDefs": [{ "targets": 7, "orderable": false }],   // Actions column is now index 7
@@ -142,7 +147,7 @@
 
     function deleteTechnician(id) {
         if (confirm('Are you sure you want to delete this technician?')) {
-            $.post('@Url.Action("Delete", "Technicians")', { id: id }, function (response) {
+            techTableJQuery.post('@Url.Action("Delete", "Technicians")', { id: id }, function (response) {
                 if (response.success) {
                     alert(response.message);
                     location.reload();
