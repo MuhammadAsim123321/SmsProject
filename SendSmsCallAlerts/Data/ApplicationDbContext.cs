@@ -41,6 +41,8 @@ namespace SendSmsCallAlerts.Data
         // NEW: Technician DbSet
         public DbSet<Technician> Technicians { get; set; }
         public DbSet<TechnicianAvailability> TechnicianAvailabilities { get; set; }
+        public DbSet<AutomatedSmsSetting> AutomatedSmsSettings { get; set; }
+        public DbSet<AutomatedSmsLog> AutomatedSmsLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,6 +54,58 @@ namespace SendSmsCallAlerts.Data
                  .HasDatabaseName("UQ_TechnicianAvailability_Tech_Day");
                 e.HasOne(a => a.Technician).WithMany(t => t.Availabilities)
                  .HasForeignKey(a => a.TechnicianId).OnDelete(DeleteBehavior.Cascade);
+            });
+            modelBuilder.Entity<AutomatedSmsSetting>(e =>
+            {
+                e.HasIndex(s => s.Name).IsUnique().HasDatabaseName("UQ_AutomatedSmsSettings_Name");
+
+                e.HasData(
+                    new AutomatedSmsSetting
+                    {
+                        Id = 1,
+                        Name = "Technician Weekly Availability Request",
+                        NotificationType = NotificationTypes.TechnicianAvailabilityRequest,
+                        RecipientType = RecipientTypes.Technician,
+                        Frequency = SmsFrequencies.Weekly,
+                        DayOfWeek = 0, // Sunday
+                        SendTime = new TimeSpan(17, 0, 0),
+                        TemplateBody = "Hi {technicianFirstName}, please reply with your availability for the week of {weekStart} to {weekEnd}.\n\nExample: MON 9AM-5PM, TUE OFF\n\nThank you, {companyName}",
+                        IsActive = true,
+                        CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new AutomatedSmsSetting
+                    {
+                        Id = 2,
+                        Name = "Technician Daily Job Summary",
+                        NotificationType = NotificationTypes.TechnicianDailyJobSummary,
+                        RecipientType = RecipientTypes.Technician,
+                        Frequency = SmsFrequencies.Daily,
+                        SendTime = new TimeSpan(17, 0, 0),
+                        TemplateBody = "Hi {technicianFirstName}, you have {jobCount} job(s) tomorrow ({jobDate}):\n\n{jobsList}\n\n- {companyName}",
+                        IsActive = true,
+                        CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new AutomatedSmsSetting
+                    {
+                        Id = 3,
+                        Name = "Customer Next-Day Job Reminder",
+                        NotificationType = NotificationTypes.CustomerJobReminder,
+                        RecipientType = RecipientTypes.Customer,
+                        Frequency = SmsFrequencies.Daily,
+                        SendTime = new TimeSpan(17, 0, 0),
+                        TemplateBody = "Hi {customerName}, this is a reminder from {companyName}: your {category} appointment is scheduled for tomorrow, {jobDate}, at {jobTime}. Your technician will be {technicianName}. Reply STOP to opt out.",
+                        IsActive = true,
+                        CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
+                    });
+            });
+
+            modelBuilder.Entity<AutomatedSmsLog>(e =>
+            {
+                e.HasIndex(l => new { l.SettingId, l.OccurrenceKey, l.RecipientType, l.RecipientId })
+                 .IsUnique().HasDatabaseName("UQ_AutomatedSmsLogs_Occurrence");
+
+                e.HasOne(l => l.Setting).WithMany(s => s.Logs)
+                 .HasForeignKey(l => l.SettingId).OnDelete(DeleteBehavior.Cascade);
             });
             modelBuilder.Entity<TimeToRun>().HasData(
                 new TimeToRun { Id = 1, Name = "Now", HourCount = 0 },

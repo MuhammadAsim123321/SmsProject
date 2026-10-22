@@ -1,0 +1,15 @@
+﻿@model SendSmsCallAlerts.Models.AutomatedSmsSetting
+@{
+    ViewData["Title"] = "New Automated SMS";
+}
+
+<partial name="_AutoSmsHead" />
+
+<div style="padding:20px;">
+    <h1>New Automated SMS</h1>
+    <form asp-action="Create" method="post">
+        <partial name="_Form" model="Model" />
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>

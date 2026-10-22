@@ -1,0 +1,31 @@
+﻿@model SendSmsCallAlerts.Controllers.RunNowVm
+@{
+    ViewData["Title"] = "Test run";
+}
+
+<partial name="_AutoSmsHead" />
+
+<div style="padding:20px;">
+    <h1>Test run: @Model.SettingName</h1>
+    <p class="text-muted">Preview only. Nothing was sent. These are the messages that would go out for tomorrow.</p>
+
+    @if (!Model.Items.Any())
+    {
+        <div class="alert alert-warning">No recipients right now (for example, no jobs scheduled tomorrow).</div>
+    }
+    else
+    {
+        <table class="table table-bordered table-striped">
+            <thead style="background: #70b3db; color: white;">
+                <tr><th>Recipient</th><th>Phone</th><th>Message</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var i in Model.Items)
+                {
+                    <tr><td>@i.RecipientName</td><td>@i.Phone</td><td style="white-space:pre-wrap">@i.Body</td><td>@i.Status</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+</div>

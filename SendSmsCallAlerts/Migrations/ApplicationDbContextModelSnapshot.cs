@@ -76,6 +76,159 @@ namespace SendSmsCallAlerts.Migrations
                     b.ToTable("AllScheduledJobs");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("OccurrenceKey")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<int>("RecipientId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RecipientType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SettingId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SmsDetailId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SettingId", "OccurrenceKey", "RecipientType", "RecipientId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_AutomatedSmsLogs_Occurrence");
+
+                    b.ToTable("AutomatedSmsLogs");
+                });
+
+            modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsSetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("DayOfWeek")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastRunAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("NotificationType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("RecipientType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<TimeSpan>("SendTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("TemplateBody")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_AutomatedSmsSettings_Name");
+
+                    b.ToTable("AutomatedSmsSettings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, 0, DateTimeKind.Utc),
+                            DayOfWeek = 0,
+                            Frequency = "Weekly",
+                            IsActive = true,
+                            Name = "Technician Weekly Availability Request",
+                            NotificationType = "TechnicianAvailabilityRequest",
+                            RecipientType = "Technician",
+                            SendTime = new TimeSpan(0, 17, 0, 0, 0),
+                            TemplateBody = "Hi {technicianFirstName}, please reply with your availability for the week of {weekStart} to {weekEnd}.\n\nExample: MON 9AM-5PM, TUE OFF\n\nThank you, {companyName}"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Frequency = "Daily",
+                            IsActive = true,
+                            Name = "Technician Daily Job Summary",
+                            NotificationType = "TechnicianDailyJobSummary",
+                            RecipientType = "Technician",
+                            SendTime = new TimeSpan(0, 17, 0, 0, 0),
+                            TemplateBody = "Hi {technicianFirstName}, you have {jobCount} job(s) tomorrow ({jobDate}):\n\n{jobsList}\n\n- {companyName}"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Frequency = "Daily",
+                            IsActive = true,
+                            Name = "Customer Next-Day Job Reminder",
+                            NotificationType = "CustomerJobReminder",
+                            RecipientType = "Customer",
+                            SendTime = new TimeSpan(0, 17, 0, 0, 0),
+                            TemplateBody = "Hi {customerName}, this is a reminder from {companyName}: your {category} appointment is scheduled for tomorrow, {jobDate}, at {jobTime}. Your technician will be {technicianName}. Reply STOP to opt out."
+                        });
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>
                 {
                     b.Property<int>("Id")
@@ -797,6 +950,17 @@ namespace SendSmsCallAlerts.Migrations
                     b.Navigation("Technician");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsLog", b =>
+                {
+                    b.HasOne("SendSmsCallAlerts.Models.AutomatedSmsSetting", "Setting")
+                        .WithMany("Logs")
+                        .HasForeignKey("SettingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Setting");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>
                 {
                     b.HasOne("SendSmsCallAlerts.Models.Technician", "AssignedTechnician")
@@ -854,6 +1018,11 @@ namespace SendSmsCallAlerts.Migrations
                         .IsRequired();
 
                     b.Navigation("Technician");
+                });
+
+            modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsSetting", b =>
+                {
+                    b.Navigation("Logs");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>

@@ -1,0 +1,69 @@
+﻿@model SendSmsCallAlerts.Models.AutomatedSmsSetting
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label"></label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<div class="mb-3">
+    <label asp-for="NotificationType" class="form-label">Notification type</label>
+    <select asp-for="NotificationType" class="form-select">
+        <option value="">-- select --</option>
+        <option value="TechnicianAvailabilityRequest">Technician weekly availability request</option>
+        <option value="TechnicianDailyJobSummary">Technician daily job summary</option>
+        <option value="CustomerJobReminder">Customer next-day job reminder</option>
+    </select>
+    <span asp-validation-for="NotificationType" class="text-danger"></span>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <label asp-for="Frequency" class="form-label"></label>
+        <select asp-for="Frequency" class="form-select">
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+        </select>
+        <span asp-validation-for="Frequency" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label asp-for="DayOfWeek" class="form-label">Day (weekly only)</label>
+        <select asp-for="DayOfWeek" class="form-select">
+            <option value="">--</option>
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+        </select>
+        <span asp-validation-for="DayOfWeek" class="text-danger"></span>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label for="SendTime" class="form-label">Send time (business timezone)</label>
+        <input type="time" id="SendTime" name="SendTime" class="form-control"
+               value="@Model.SendTime.ToString(@"hh\:mm")" />
+        <span asp-validation-for="SendTime" class="text-danger"></span>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label asp-for="TemplateBody" class="form-label">Message text</label>
+    <textarea asp-for="TemplateBody" class="form-control" rows="4"></textarea>
+    <span asp-validation-for="TemplateBody" class="text-danger"></span>
+</div>
+
+<div class="form-check mb-3">
+    <input asp-for="IsActive" class="form-check-input" />
+    <label asp-for="IsActive" class="form-check-label">Active</label>
+</div>
+
+<div class="alert alert-info small">
+    <strong>Placeholders</strong> (unknown ones are left as typed)<br />
+    <b>Technician weekly request:</b> {technicianFirstName} {technicianName} {weekStart} {weekEnd} {companyName}<br />
+    <b>Technician daily summary:</b> {technicianFirstName} {technicianName} {jobCount} {jobDate} {jobsList} {companyName}<br />
+    <b>Customer reminder:</b> {customerName} {category} {jobDate} {jobTime} {technicianName} {companyName}
+</div>
