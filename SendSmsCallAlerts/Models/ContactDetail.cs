@@ -33,6 +33,10 @@ namespace SendSmsCallAlerts.Models
 
         public string? PhoneNumber { get; set; }
 
+        // Per-contact service category. Kept separate from Scheduler.templateOrAudioId
+        // so updating one contact cannot change the category/template of shared schedulers.
+        public int? CategoryId { get; set; }
+
         //public string? FormNo { get; set; }
 
         // NEW: Technician assignment

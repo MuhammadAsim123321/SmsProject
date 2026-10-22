@@ -626,9 +626,15 @@ namespace SendSmsCallAlerts.Controllers
 
                 if (contactJobs.Any())
                 {
-                    var categoryNames = contactJobs.Select(c =>
+                    // Prefer the category saved on the contact. Fall back to the
+                    // scheduler category for older contacts that predate CategoryId.
+                    var categoryIds = item.contact?.CategoryId.HasValue == true
+                        ? new[] { item.contact.CategoryId.Value }
+                        : contactJobs.Select(c => c.Scheduler.templateOrAudioId).Distinct().ToArray();
+
+                    var categoryNames = categoryIds.Select(id =>
                     {
-                        var cat = categories.FirstOrDefault(x => x.Id == c.Scheduler.templateOrAudioId);
+                        var cat = categories.FirstOrDefault(x => x.Id == id);
                         return cat != null && !string.IsNullOrEmpty(cat.keyword) ? cat.keyword : "N/A";
                     }).ToList();
 
@@ -691,7 +697,9 @@ namespace SendSmsCallAlerts.Controllers
                         cityState = displayCityState,
                         zipCode = displayZipCode,
                         email = displayEmail,
-                        category = "N/A",
+                        category = item.contact?.CategoryId is int contactCategoryId
+                            ? (categories.FirstOrDefault(x => x.Id == contactCategoryId)?.keyword ?? "N/A")
+                            : "N/A",
                         scheduler = "N/A",
                         jobBookDatesList = "N/A",
                         jobBookTimesList = "N/A",
@@ -837,6 +845,13 @@ namespace SendSmsCallAlerts.Controllers
                     await _context.SaveChangesAsync();
                 }
 
+                // Save the selected service category on the contact. Do not overwrite
+                // Scheduler.templateOrAudioId because schedulers are shared between contacts.
+                if (model.smsDirection != "Outgoing" && categoryId > 0)
+                {
+                    contact.CategoryId = categoryId;
+                }
+
                 var smsToUpdate = await _context.SmsDetails.Where(s => s.fromNum == phoneNumber).ToListAsync();
                 foreach (var sms in smsToUpdate) { sms.ContactDetailId = contact.Id; }
                 _context.SmsDetails.UpdateRange(smsToUpdate);
@@ -849,13 +864,6 @@ namespace SendSmsCallAlerts.Controllers
 
                 if (model.schedulerId.HasValue && model.schedulerId.Value > 0)
                 {
-                    var scheduler = await _context.Schedulers.FindAsync(model.schedulerId.Value);
-                    if (scheduler != null && categoryId > 0)
-                    {
-                        scheduler.templateOrAudioId = categoryId;
-                        _context.Schedulers.Update(scheduler);
-                    }
-
                     var newScheduledJob = new AllScheduledJob
                     {
                         ContactDetailId = contact.Id,
@@ -912,7 +920,7 @@ namespace SendSmsCallAlerts.Controllers
                                             select s)
                                             .FirstOrDefaultAsync();
 
-                int? categoryId = firstScheduler?.templateOrAudioId;
+                int? categoryId = contact.CategoryId ?? firstScheduler?.templateOrAudioId;
 
                 return Json(new
                 {
