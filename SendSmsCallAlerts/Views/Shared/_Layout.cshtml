@@ -103,14 +103,6 @@
         }
         <div class="page-wrapper signal-page-wrapper">
             <main class="content container-fluid signal-page-content" id="main-content">
-                @if (isLoggedIn)
-                {
-                    <div class="signal-page-context" aria-hidden="true">
-                        <span class="signal-page-eyebrow">@areaLabel</span>
-                        <span class="signal-page-context-dot">•</span>
-                        <span class="signal-page-current">@pageHeading</span>
-                    </div>
-                }
                 <div class="signal-view-surface" data-controller="@routeController" data-action="@routeAction">
                     @RenderBody()
                 </div>
@@ -124,6 +116,7 @@
     @* This is intentionally after RenderBody: legacy pages inject their own style tags. *@
     <link rel="stylesheet" href="~/css/signal-ui-overrides.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/signal-ui-polish.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-ui-v3.css" asp-append-version="true" />
     @* Preserve the existing jquery/bootstrap plugin order and AJAX session-expiry behavior. *@
     <script src="~/assets/js/jquery-3.2.1.min.js"></script>
     <script src="~/assets/js/popper.min.js"></script>

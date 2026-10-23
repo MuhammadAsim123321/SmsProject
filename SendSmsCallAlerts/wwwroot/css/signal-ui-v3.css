@@ -1,0 +1,492 @@
+/*
+  SMS Hub — unified interface refinement (V3)
+  Added after existing stylesheets and page-local styles.
+  Presentational only: no IDs, handlers, form field names, routes, or request behavior change.
+*/
+:root {
+  --sg-navy: #10213c;
+  --sg-navy-2: #132a4a;
+  --sg-blue: #275dde;
+  --sg-blue-deep: #184ac4;
+  --sg-blue-soft: #edf3ff;
+  --sg-teal: #089b89;
+  --sg-ink: #162640;
+  --sg-muted: #667993;
+  --sg-line: #e0e8f3;
+  --sg-base: #f5f7fc;
+  --sg-shadow: 0 2px 12px rgba(21,39,74,.035), 0 14px 36px rgba(21,39,74,.035);
+  --sg-card-radius: 15px;
+  --sg-control-height: 41px;
+  --sg-page-gutter: clamp(16px, 2.1vw, 34px);
+}
+
+/* Layout frame: the breadcrumb is in the TOP bar only. */
+body.signal-app { background: var(--sg-base); color: var(--sg-ink); }
+.signal-app .header.signal-header {
+  background: rgba(255,255,255,.98);
+  border-bottom: 1px solid #e7edf6;
+  box-shadow: 0 1px 3px rgba(20,34,62,.025);
+}
+.signal-app .signal-header .header-left.signal-brand,
+.signal-app .signal-sidebar.signal-sidebar,
+.signal-app .sidebar-inner.signal-sidebar-scroll {
+  background: #10243f;
+}
+.signal-app .signal-sidebar .sidebar-menu ul li a {
+  border-radius: 10px; min-height: 42px; margin: 3px 0;
+  font-size: 13px; letter-spacing: .01em;
+}
+.signal-app .signal-sidebar .sidebar-menu ul li a.active {
+  background: linear-gradient(90deg,rgba(77,123,221,.32),rgba(77,123,221,.14));
+  box-shadow: inset 3px 0 0 #82a7ff;
+}
+.signal-app .signal-sidebar .sidebar-menu ul li a:hover:not(.active) {
+  background: rgba(241,246,255,.10);
+}
+.signal-app .sidebar-menu .menu-title { color: #8a9eba !important; }
+.signal-app .signal-brand-icon { border-radius: 11px; box-shadow: none; }
+.signal-app #toggle_btn.signal-nav-toggle,
+.signal-app .signal-mobile-toggle {
+  border: 1px solid #e9edf5; background: #f6f8fc;
+  color: #39516f; box-shadow: 0 1px 1px rgba(18,41,80,.025);
+}
+.signal-app .signal-topbar-context {
+  flex: 1 1 auto; min-width: 0; display: flex; align-items: center;
+  gap: 10px; font-size: 13px; max-width: calc(100% - 240px);
+}
+.signal-app .signal-location-label { color: #74829a; font-weight: 550; font-size: 12px; }
+.signal-app .signal-location-slash { color: #b9c5d4; }
+.signal-app .signal-location-page { color: #172a49; font-size: 13px; font-weight: 720; }
+.signal-app .signal-page-wrapper.signal-page-wrapper { background: #f5f7fc; }
+.signal-app .signal-page-content {
+  max-width: 1650px; padding: 29px var(--sg-page-gutter) 50px;
+  min-height: calc(100vh - var(--sg-topbar-height) - 64px);
+}
+/* Defensive hide for any older separately injected duplicate breadcrumb. */
+.signal-app .signal-page-content > .signal-page-context { display: none !important; }
+.signal-app .signal-view-surface { min-width: 0; width: 100%; display: flow-root; }
+.signal-app .signal-view-surface > * { max-width: 100%; }
+
+/* Single page-heading system. The title starts every screen in the same location. */
+.signal-app .signal-view-surface h1 {
+  font-size: clamp(23px,2.15vw,30px); font-weight: 775;
+  letter-spacing: -.75px; line-height: 1.24;
+  margin: 0 0 22px; color: #172943;
+}
+.signal-app .signal-view-surface .sg-page-header,
+.signal-app .signal-view-surface .signal-heading-row,
+.signal-app .signal-view-surface .signal-conversation-heading {
+  display: flex !important; align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: wrap; column-gap: 24px; row-gap: 12px;
+  min-height: 44px; margin: 0 0 22px !important;
+}
+.signal-app .signal-view-surface .sg-page-header > h1,
+.signal-app .signal-view-surface .signal-heading-row > h1,
+.signal-app .signal-view-surface .signal-conversation-heading h1,
+.signal-app .signal-view-surface .sg-title-block h1 {
+  flex: 1 1 240px; margin: 0 !important;
+}
+.signal-app .signal-view-surface .sg-title-block { min-width: 0; }
+.signal-app .signal-view-surface .sg-page-intro,
+.signal-app .signal-view-surface .sg-title-block > p {
+  font-size: 13px; color: #7787a0; line-height: 1.5;
+  margin: 5px 0 0;
+}
+.signal-app .signal-view-surface .sg-page-header--form,
+.signal-app .signal-view-surface .sg-page-header--list { padding: 0; }
+.signal-app .signal-view-surface .signal-heading-row + hr,
+.signal-app .signal-view-surface .sg-page-header + hr { margin: -5px 0 20px; }
+
+/* Fixed, predictable action placement: secondary first, PRIMARY always last. */
+.signal-app .signal-view-surface .sg-page-actions {
+  display: flex; align-items: center; justify-content: flex-end;
+  flex: 0 0 auto; gap: 10px; margin: 0 0 0 auto;
+  flex-wrap: wrap;
+}
+.signal-app .signal-view-surface .sg-page-actions > * { margin: 0 !important; }
+.signal-app .signal-view-surface .btn,
+.signal-app .signal-view-surface .signal-create-link,
+.signal-app .signal-view-surface button.btn,
+.signal-app .signal-view-surface a.sg-table-link {
+  border-radius: 9px; font-weight: 650; box-shadow: none;
+  transition: background-color .15s,border-color .15s,box-shadow .15s,color .15s;
+}
+.signal-app .signal-view-surface .sg-page-actions .btn,
+.signal-app .signal-view-surface .sg-page-actions .signal-create-link,
+.signal-app .signal-view-surface .signal-heading-row > a.btn,
+.signal-app .signal-view-surface .sg-page-header > a.btn {
+  min-height: 42px; display: inline-flex; justify-content: center;
+  align-items: center; gap: 7px; padding: 9px 15px;
+  white-space: nowrap; line-height: 1.25; font-size: 12.5px;
+}
+.signal-app .signal-view-surface .sg-primary-action,
+.signal-app .signal-view-surface .sg-page-actions > a[href]:last-child.signal-create-link,
+.signal-app .signal-view-surface .signal-create-link,
+.signal-app .signal-view-surface .btn-primary {
+  border-color: #285edf !important; background-color: #285edf !important; color: #fff !important;
+}
+.signal-app .signal-view-surface .sg-primary-action:hover,
+.signal-app .signal-view-surface .signal-create-link:hover,
+.signal-app .signal-view-surface .btn-primary:hover { background: #1c4ec0 !important; border-color: #1c4ec0 !important; color: #fff !important; }
+.signal-app .signal-view-surface .sg-secondary-action,
+.signal-app .signal-view-surface .btn-outline-secondary,
+.signal-app .signal-view-surface .btn-secondary {
+  background: #fff !important; color: #526580 !important;
+  border: 1px solid #d8e1ee !important;
+}
+.signal-app .signal-view-surface .sg-secondary-action:hover,
+.signal-app .signal-view-surface .btn-secondary:hover,
+.signal-app .signal-view-surface .btn-outline-secondary:hover {
+  background: #f1f5fc !important; border-color: #b9c9df !important;
+  color: #253c5b !important;
+}
+.signal-app .signal-view-surface .sg-page-actions > .sg-primary-action { order: 10; }
+.signal-app .signal-view-surface .sg-page-actions > .sg-secondary-action { order: 0; }
+.signal-app .signal-view-surface .sg-page-actions .signal-create-link::before { margin-right: 1px; padding-right: 6px; }
+.signal-app .signal-view-surface .btn:focus-visible,
+.signal-app .signal-view-surface .signal-create-link:focus-visible,
+.signal-app .signal-sidebar a:focus-visible {
+  outline: 3px solid rgba(39,93,222,.30); outline-offset: 2px;
+}
+.signal-app .signal-view-surface .btn:disabled,
+.signal-app .signal-view-surface .btn.disabled { opacity: .55; box-shadow: none; cursor: not-allowed; }
+
+/* Standard content surfaces, regardless of which controller renders them. */
+.signal-app .signal-view-surface .signal-list-card,
+.signal-app .signal-view-surface .table-responsive.sg-table-card,
+.signal-app .signal-view-surface .sg-table-scroll,
+.signal-app .signal-view-surface .page-card,
+.signal-app .signal-view-surface .signal-details-form.sg-form-surface,
+.signal-app .signal-view-surface .send-card,
+.signal-app .signal-view-surface .conv-panel,
+.signal-app .signal-view-surface .signal-thread,
+.signal-app .signal-view-surface .sg-twilio-editor {
+  border: 1px solid var(--sg-line); border-radius: var(--sg-card-radius);
+  box-shadow: var(--sg-shadow); background: #fff;
+}
+.signal-app .signal-view-surface .signal-list-card,
+.signal-app .signal-view-surface .table-responsive.sg-table-card,
+.signal-app .signal-view-surface .sg-table-scroll { margin: 0 0 26px; overflow-x: auto; }
+.signal-app .signal-view-surface .page-card,
+.signal-app .signal-view-surface .signal-details-form.sg-form-surface,
+.signal-app .signal-view-surface .sg-twilio-editor { padding: clamp(17px,2.3vw,27px) !important; }
+.signal-app .signal-view-surface .sg-content-stack { padding: 0 !important; min-width: 0; width: 100%; }
+.signal-app .signal-view-surface .sg-results-page { padding: 0 !important; }
+.signal-app .signal-view-surface .sg-results-page > table { background: #fff; }
+.signal-app .signal-view-surface .sg-section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px; margin: 28px 0 13px;
+}
+.signal-app .signal-view-surface .sg-section-header h2 { font-size: 18px; font-weight: 750; margin: 0; }
+.signal-app .signal-view-surface .sg-section-meta { font-size: 12px; color: #778ba5; }
+.signal-app .signal-view-surface .sg-content-stack > form,
+.signal-app .signal-view-surface[data-controller='AutomatedNotifications'][data-action='Create'] .sg-content-stack > form,
+.signal-app .signal-view-surface[data-controller='AutomatedNotifications'][data-action='Edit'] .sg-content-stack > form {
+  background: #fff; border-radius: 15px; border: 1px solid var(--sg-line);
+  max-width: 860px; margin: 0 0 26px; padding: clamp(18px,2.6vw,30px);
+  box-shadow: var(--sg-shadow);
+}
+.signal-app .signal-view-surface .sg-form-actions {
+  display: flex; align-items: center; justify-content: flex-end;
+  flex-wrap: wrap; gap: 10px; border-top: 1px solid #ebeff5;
+  padding-top: 20px; margin-top: 22px;
+}
+.signal-app .signal-view-surface .sg-form-actions > * { margin: 0 !important; }
+/* Old scaffold forms in narrow columns get usable widths and the same card styling. */
+.signal-app .signal-view-surface > .row > [class*='col-']:has(> form) {
+  flex: 0 1 750px; width: 100%; max-width: 750px; min-width: 0;
+}
+.signal-app .signal-view-surface > .row > [class*='col-'] > form {
+  background: #fff; border: 1px solid var(--sg-line);
+  border-radius: 15px; padding: clamp(18px,2.3vw,27px);
+  box-shadow: var(--sg-shadow); min-width: 0;
+}
+.signal-app .signal-view-surface .form-group,
+.signal-app .signal-view-surface .mb-3 { min-width: 0; }
+.signal-app .signal-view-surface .form-control,
+.signal-app .signal-view-surface .form-select,
+.signal-app .signal-view-surface .custom-select {
+  color: #273b5a; background-color: #fff; border: 1px solid #d6e0ed;
+  border-radius: 9px; min-height: 41px; max-width: 100%; box-shadow: none;
+}
+.signal-app .signal-view-surface .form-control:focus,
+.signal-app .signal-view-surface .form-select:focus,
+.signal-app .signal-view-surface .custom-select:focus {
+  border-color: #7f9fe5 !important; box-shadow: 0 0 0 3px rgba(39,93,222,.12) !important;
+}
+.signal-app .signal-view-surface input[readonly].form-control { background: #f6f8fc; color: #61728d; }
+.signal-app .signal-view-surface textarea.form-control { min-height: 108px; }
+.signal-app .signal-view-surface label { color: #41536f; font-size: 12px; font-weight: 650; }
+.signal-app .signal-view-surface .text-danger { line-height: 1.45; }
+.signal-app .signal-view-surface .alert {
+  border-radius: 11px; line-height: 1.55; padding: 12px 15px; margin-bottom: 20px;
+}
+.signal-app .signal-view-surface .alert-dismissible { padding-right: 46px; }
+.signal-app .signal-view-surface dl.row { margin: 0; }
+.signal-app .signal-view-surface dl.row dt,
+.signal-app .signal-view-surface dl.row dd { padding-top: 9px; padding-bottom: 9px; }
+.signal-app .signal-view-surface dl.row dt { color: #697b94; font-weight: 650; }
+.signal-app .signal-view-surface dl.row dd { color: #263950; overflow-wrap: anywhere; }
+
+/* Cohesive data grids and CRUD table actions. */
+.signal-app .signal-view-surface .table { color: #2d415d; margin: 0; background: #fff; }
+.signal-app .signal-view-surface .table thead th,
+.signal-app .signal-view-surface #tblRPM thead th,
+.signal-app .signal-view-surface #tblScheduledJobs thead th {
+  background-color: #f2f5fa !important; color: #4e607c !important;
+  font-size: 11px !important; text-transform: uppercase;
+  letter-spacing: .055em; font-weight: 780; white-space: nowrap;
+  padding: 13px 15px !important; border-color: #e5ebf4 !important;
+}
+.signal-app .signal-view-surface .table tbody td,
+.signal-app .signal-view-surface #tblRPM tbody td {
+  font-size: 12.5px; padding: 12px 15px;
+  border-color: #edf1f7; vertical-align: middle;
+}
+.signal-app .signal-view-surface .table tbody tr:hover { background: #f8faff !important; }
+.signal-app .signal-view-surface .table tbody td:last-child:has(> .btn),
+.signal-app .signal-view-surface .table tbody td:last-child:has(> .sg-table-link),
+.signal-app .signal-view-surface .sg-automated-actions { white-space: normal; }
+.signal-app .signal-view-surface .sg-table-link,
+.signal-app .signal-view-surface td > a.btn.btn-sm,
+.signal-app .signal-view-surface td > form > button.btn.btn-sm {
+  display: inline-flex; justify-content: center; align-items: center;
+  vertical-align: middle; font-size: 11.5px; padding: 6px 10px;
+  min-height: 32px; margin: 2px 4px 2px 0 !important;
+}
+.signal-app .signal-view-surface td .sg-table-link { border-radius: 8px; }
+.signal-app .signal-view-surface .sg-automated-actions {
+  min-width: 0; width: 264px; max-width: 300px;
+}
+.signal-app .signal-view-surface .sg-automated-actions form {
+  display: inline-block; vertical-align: middle; margin: 2px 4px 2px 0 !important;
+}
+.signal-app .signal-view-surface .sg-automated-actions .btn { margin: 0 !important; }
+.signal-app .signal-view-surface .table-responsive:not(.sg-table-card),
+.signal-app .signal-view-surface .dataTables_wrapper,
+.signal-app .signal-view-surface .sg-sms-table-zone { max-width: 100%; min-width: 0; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter,
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_length {
+  padding: 0; min-height: 42px; gap: 8px;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter input {
+  border-radius: 9px !important; min-height: 38px; max-width: 100%;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_length select {
+  min-height: 33px; background-color: #fff !important;
+}
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_scrollBody { overscroll-behavior-x: contain; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_paginate { gap: 4px; flex-wrap: wrap; }
+.signal-app .signal-view-surface .dataTables_wrapper .paginate_button { border-radius: 8px !important; }
+.signal-app .signal-view-surface .sg-response-legend {
+  display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center;
+  background: #fff; border: 1px solid var(--sg-line);
+  border-radius: 12px; padding: 12px 16px; margin: 0 0 18px;
+  color: #596b85; font-size: 12px;
+}
+.signal-app .signal-view-surface .sg-response-legend > span { gap: 6px; }
+.signal-app .signal-view-surface .sg-sms-table-zone {
+  border: 1px solid var(--sg-line); border-radius: 13px;
+  background: #fff; box-shadow: var(--sg-shadow);
+  padding: 10px 12px 4px;
+}
+.signal-app .signal-view-surface #tblRPM_wrapper { overflow-x: auto !important; }
+.signal-app .signal-view-surface .action-btns { display: flex; flex-wrap: nowrap; gap: 6px; }
+.signal-app .signal-view-surface .action-btns .btn { margin: 0 !important; }
+.signal-app .signal-view-surface .signal-thread,
+.signal-app .signal-view-surface .conv-panel { border-radius: 14px; overflow: hidden; }
+.signal-app .signal-view-surface .signal-thread-input-row { gap: 10px; }
+.signal-app .signal-view-surface .bubble, .signal-app .signal-thread-bubble { overflow-wrap: anywhere; }
+
+/* Incoming SMS: dialog width AND height reduced, editor reflowed into tidy grid.
+   Only this editor is adjusted; confirmation/download dialogs keep their own sizes. */
+.signal-app #editModal { padding-right: 0 !important; }
+.signal-app #editModal .modal-dialog.sg-inbox-edit-dialog {
+  width: min(590px, calc(100vw - 32px)) !important;
+  max-width: 590px !important; margin: 3vh auto !important;
+  display: flex; align-items: center; min-height: 0;
+}
+.signal-app #editModal .modal-content {
+  border: 1px solid #dce5f1; border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(10,29,59,.20);
+  max-height: 92dvh; overflow: hidden;
+}
+.signal-app #editModal .modal-header {
+  flex: 0 0 auto; background: #fbfcff; border-bottom: 1px solid #e6edf6;
+  padding: 15px 20px; min-height: 60px;
+}
+.signal-app #editModal .modal-header .modal-title {
+  font-size: 17px; font-weight: 750; letter-spacing: -.25px; margin: 0;
+}
+.signal-app #editModal .modal-body {
+  flex: 1 1 auto; min-height: 0;
+  overflow-y: auto; overflow-x: hidden;
+  max-height: calc(92dvh - 130px);
+  padding: 17px 20px 20px;
+  overscroll-behavior: contain;
+}
+.signal-app #editModal .modal-footer {
+  flex: 0 0 auto; margin: 0; border-top: 1px solid #e6edf6;
+  padding: 11px 20px; gap: 9px; background: #fff;
+}
+.signal-app #editModal .modal-footer .btn { margin: 0 !important; min-height: 37px; }
+.signal-app #editModal #updateForm { min-width: 0; }
+.signal-app #editModal #updateForm label { display: block; margin-bottom: 5px; font-size: 11.5px; }
+.signal-app #editModal #updateForm .form-control,
+.signal-app #editModal #updateForm .form-select { min-height: 37px; height: auto; padding: 7px 10px; font-size: 12.5px; }
+.signal-app #editModal #updateForm .mb-3 { margin-bottom: 12px !important; }
+.signal-app #editModal .sg-inbox-contact-grid,
+.signal-app #editModal #jobScheduleSection {
+  display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  column-gap: 12px; align-items: start;
+}
+.signal-app #editModal .sg-inbox-contact-grid > *,
+.signal-app #editModal #jobScheduleSection > * { min-width: 0; }
+.signal-app #editModal .sg-field-street,
+.signal-app #editModal #jobScheduleSection > hr,
+.signal-app #editModal #jobScheduleSection > h6,
+.signal-app #editModal #activeJobsContainer,
+.signal-app #editModal #technicianSection,
+.signal-app #editModal #customDaysHoursContainer { grid-column: 1 / -1; }
+.signal-app #editModal #jobScheduleSection > hr { margin: 1px 0 12px; }
+.signal-app #editModal #jobScheduleSection > h6 {
+  margin: 0 0 11px; font-size: 12px; letter-spacing: .065em;
+  text-transform: uppercase; font-weight: 760; color: #627993;
+}
+.signal-app #editModal #activeJobsContainer:empty { display: none !important; }
+.signal-app #editModal #technicianSection .input-group { display: flex; flex-wrap: nowrap; }
+.signal-app #editModal #technicianSection .input-group .form-select { min-width: 0; }
+.signal-app #editModal #technicianSection #btnAssignTechnician {
+  flex: 0 0 auto; min-height: 37px; padding: 6px 11px;
+}
+.signal-app #editModal #customDaysHoursContainer .d-flex { gap: 10px !important; }
+.signal-app #editModal #customDaysHoursContainer .input-group { min-width: 0; flex: 1 1 50%; }
+.signal-app #editModal .modal-body hr { border-color: #e7edf5; }
+
+/* Mobile: one navigation header, predictable stacked page actions, readable forms. */
+@media (max-width: 991.98px) {
+  .signal-app .signal-page-content { padding-top: 22px; }
+  .signal-app .signal-header .signal-topbar-context { max-width: none; }
+  .signal-app .signal-header .signal-location-label,
+  .signal-app .signal-header .signal-location-slash { display: none; }
+  .signal-app .signal-header .signal-location-page { font-size: 13px; }
+  .signal-app .signal-sidebar .signal-sidebar-intro { padding-top: 18px; }
+}
+@media (max-width: 767.98px) {
+  .signal-app .signal-page-content { padding: 20px 15px 38px; }
+  .signal-app .signal-view-surface h1 { font-size: 24px; }
+  .signal-app .signal-view-surface .sg-page-header,
+  .signal-app .signal-view-surface .signal-heading-row,
+  .signal-app .signal-view-surface .signal-conversation-heading {
+    align-items: stretch !important; row-gap: 13px;
+  }
+  .signal-app .signal-view-surface .sg-page-header > h1,
+  .signal-app .signal-view-surface .signal-heading-row > h1,
+  .signal-app .signal-view-surface .sg-title-block { flex: 1 1 100%; }
+  .signal-app .signal-view-surface .sg-page-actions {
+    width: 100%; flex: 1 1 100%; margin-left: 0;
+    display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px;
+  }
+  .signal-app .signal-view-surface .sg-page-actions > * {
+    width: 100%; white-space: normal !important; text-align: center;
+    min-height: 43px;
+  }
+  .signal-app .signal-view-surface .sg-page-actions > :only-child { grid-column: 1 / -1; }
+  .signal-app .signal-view-surface .signal-heading-row > a.btn,
+  .signal-app .signal-view-surface .sg-page-header > a.btn { width: 100%; }
+  .signal-app .signal-view-surface .signal-list-card,
+  .signal-app .signal-view-surface .sg-sms-table-zone,
+  .signal-app .signal-view-surface .sg-table-card {
+    width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .signal-app .signal-view-surface .sg-sms-table-zone { padding: 8px; }
+  .signal-app .signal-view-surface .dataTables_wrapper .row { gap: 4px 0; }
+  .signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter,
+  .signal-app .signal-view-surface .dataTables_wrapper .dataTables_length {
+    justify-content: flex-start; float: none; margin: 2px 0;
+  }
+  .signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter label { justify-content: flex-start; }
+  .signal-app .signal-view-surface .dataTables_wrapper .dataTables_info { max-width: 100%; }
+  .signal-app .signal-view-surface .page-card,
+  .signal-app .signal-view-surface .signal-details-form.sg-form-surface,
+  .signal-app .signal-view-surface .sg-twilio-editor { padding: 17px !important; }
+  .signal-app .signal-view-surface dl.row dt { padding-bottom: 0; }
+  .signal-app .signal-view-surface dl.row dd { padding-top: 3px; }
+  .signal-app #editModal .modal-dialog.sg-inbox-edit-dialog {
+    max-width: calc(100vw - 18px) !important;
+    width: calc(100vw - 18px) !important; margin: 1.5vh auto !important;
+  }
+  .signal-app #editModal .modal-content { max-height: 96dvh; }
+  .signal-app #editModal .modal-body { max-height: calc(96dvh - 120px); }
+  .signal-app #editModal .modal-header { padding: 12px 15px; min-height: 53px; }
+  .signal-app #editModal .modal-body { padding: 13px 15px; }
+  .signal-app #editModal .modal-footer { padding: 10px 15px; }
+}
+@media (max-width: 520px) {
+  .signal-app .signal-page-content { padding-left: 12px; padding-right: 12px; }
+  .signal-app .signal-location-page { max-width: min(44vw,175px); }
+  .signal-app .signal-view-surface .sg-page-actions { grid-template-columns: 1fr; }
+  .signal-app .signal-view-surface .sg-page-actions > * { min-height: 44px; }
+  .signal-app .signal-view-surface .sg-response-legend { align-items: flex-start; flex-direction: column; }
+  .signal-app .signal-view-surface .sg-form-actions { justify-content: stretch; }
+  .signal-app .signal-view-surface .sg-form-actions .btn { flex: 1 1 auto; }
+  .signal-app .signal-view-surface .signal-thread-header,
+  .signal-app .signal-view-surface .signal-thread-compose { padding: 14px !important; }
+  .signal-app .signal-view-surface .signal-thread-bubble,
+  .signal-app .signal-view-surface .bubble { max-width: 92%; }
+  .signal-app #editModal .sg-inbox-contact-grid,
+  .signal-app #editModal #jobScheduleSection { grid-template-columns: minmax(0,1fr); }
+  .signal-app #editModal .sg-inbox-contact-grid > *,
+  .signal-app #editModal #jobScheduleSection > * { grid-column: 1 / -1; }
+  .signal-app #editModal #technicianSection .input-group { flex-wrap: wrap; gap: 8px; }
+  .signal-app #editModal #technicianSection .input-group .form-select { flex-basis: 100%; }
+  .signal-app #editModal #technicianSection #btnAssignTechnician { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .signal-app .signal-view-surface .btn,
+  .signal-app .signal-sidebar .sidebar-menu ul li a { transition: none !important; }
+}
+
+/* Do not crush six- to nineteen-column tables into narrow 320px screens.
+   The table container scrolls horizontally; form controls remain full width. */
+@media (max-width: 767.98px) {
+  .signal-app .signal-view-surface .sg-table-card > table.table {
+    width: max-content !important; min-width: 760px !important;
+  }
+  .signal-app .signal-view-surface .sg-table-card > .table th,
+  .signal-app .signal-view-surface .sg-table-card > .table td {
+    overflow-wrap: normal; word-break: normal;
+  }
+  .signal-app .signal-view-surface .signal-list-card .table {
+    width: max-content !important; min-width: min(680px, 100%) !important;
+  }
+  .signal-app .signal-view-surface #tblRPM,
+  .signal-app .signal-view-surface #tblTechnicians,
+  .signal-app .signal-view-surface #tblScheduledJobs {
+    min-width: 1000px !important;
+  }
+  .signal-app .signal-view-surface .dataTables_wrapper .dataTables_scrollHeadInner,
+  .signal-app .signal-view-surface .dataTables_wrapper .dataTables_scrollHeadInner table {
+    min-width: 100%;
+  }
+  .signal-app #mobile_btn.signal-mobile-toggle {
+    border-radius: 10px; background: #f6f8fc;
+    width: 39px; height: 39px;
+  }
+}
+
+/* Compact editor alignment polish: avoid half-empty rows or undersized selects. */
+@media (min-width: 521px) {
+  .signal-app #editModal .sg-field-email,
+  .signal-app #editModal #jobScheduleSection > .mb-3:has(#mCategory) {
+    grid-column: 1 / -1;
+  }
+}
+.signal-app #editModal #updateForm select.form-select {
+  display: block; width: 100% !important; min-width: 0; max-width: 100%;
+}
+.signal-app #editModal #technicianSection .input-group { width: 100%; }
+.signal-app #editModal #technicianSection #mTechnician {
+  flex: 1 1 0; min-width: 0; width: 1% !important;
+}
