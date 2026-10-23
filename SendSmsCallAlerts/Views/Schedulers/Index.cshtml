@@ -7,10 +7,10 @@
 <div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
     <h1>All Schedulers</h1>
     <div class="sg-page-actions">
-        <a asp-action="Create" class="btn btn-primary">Create New Template</a>
-        <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+        <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-outline-secondary btn-sm sg-secondary-action">
         <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
     </a>
+        <a asp-action="Create" class="btn btn-primary sg-primary-action">Create New Template</a>
     </div>
 </div>
 @if (TempData["ErrMsg"] != null)

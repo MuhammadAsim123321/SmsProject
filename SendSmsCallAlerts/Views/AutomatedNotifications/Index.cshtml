@@ -11,9 +11,9 @@
 <div class="sg-content-stack">
     <div class="d-flex justify-content-between align-items-center mb-3 signal-heading-row">
         <h1>Automated SMS</h1>
-        <a asp-action="Create" class="btn btn-primary">
+        <div class="sg-page-actions"><a asp-action="Create" class="btn btn-primary sg-primary-action">
             <i class="fa fa-plus me-1"></i> New setting
-        </a>
+        </a></div>
     </div>
 
     @if (TempData["Success"] != null)
@@ -21,7 +21,7 @@
         <div class="alert alert-success"><b>@TempData["Success"]</b></div>
     }
 
-    <div class="table-responsive">
+    <div class="table-responsive sg-table-card">
         <table class="table table-bordered table-striped">
             <thead style="background: #70b3db; color: white;">
                 <tr>
@@ -66,8 +66,8 @@
         </table>
     </div>
 
-    <h5 class="mt-4">Recent activity (last 50)</h5>
-    <div class="table-responsive">
+    <div class="sg-section-header"><h2>Recent activity</h2><span class="sg-section-meta">Latest 50 events</span></div>
+    <div class="table-responsive sg-table-card">
         <table class="table table-sm table-bordered">
             <thead><tr><th>When</th><th>Setting</th><th>Recipient</th><th>Phone</th><th>Status</th><th>Note</th></tr></thead>
             <tbody>
