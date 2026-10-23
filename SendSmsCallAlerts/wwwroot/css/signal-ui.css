@@ -1,0 +1,253 @@
+/* Signal Control Center — shared application design system.
+   Add to wwwroot/css; referenced by Views/Shared/_Layout.cshtml and Account/LogIn.cshtml.
+   All old Bootstrap plugins, forms, data binding and JavaScript hooks remain in place. */
+:root {
+    --sg-navy: #101e35;
+    --sg-navy-2: #162743;
+    --sg-navy-3: #233753;
+    --sg-blue: #335ff4;
+    --sg-blue-deep: #2549d8;
+    --sg-blue-soft: #e9efff;
+    --sg-teal: #14a99b;
+    --sg-ink: #17243d;
+    --sg-muted: #66748d;
+    --sg-line: #e3e9f2;
+    --sg-base: #f3f6fb;
+    --sg-surface: #ffffff;
+    --sg-amber: #edaa3c;
+    --sg-red: #db4d65;
+    --sg-green: #189b75;
+    --sg-sidebar-width: 260px;
+    --sg-topbar-height: 72px;
+    --sg-radius: 14px;
+    --sg-shadow: 0 8px 25px rgba(22, 42, 76, .045), 0 1px 4px rgba(22, 42, 76, .035);
+}
+html { scroll-behavior: smooth; }
+body.signal-app { color: var(--sg-ink); background: var(--sg-base); font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; font-size: 14px; line-height: 1.5; overflow-x: hidden; }
+.signal-app *, .signal-login-body * { box-sizing: border-box; }
+.signal-app a { color: var(--sg-blue-deep); }
+.signal-app a:hover { color: var(--sg-blue); }
+.signal-app :focus-visible, .signal-login-body :focus-visible { outline: 3px solid rgba(51, 95, 244, .34); outline-offset: 2px; }
+.signal-app .main-wrapper { min-height: 100vh; }
+/* Header. Keep the PreClinic structural classes for compatibility with assets/js/app.js. */
+.signal-app .header.signal-header { height: var(--sg-topbar-height); min-height: var(--sg-topbar-height); background: var(--sg-surface); border-bottom: 1px solid var(--sg-line); box-shadow: none; padding: 0 23px 0 0; display: flex; align-items: center; position: fixed; left: 0; right: 0; top: 0; z-index: 1035; }
+.signal-app .signal-header .header-left.signal-brand { position: relative; float: none; display: flex; align-items: center; flex: 0 0 var(--sg-sidebar-width); width: var(--sg-sidebar-width); height: 100%; padding: 0 19px; background: var(--sg-navy); border-right: 1px solid rgba(255,255,255,.07); }
+.signal-app .signal-brand-link { display: inline-flex; align-items: center; gap: 11px; color: #fff; width: 100%; text-decoration: none; }
+.signal-app .signal-brand-link:hover { color: #fff; text-decoration: none; }
+.signal-brand-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 39px; height: 39px; border-radius: 12px; background: linear-gradient(145deg,#4777ff,#1f4bdd); color: white; font-size: 19px; box-shadow: 0 5px 12px rgba(24,70,196,.35); }
+.signal-brand-text { font-size: 21px; font-weight: 800; line-height: 1; letter-spacing: -.9px; white-space: nowrap; }
+.signal-brand-sub { display: block; padding-top: 6px; font-size: 8px; letter-spacing: 2px; opacity: .58; font-weight: 750; }
+.signal-app #toggle_btn.signal-nav-toggle { display: inline-flex; align-items: center; justify-content: center; position: relative; inset: auto; float: none; color: #51617d; background: var(--sg-base); height: 36px; width: 36px; border-radius: 10px; margin: 0 22px; font-size: 15px; transition: background .15s,color .15s; }
+.signal-app #toggle_btn:hover { color: var(--sg-blue); background: var(--sg-blue-soft); }
+.signal-topbar-context { display: flex; align-items: center; gap: 11px; min-width: 0; font-weight: 650; }
+.signal-location-label { font-size: 13px; color: #8390a3; font-weight: 500; white-space: nowrap; }
+.signal-location-slash { color: #b6c0cf; font-weight: 400; }
+.signal-location-page { font-size: 14px; color: var(--sg-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.signal-app .signal-header .signal-user-menu { margin: 0 0 0 auto; height: auto; align-items: center; display: flex; float: none !important; padding: 0; }
+.signal-app .signal-header .signal-user-menu li { height: auto; }
+.signal-app .signal-header .signal-account-toggle { background: none; display: flex; align-items: center; gap: 10px; height: 55px; padding: 3px 5px 3px 10px; color: var(--sg-ink); border-radius: 12px; }
+.signal-app .signal-header .signal-account-toggle:hover { background: #f5f7fc; }
+.signal-app .signal-header .signal-account-toggle:after { display: none; }
+.signal-avatar { background: #e5ecff; color: var(--sg-blue-deep); border-radius: 12px; width: 38px; height: 38px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 17px; }
+.signal-account-details { display: flex; flex-direction: column; text-align: left; line-height: 1.25; max-width: 145px; }
+.signal-account-details strong { font-size: 13px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
+.signal-account-details small { color: var(--sg-muted); font-size: 11px; padding-top: 2px; }
+.signal-account-chevron { color: #8b9ab0; margin-left: 5px; }
+.signal-app .signal-account-dropdown { border: 1px solid var(--sg-line); border-radius: 12px; box-shadow: 0 14px 40px rgba(26,43,78,.14); padding: 8px; min-width: 220px; }
+.signal-dropdown-label { color: var(--sg-muted); padding: 10px 12px 12px; margin-bottom: 5px; border-bottom: 1px solid var(--sg-line); font-size: 12px; }
+.signal-dropdown-label strong { color: var(--sg-ink); }
+.signal-app .signal-account-dropdown .dropdown-item { border-radius: 7px; padding: 10px 12px; color: var(--sg-ink); }
+.signal-app .signal-account-dropdown .dropdown-item:hover { background: var(--sg-blue-soft); color: var(--sg-blue); }
+.signal-app .signal-account-dropdown .dropdown-item i { color: var(--sg-muted); width: 22px; }
+.signal-app .signal-mobile-toggle { display: none; }
+/* Sidebar. The selectors override vendor theme while keeping #sidebar/#sidebar-menu for original JS. */
+.signal-app .sidebar.signal-sidebar { top: var(--sg-topbar-height); width: var(--sg-sidebar-width); bottom: 0; background: var(--sg-navy); border: 0; box-shadow: none; z-index: 1034; transition: width .24s ease, left .24s ease; }
+.signal-app .sidebar-inner.signal-sidebar-scroll { background: var(--sg-navy); height: 100%; }
+.signal-sidebar-menu { padding: 0 0 12px; }
+.signal-sidebar-intro { display: flex; flex-direction: column; padding: 25px 24px 5px; }
+.signal-sidebar-kicker { font-size: 10px; font-weight: 750; letter-spacing: 2px; color: rgba(255,255,255,.42); }
+.signal-sidebar-description { padding-top: 6px; font-size: 12px; color: rgba(255,255,255,.78); }
+.signal-app .signal-sidebar .sidebar-menu ul { padding: 0 12px; margin: 0; }
+.signal-app .signal-sidebar .sidebar-menu ul li { list-style: none; }
+.signal-app .signal-sidebar .sidebar-menu ul li.menu-title { padding: 26px 12px 10px; margin: 0; font-size: 10px; line-height: 1.1; letter-spacing: 1.5px; color: #7386a5; font-weight: 800; text-transform: uppercase; }
+.signal-app .signal-sidebar .sidebar-menu ul li a { display: flex; align-items: center; min-height: 43px; gap: 12px; margin: 2px 0; padding: 10px 12px; font-size: 13px; font-weight: 580; line-height: 1.45; color: #b9c5d7; border-radius: 9px; white-space: normal; transition: background .15s, color .15s; border-left: 0; }
+.signal-app .signal-sidebar .sidebar-menu ul li a:hover { background: rgba(255,255,255,.075); color: #fff; }
+.signal-app .signal-sidebar .sidebar-menu ul li a.active { color: #fff; background: #2b4785; box-shadow: inset 3px 0 0 #7299ff; font-weight: 680; }
+.signal-app .signal-sidebar .sidebar-menu ul li a i { display: inline-flex; justify-content: center; align-items: center; font-size: 15px; color: #96a9c7; width: 20px; min-width: 20px; margin: 0; }
+.signal-app .signal-sidebar .sidebar-menu ul li a.active i { color: #c4d5ff; }
+.signal-app .signal-sidebar .sidebar-menu ul li a span { flex: 1; padding: 0; }
+.signal-sidebar-footer { margin: 30px 14px 20px; display: flex; align-items: center; gap: 10px; padding: 13px 12px; border: 1px solid rgba(255,255,255,.10); border-radius: 12px; color: #d0dbed; font-size: 11px; font-weight: 700; }
+.signal-sidebar-footer-icon { background: rgba(92,132,219,.19); color: #a7c0ff; border-radius: 8px; width: 33px; height: 33px; display: flex; align-items: center; justify-content: center; }
+.signal-sidebar-footer small { display: block; color: #7186a7; font-size: 10px; font-weight: 500; }
+/* Main content */
+.signal-app .page-wrapper.signal-page-wrapper { background: var(--sg-base); margin-left: var(--sg-sidebar-width); padding-top: var(--sg-topbar-height); min-height: 100vh; position: relative; transition: margin-left .24s ease; }
+.signal-app .signal-page-content { padding: 26px 29px 35px; max-width: 1800px; margin: 0 auto; }
+.signal-page-context { display: flex; align-items: center; gap: 9px; margin: 2px 0 18px; font-size: 11px; font-weight: 650; letter-spacing: .025em; }
+.signal-page-eyebrow { color: var(--sg-blue); text-transform: uppercase; letter-spacing: 1.2px; font-size: 10px; font-weight: 800; }
+.signal-page-context-dot { color: #adb7c6; }
+.signal-page-current { color: #7c8aa0; }
+.signal-app .signal-view-surface { min-width: 0; width: 100%; }
+.signal-app .signal-view-surface h1 { color: var(--sg-ink); font-size: clamp(25px, 2vw, 32px); font-weight: 780; letter-spacing: -.8px; line-height: 1.25; margin-bottom: 20px; }
+.signal-app .signal-view-surface h2 { color: var(--sg-ink); font-size: 23px; font-weight: 720; letter-spacing: -.4px; }
+.signal-app .signal-view-surface h3 { color: var(--sg-ink); font-size: 19px; font-weight: 700; }
+.signal-app .signal-view-surface h4 { color: var(--sg-ink); font-size: 17px; font-weight: 700; }
+.signal-app .signal-view-surface h5 { color: var(--sg-ink); font-size: 15px; font-weight: 700; }
+.signal-app .signal-view-surface hr { margin: 20px 0 25px; border-top: 1px solid var(--sg-line); }
+.signal-app .signal-view-surface p { line-height: 1.6; }
+.signal-app .signal-view-surface .text-muted { color: var(--sg-muted) !important; }
+.signal-app .signal-view-surface .text-primary { color: var(--sg-blue) !important; }
+.signal-footer { display: flex; justify-content: space-between; gap: 16px; padding: 16px 29px 22px; color: #96a2b4; font-size: 11px; border-top: 1px solid var(--sg-line); background: transparent; }
+/* Forms and components */
+.signal-app .signal-view-surface .form-control,
+.signal-app .signal-view-surface .custom-select,
+.signal-app .signal-view-surface select.form-control { background-color: #fff; border: 1px solid #d5deea; border-radius: 9px; box-shadow: none; font-size: 13px; min-height: 41px; color: var(--sg-ink); padding: 9px 12px; max-width: 100%; transition: border-color .16s, box-shadow .16s; }
+.signal-app .signal-view-surface .form-control:focus, .signal-app .signal-view-surface select:focus, .signal-app .signal-view-surface textarea:focus { border-color: #7392ff; box-shadow: 0 0 0 3px rgba(51,95,244,.12); outline: none; }
+.signal-app .signal-view-surface .form-control::placeholder { color: #9aa7bb; }
+.signal-app .signal-view-surface .form-group { margin-bottom: 18px; }
+.signal-app .signal-view-surface label, .signal-app .signal-view-surface .control-label, .signal-app .signal-view-surface .form-label { display: inline-block; font-size: 12px; font-weight: 700; color: #3c4b63; margin-bottom: 7px; }
+.signal-app .signal-view-surface input[type="checkbox"],.signal-app .signal-view-surface input[type="radio"] { accent-color: var(--sg-blue); }
+.signal-app .signal-view-surface input[type="file"] { max-width: 100%; border-radius: 9px; }
+.signal-app .signal-view-surface textarea.form-control { min-height: 90px; resize: vertical; }
+.signal-app .signal-view-surface .btn { border-radius: 8px; min-height: 37px; padding: 8px 14px; font-size: 12px; font-weight: 710; letter-spacing: .01em; box-shadow: none; transition: background .16s,border-color .16s,color .16s; white-space: normal; line-height: 1.4; }
+.signal-app .signal-view-surface .btn.btn-sm { min-height: 32px; padding: 6px 11px; font-size: 11.5px; }
+.signal-app .signal-view-surface .btn-primary { color: #fff; background: var(--sg-blue); border-color: var(--sg-blue); }
+.signal-app .signal-view-surface .btn-primary:hover { background: var(--sg-blue-deep); border-color: var(--sg-blue-deep); }
+.signal-app .signal-view-surface .btn-secondary { background: #edf1f8; color: #53637b; border-color: #e2e8f2; }
+.signal-app .signal-view-surface .btn-secondary:hover { background: #e2e9f3; color: #263b5a; }
+.signal-app .signal-view-surface .btn-info { color: var(--sg-blue-deep); background: var(--sg-blue-soft); border-color: #d5e0ff; }
+.signal-app .signal-view-surface .btn-info:hover { background: #d8e4ff; color: var(--sg-blue-deep); }
+.signal-app .signal-view-surface .btn-success { background: #e1f7ee; border-color: #bcebd8; color: #117653; }
+.signal-app .signal-view-surface .btn-success:hover { background: #c7efdf; border-color: #91ddc0; color: #0d5d42; }
+.signal-app .signal-view-surface .btn-danger { background: #fff0f2; border-color: #ffdae0; color: #bc3450; }
+.signal-app .signal-view-surface .btn-danger:hover { background: #ffe0e5; border-color: #fcc0ca; color: #aa2340; }
+.signal-app .signal-view-surface .btn-warning { color: #9c660c; border-color: #fae4b7; background: #fff6e4; }
+.signal-app .signal-view-surface .btn-warning:hover { background: #ffedc9; color: #855600; }
+.signal-app .signal-view-surface .btn-outline-secondary { border-color: #d8e0eb; color: #576982; background: white; }
+.signal-app .signal-view-surface .btn-outline-secondary:hover { border-color: #b7c7df; background: #f6f8fc; color: var(--sg-ink); }
+.signal-app .signal-view-surface .btn-outline-primary { border-color: #bdd0ff; color: var(--sg-blue-deep); }
+.signal-app .signal-view-surface .btn-outline-primary:hover { background: var(--sg-blue); color: white; }
+.signal-app .signal-view-surface .signal-create-link { display: inline-flex; align-items: center; background: var(--sg-blue); border: 1px solid var(--sg-blue); color: white !important; border-radius: 8px; font-size: 12px; font-weight: 750; padding: 10px 16px; margin: 3px 0 16px; }
+.signal-app .signal-view-surface .signal-create-link:hover { background: var(--sg-blue-deep); text-decoration: none; }
+.signal-app .signal-view-surface .signal-create-link:before { content: "+"; display: inline-block; font-size: 18px; font-weight: 400; line-height: 10px; padding-right: 7px; }
+.signal-app .signal-view-surface .signal-heading-row { gap: 14px; margin-bottom: 14px !important; }
+.signal-app .signal-view-surface .signal-heading-row h1 { margin-bottom: 0; }
+.signal-app .signal-view-surface .row > [class*="col-md-"] { min-width: 0; }
+.signal-app .signal-view-surface .alert { border-radius: 11px; padding: 13px 16px; font-size: 13px; border: 1px solid transparent; box-shadow: none; }
+.signal-app .signal-view-surface .alert-info { color: #2b5c8c; border-color: #d6e9fc; background: #eaf5ff; }
+.signal-app .signal-view-surface .alert-success { color: #146b50; border-color: #bde6d5; background: #e9f8f1; }
+.signal-app .signal-view-surface .alert-danger { color: #a8374d; border-color: #f5cbd5; background: #fff1f3; }
+.signal-app .signal-view-surface .alert-warning { color: #916008; border-color: #f9dfa7; background: #fff8e8; }
+.signal-app .signal-view-surface .badge { padding: 5px 9px; font-size: 11px; font-weight: 750; border-radius: 50px; }
+/* Soft surfaces for standard scaffolded CRUD forms. No DOM/submit changes. */
+.signal-app .signal-view-surface > .row, .signal-app .signal-view-surface > div.row, .signal-app .signal-view-surface .signal-details-form { max-width: 100%; }
+.signal-app .signal-view-surface > .row > .col-md-4:has(form),
+.signal-app .signal-view-surface > .row > .col-md-6:has(form),
+.signal-app .signal-view-surface > .row > .col-md-8:has(form),
+.signal-app .signal-view-surface > .row > .col-md-10:has(form),
+.signal-app .signal-view-surface > .row > .col-md-12:has(form) { background: #fff; border: 1px solid var(--sg-line); border-radius: var(--sg-radius); padding: 25px 26px; box-shadow: var(--sg-shadow); flex: 0 0 auto; max-width: min(100%, 820px); width: 100%; }
+.signal-app .signal-view-surface form.signal-form { width: 100%; }
+.signal-app .signal-view-surface .dl-horizontal, .signal-app .signal-view-surface dl.row { background: #fff; border: 1px solid var(--sg-line); border-radius: var(--sg-radius); padding: 20px 22px; max-width: 920px; margin-bottom: 20px; }
+.signal-app .signal-view-surface dl dt { color: #4b5a73; font-weight: 730; padding-top: 9px; padding-bottom: 9px; }
+.signal-app .signal-view-surface dl dd { color: var(--sg-ink); padding-top: 9px; padding-bottom: 9px; border-bottom: 1px solid #f1f4f9; overflow-wrap: anywhere; }
+/* Table family: this includes table wrappers created by DataTables after AJAX. */
+.signal-app .signal-view-surface .table { border: 1px solid var(--sg-line); background: #fff; color: var(--sg-ink); width: 100%; margin: 14px 0 21px; border-collapse: separate; border-spacing: 0; border-radius: 11px; }
+.signal-app .signal-view-surface .table thead th { color: #5b6b84; background: #f3f6fc; border-color: #e8edf5; padding: 13px 13px; font-size: 11px; font-weight: 790; text-transform: uppercase; letter-spacing: .05em; vertical-align: middle; white-space: nowrap; }
+.signal-app .signal-view-surface .table tbody td { border-color: #ebeff6; padding: 12px 13px; font-size: 12.5px; font-weight: 460; vertical-align: middle; }
+.signal-app .signal-view-surface .table tbody tr:nth-child(even) { background-color: #fcfdff; }
+.signal-app .signal-view-surface .table tbody tr:hover { background-color: #f5f8ff; }
+.signal-app .signal-view-surface .table a:not(.btn) { font-weight: 650; }
+.signal-app .signal-view-surface .table-responsive { border: 1px solid var(--sg-line); border-radius: 12px; background: #fff; box-shadow: var(--sg-shadow); padding: 0 0 4px; overflow: auto; }
+.signal-app .signal-view-surface .table-responsive .table { margin: 0; border: 0; box-shadow: none; }
+.signal-app .signal-view-surface .table-responsive table { border-radius: 0; }
+.signal-app .signal-view-surface .dataTables_wrapper { background: #fff; border: 1px solid var(--sg-line); border-radius: 13px; padding: 19px 16px 15px; margin: 14px 0 24px; box-shadow: var(--sg-shadow); min-width: 0; }
+.signal-app .signal-view-surface .dataTables_wrapper .table { margin-top: 10px !important; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_length,
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter { margin-bottom: 14px; font-size: 12px; color: var(--sg-muted); font-weight: 600; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter input,
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_length select { display: inline-block; width: auto; height: 36px; padding: 5px 12px; border: 1px solid #d5deea; background: #fff; border-radius: 8px; color: var(--sg-ink); font-size: 12px; min-height: 36px; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter input { min-width: 210px; margin-left: 9px; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_info { font-size: 12px; color: var(--sg-muted); padding: 10px 0; }
+.signal-app .signal-view-surface .dataTables_wrapper .dataTables_paginate { padding: 8px 0; font-size: 12px; }
+.signal-app .signal-view-surface .dataTables_wrapper .paginate_button { border: 1px solid transparent; border-radius: 7px; padding: 6px 10px; }
+.signal-app .signal-view-surface .dataTables_wrapper .paginate_button.current { background: var(--sg-blue-soft); border-color: #d2ddff; color: var(--sg-blue-deep) !important; }
+/* Cards, dropdowns, modals, and tabs retain Bootstrap behavior */
+.signal-app .signal-view-surface .card, .signal-app .signal-view-surface .page-card { background: #fff; border: 1px solid var(--sg-line); border-radius: var(--sg-radius); box-shadow: var(--sg-shadow); overflow: visible; }
+.signal-app .signal-view-surface .card-header { background: #fafcff; border-bottom: 1px solid var(--sg-line); font-weight: 700; padding: 15px 20px; border-radius: var(--sg-radius) var(--sg-radius) 0 0; }
+.signal-app .signal-view-surface .card-body { padding: 21px; }
+.signal-app .modal-content { border: 1px solid var(--sg-line); border-radius: 14px; box-shadow: 0 25px 70px rgba(20,37,66,.20); }
+.signal-app .modal-header { background: #f9fbff; border-radius: 14px 14px 0 0; border-bottom: 1px solid var(--sg-line); padding: 17px 21px; }
+.signal-app .modal-title { color: var(--sg-ink); font-size: 17px; font-weight: 750; }
+.signal-app .modal-body { padding: 21px; }
+.signal-app .modal-footer { padding: 14px 21px; border-color: var(--sg-line); }
+.signal-app .dropdown-menu { border-radius: 10px; }
+.signal-app .signal-view-surface .nav-tabs { border-bottom: 1px solid var(--sg-line); gap: 6px; }
+.signal-app .signal-view-surface .nav-tabs .nav-link { border: none; border-bottom: 2px solid transparent; color: var(--sg-muted); font-size: 13px; font-weight: 720; padding: 10px 15px; }
+.signal-app .signal-view-surface .nav-tabs .nav-link.active { background: transparent; color: var(--sg-blue); border-color: var(--sg-blue); }
+.signal-app .signal-view-surface .select2-container--default .select2-selection--single { height: 41px; border-color: #d5deea; border-radius: 9px; }
+/* Handle utility names from pages which loaded Bootstrap 5 without replacing Bootstrap 4 scripts. */
+.signal-app .signal-view-surface .me-1 { margin-right: .25rem !important; }
+.signal-app .signal-view-surface .me-2 { margin-right: .5rem !important; }
+.signal-app .signal-view-surface .ms-1 { margin-left: .25rem !important; }
+.signal-app .signal-view-surface .ms-2 { margin-left: .5rem !important; }
+.signal-app .signal-view-surface .fw-semibold { font-weight: 650 !important; }
+.signal-app .signal-view-surface .gap-1 { gap: .25rem !important; }
+.signal-app .signal-view-surface .gap-2 { gap: .5rem !important; }
+.signal-app .signal-view-surface .gap-3 { gap: 1rem !important; }
+.signal-app .signal-view-surface .g-3 { margin-right: -.5rem; margin-left: -.5rem; }
+.signal-app .signal-view-surface .g-3 > * { padding-right: .5rem; padding-left: .5rem; }
+.signal-app .signal-view-surface .btn-close { display: inline-block; width: 24px; height: 24px; cursor: pointer; border: 0; background: transparent; color: var(--sg-muted); }
+.signal-app .signal-view-surface .btn-close:before { content: '×'; font-size: 21px; line-height: 19px; }
+.signal-app .signal-view-surface .rounded { border-radius: 8px !important; }
+/* Sidebar collapse JS retains body.mini-sidebar, body.expand-menu. */
+@media (min-width: 992px) {
+    body.signal-app.mini-sidebar .signal-sidebar { width: 76px; }
+    body.signal-app.mini-sidebar .signal-page-wrapper { margin-left: 76px; }
+    body.signal-app.mini-sidebar .signal-header .signal-brand { flex-basis: 76px; width: 76px; padding-left: 17px; }
+    body.signal-app.mini-sidebar .signal-brand-text { display: none; }
+    body.signal-app.mini-sidebar .signal-sidebar .signal-sidebar-intro,
+    body.signal-app.mini-sidebar .signal-sidebar .sidebar-menu .menu-title,
+    body.signal-app.mini-sidebar .signal-sidebar .sidebar-menu ul li a span,
+    body.signal-app.mini-sidebar .signal-sidebar .signal-sidebar-footer { display: none; }
+    body.signal-app.mini-sidebar .signal-sidebar .sidebar-menu ul { padding: 0 9px; }
+    body.signal-app.mini-sidebar .signal-sidebar .sidebar-menu ul li a { justify-content: center; padding: 11px 6px; }
+    body.signal-app.mini-sidebar.expand-menu .signal-sidebar { width: var(--sg-sidebar-width); }
+    body.signal-app.mini-sidebar.expand-menu .signal-sidebar .signal-sidebar-intro { display: flex; }
+    body.signal-app.mini-sidebar.expand-menu .signal-sidebar .sidebar-menu .menu-title { display: block; }
+    body.signal-app.mini-sidebar.expand-menu .signal-sidebar .sidebar-menu ul li a span { display: inline; }
+    body.signal-app.mini-sidebar.expand-menu .signal-sidebar .sidebar-menu ul li a { justify-content: flex-start; padding: 10px 12px; }
+    body.signal-app.mini-sidebar.expand-menu .signal-sidebar .signal-sidebar-footer { display: flex; }
+}
+@media (max-width: 991.98px) {
+    :root { --sg-topbar-height: 64px; }
+    .signal-app .signal-header .header-left.signal-brand { flex: 0 0 210px; width: 210px; }
+    .signal-app #toggle_btn.signal-nav-toggle { display: none; }
+    .signal-app .signal-mobile-toggle { display: inline-flex; align-items: center; justify-content: center; order: 1; float: none !important; margin: 0 0 0 15px; font-size: 20px; width: 40px; height: 40px; position: relative; left: auto; top: auto; }
+    .signal-app .signal-topbar-context { order: 2; margin-left: 10px; }
+    .signal-app .signal-user-menu { order: 3; }
+    .signal-app .sidebar.signal-sidebar { left: calc(-1 * var(--sg-sidebar-width)); top: var(--sg-topbar-height); }
+    .signal-app .sidebar.signal-sidebar.opened { left: 0; }
+    .signal-app .page-wrapper.signal-page-wrapper { margin-left: 0; }
+    .signal-app .signal-page-content { padding: 21px 20px 32px; }
+    .signal-app .sidebar-overlay.opened { z-index: 1033; }
+}
+@media (max-width: 650px) {
+    .signal-app .signal-header .header-left.signal-brand { flex: 0 0 65px; width: 65px; padding: 0 13px; }
+    .signal-app .signal-brand-text { display: none; }
+    .signal-app .signal-header { padding-right: 10px; }
+    .signal-app .signal-header .signal-account-details, .signal-app .signal-account-chevron, .signal-app .signal-location-label, .signal-app .signal-location-slash { display: none; }
+    .signal-app .signal-location-page { max-width: 145px; font-size: 12px; }
+    .signal-app .signal-page-content { padding: 18px 14px 26px; }
+    .signal-app .signal-view-surface h1 { font-size: 24px; }
+    .signal-app .signal-view-surface .signal-heading-row { align-items: flex-start !important; flex-direction: column; }
+    .signal-app .signal-view-surface .dataTables_wrapper { padding: 12px 8px; }
+    .signal-app .signal-view-surface .dataTables_wrapper .dataTables_filter input { min-width: 140px; }
+    .signal-app .signal-view-surface > .row > .col-md-4:has(form),
+    .signal-app .signal-view-surface > .row > .col-md-6:has(form),
+    .signal-app .signal-view-surface > .row > .col-md-8:has(form),
+    .signal-app .signal-view-surface > .row > .col-md-10:has(form),
+    .signal-app .signal-view-surface > .row > .col-md-12:has(form) { padding: 17px; }
+    .signal-footer { padding: 12px 15px; }
+    .signal-footer span:last-child { display: none; }
+}
+/* Non-login guests (error endpoints may use the shared layout without a session). */
+.signal-app.signal-guest .signal-page-wrapper { margin-left: 0; padding-top: 0; }

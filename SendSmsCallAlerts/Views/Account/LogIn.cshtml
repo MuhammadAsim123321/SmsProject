@@ -1,112 +1,66 @@
-﻿@model SendSmsCallAlerts.Models.LogInViewModel
-
-
+@model SendSmsCallAlerts.Models.LogInViewModel
 @{
     Layout = null;
 }
-
 <!DOCTYPE html>
-
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width" />
-    <title>Software</title>
-    
-    @*    <link rel="icon" href="~/images/faviconicon.jpg" sizes="32x32" />
-    <link rel="icon" href="~/images/faviconicon.jpg" sizes="192x192" />
-    <link rel="apple-touch-icon" href="~/images/faviconicon.jpg" />
-    <meta name="msapplication-TileImage" content="https://saddlebrookecommerce.com/wp-content/uploads/2023/04/ECOM-CHANGES-V2_03.jpg" />
-*@
-
-    <style>
-            .form-group {
-                margin-bottom: 15px;
-            }
-
-            label {
-                display: block;
-                font-weight: bold;
-            }
-
-            input[type="text"],
-            input[type="password"] {
-                width: 100%;
-                padding: 8px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-            }
-
-            button[type="submit"] {
-                padding: 10px 20px;
-                background-color: #007bff;
-                border: none;
-                color: #fff;
-                border-radius: 4px;
-                cursor: pointer;
-            }
-
-                button[type="submit"]:hover {
-                    background-color: #0056b3;
-                }
-
-            .form-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                height: 100vh;
-            }
-
-            .alert.alert-danger {
-                color: #721c24; /* Text color */
-                background-color: #f8d7da; /* Background color */
-                border-color: #f5c6cb; /* Border color */
-                padding: 1rem; /* Padding around the content */
-                border: 1px solid transparent; /* Border style */
-                border-radius: 0.25rem; /* Rounded corners */
-            }
-
-                .alert.alert-danger h4 {
-                    margin-top: 0; /* Remove margin from heading */
-                }
-
-    </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in · SendSmsCallAlerts</title>
+    <link rel="stylesheet" href="~/assets/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/css/signal-ui.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-ui-overrides.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-ui-polish.css" asp-append-version="true" />
 </head>
-<body>
-
-
-
-    @using (Html.BeginForm("Login", "Account", FormMethod.Post))
-    {
-
-        @Html.AntiForgeryToken()
-        <div class="form-container">
-            @if (ViewBag.ErrMsg != null)
-            {
-                <div class="alert alert-danger">
-                    <b>@ViewBag.ErrMsg</b>
+<body class="signal-login-body">
+    <main class="signal-login-shell">
+        <section class="signal-login-aside" aria-label="Product overview">
+            <div class="signal-login-product"><span class="signal-login-product-icon"><i class="fa fa-commenting-o" aria-hidden="true"></i></span><span>SMS Hub <small>CONTROL CENTER</small></span></div>
+            <div class="signal-login-hero">
+                <span class="signal-login-overline">MESSAGE OPERATIONS · SIMPLIFIED</span>
+                <h1>All your messages.<br /><span>One clear workspace.</span></h1>
+                <p>Manage incoming conversations, scheduled messages, and call routing from a single connected dashboard.</p>
+                <div class="signal-login-highlights" aria-hidden="true">
+                    <span><i class="fa fa-comment-o"></i> Conversations</span>
+                    <span><i class="fa fa-clock-o"></i> Scheduling</span>
+                    <span><i class="fa fa-random"></i> Call routing</span>
                 </div>
-            }
-
-            @if (ViewBag.ReturnUrl != null)
-            {
-                <input type="hidden" name="storedurl" value="@ViewBag.ReturnUrl" />
-            }
-            <h2>Login</h2>
-            <div class="form-group">
-                @Html.LabelFor(m => m.Username)
-                @Html.TextBoxFor(m => m.Username, new { @class = "form-control" })
             </div>
-
-            <div class="form-group">
-                @Html.LabelFor(m => m.Password)
-                @Html.PasswordFor(m => m.Password, new { @class = "form-control" })
+            <div class="signal-login-aside-footer">SendSmsCallAlerts · Secure team access</div>
+        </section>
+        <section class="signal-login-main" aria-label="Sign in">
+            <div class="signal-login-card">
+                <div class="signal-login-mobile-brand"><span class="signal-login-product-icon"><i class="fa fa-commenting-o"></i></span><strong>SMS Hub</strong></div>
+                <span class="signal-login-tag">WELCOME BACK</span>
+                <h2>Sign in to your account</h2>
+                <p class="signal-login-subtitle">Enter your credentials to access your dashboard.</p>
+                @using (Html.BeginForm("Login", "Account", FormMethod.Post, new { @class = "signal-login-form" }))
+                {
+                    @Html.AntiForgeryToken()
+                    @if (ViewBag.ErrMsg != null)
+                    {
+                        <div class="signal-login-error" role="alert"><i class="fa fa-exclamation-circle" aria-hidden="true"></i><span>@ViewBag.ErrMsg</span></div>
+                    }
+                    @if (ViewBag.ReturnUrl != null)
+                    {
+                        <input type="hidden" name="storedurl" value="@ViewBag.ReturnUrl" />
+                    }
+                    <div class="signal-login-field">
+                        @Html.LabelFor(m => m.Username)
+                        <div class="signal-login-input"><i class="fa fa-user-o" aria-hidden="true"></i>@Html.TextBoxFor(m => m.Username, new { @class = "signal-login-control", autocomplete = "username", placeholder = "Enter your username" })</div>
+                        @Html.ValidationMessageFor(m => m.Username, "", new { @class = "signal-login-validation" })
+                    </div>
+                    <div class="signal-login-field">
+                        @Html.LabelFor(m => m.Password)
+                        <div class="signal-login-input"><i class="fa fa-lock" aria-hidden="true"></i>@Html.PasswordFor(m => m.Password, new { @class = "signal-login-control", autocomplete = "current-password", placeholder = "Enter your password" })</div>
+                        @Html.ValidationMessageFor(m => m.Password, "", new { @class = "signal-login-validation" })
+                    </div>
+                    <button class="signal-login-submit" type="submit">Sign in <i class="fa fa-arrow-right" aria-hidden="true"></i></button>
+                }
+                <div class="signal-login-secure"><i class="fa fa-lock" aria-hidden="true"></i> Access restricted to authorized team members</div>
             </div>
-
-            <button type="submit" class="btn btn-primary">Login</button>
-        </div>
-    }
-
-
+        </section>
+    </main>
 </body>
 </html>

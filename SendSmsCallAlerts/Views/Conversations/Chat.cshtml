@@ -1,156 +1,64 @@
-﻿@model List<SendSmsCallAlerts.Models.SmsDetail>
-
+@model List<SendSmsCallAlerts.Models.SmsDetail>
 @{
-    ViewData["Title"] = "Chat";
+    ViewData["Title"] = "Conversation";
 }
 
-@*<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-<link rel="stylesheet" type="text/css" href="~/assets/css/bootstrap.min.css" />
-<link rel="stylesheet" type="text/css" href="~/assets/css/font-awesome.min.css" />
-<link rel="stylesheet" type="text/css" href="~/assets/css/style.css" />*@
-
-
-<h1>Chat</h1>
-
-@if (TempData["StMsg"] != null)
-{
-    <div class="alert alert-success">
-        <b>@TempData["StMsg"]</b>
-    </div>
-}
-
-@if (TempData["ErMsg"] != null)
-{
-    <div class="alert alert-danger">
-        <b>@TempData["ErMsg"]</b>
-    </div>
-}
-
-<div class="chat-main-row">
-    <div class="chat-main-wrapper">
-        <div class="col-lg-9 message-view chat-view">
-            <div class="chat-window">
-                <div class="fixed-header">
-                    <div class="navbar">
-                        <div class="user-details mr-auto">
-                            @*  <div class="float-left user-img m-r-10">
-                            <a href="profile.html" title="Jennifer Robinson"><img src="~/assets/img/patient-thumb-02.jpg" alt="" class="w-40 rounded-circle"></a>
-                            </div> *@
-                            <div class="user-info float-left">
-                                @*<a href="profile.html"><span class="font-bold">Jennifer Robinson</span></a>*@
-                                <span class="font-bold">@ViewBag.CustomerNumber</span>
-                                @*<span class="last-seen">Last seen today at 7:50 AM</span>*@
-                            </div>
-                        </div>
-                        @* <div class="search-box">
-                        <div class="input-group input-group-sm">
-                        <input type="text" class="form-control" placeholder="Search">
-                        <span class="input-group-append">
-                        <button class="btn" type="button"><i class="fa fa-search"></i></button>
-                        </span>
-                        </div>
-                        </div>
-                        <ul class="nav custom-menu">
-                        <li class="nav-item">
-                        <a href="#chat_sidebar" class="nav-link task-chat profile-rightbar float-right" id="task_chat"><i class="fa fa-user"></i></a>
-                        </li>
-                        <li class="nav-item">
-                        <a class="nav-link" href="voice-call.html"><i class="fa fa-phone"></i></a>
-                        </li>
-                        <li class="nav-item">
-                        <a class="nav-link" href="video-call.html"><i class="fa fa-video-camera"></i></a>
-                        </li>
-                        <li class="nav-item dropdown dropdown-action">
-                        <a href="" class="nav-link dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-cog"></i></a>
-                        <div class="dropdown-menu dropdown-menu-right">
-                        <a class="dropdown-item" href="javascript:void(0)">Delete Conversations</a>
-                        <a class="dropdown-item" href="javascript:void(0)">Settings</a>
-                        </div>
-                        </li>
-                        </ul>*@
-                    </div>
-                </div>
-                <div class="chat-contents">
-                    <div class="chat-content-wrap">
-                        <div class="chat-wrap-inner">
-                            <div class="chat-box">
-                                <div class="chats">
-                                    @foreach (var rec in Model)
-                                    {
-                                        
-                                        if (rec.fromNum == @ViewBag.CustomerNumber)
-                                        {
-                                            <div class="chat chat-left">
-                                                <div class="chat-avatar">
-                                                    <a href="profile.html" class="avatar">
-                                                        <img alt="Jennifer Robinson" src="~/assets/img/patient-thumb-02.jpg" class="img-fluid rounded-circle">
-                                                    </a>
-                                                </div>
-                                                <div class="chat-body">
-                                                    <div class="chat-bubble">
-                                                        <div class="chat-content">
-                                                            <p>@rec.smsBody</p>
-                                                            <span class="chat-time">@rec.createdOn.ToString("MM-dd-yy HH:mm")</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="chat chat-right">
-                                                <div class="chat-body">
-                                                    <div class="chat-bubble">
-                                                        <div class="chat-content">
-                                                            <p>@rec.smsBody</p>
-                                                            <span class="chat-time">@rec.createdOn.ToString("MM-dd-yy HH:mm")</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        }
-                                    }
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <form asp-action="Create" asp-controller="Conversations" method="post">
-                    <input type="hidden" name="toNum" value="@ViewBag.CustomerNumber" />
-                    @*<input type="hidden" name="fromNum" value="@ViewBag.OurNumber" />*@
-                    <div class="chat-footer">
-                        <div class="message-bar">
-
-                            <div class="message-inner">
-                                @*<a class="link attach-icon" href="#" data-toggle="modal" data-target="#drag_files"><img src="~/assets/img/attachment.png" alt=""></a>*@
-                                <div class="message-area">
-                                    <div class="input-group">
-
-                                        <textarea class="form-control" name="smsBody" placeholder="Type message..."></textarea>
-                                        <span class="input-group-append">
-                                            <button class="btn btn-primary" type="submit"><i class="fa fa-send"></i></button>
-                                        </span>
-
-                                    </div>
-                                </div>
-                            </div>
-
-
-                        </div>
-                    </div>
-                </form>
-
-            </div>
+<div class="signal-conversation-page">
+    <div class="signal-conversation-heading">
+        <div>
+            <span class="signal-conversation-eyebrow">MESSAGE THREAD</span>
+            <h1>Conversation</h1>
+            <p>Review the thread and send a reply to <strong>@ViewBag.CustomerNumber</strong>.</p>
         </div>
+        <a asp-controller="Sms" asp-action="IncomingLogs" class="btn btn-outline-secondary btn-sm"><i class="fa fa-arrow-left me-1" aria-hidden="true"></i> Back to inbox</a>
     </div>
+
+    @if (TempData["StMsg"] != null)
+    {
+        <div class="alert alert-success" role="status"><b>@TempData["StMsg"]</b></div>
+    }
+    @if (TempData["ErMsg"] != null)
+    {
+        <div class="alert alert-danger" role="alert"><b>@TempData["ErMsg"]</b></div>
+    }
+
+    <section class="signal-thread" aria-label="SMS conversation">
+        <header class="signal-thread-header">
+            <div class="signal-thread-avatar"><i class="fa fa-user-o" aria-hidden="true"></i></div>
+            <div class="signal-thread-contact"><strong>@ViewBag.CustomerNumber</strong><span>SMS conversation history</span></div>
+            <span class="signal-thread-count">@Model.Count message@(Model.Count == 1 ? "" : "s")</span>
+        </header>
+        <div class="signal-thread-messages">
+            @if (Model.Count == 0)
+            {
+                <div class="signal-thread-empty"><i class="fa fa-comments-o" aria-hidden="true"></i><strong>No messages yet</strong><span>Use the form below to start the conversation.</span></div>
+            }
+            else
+            {
+                @foreach (var rec in Model)
+                {
+                    if (rec.fromNum == ViewBag.CustomerNumber)
+                    {
+                        <div class="signal-thread-line signal-thread-incoming">
+                            <div class="signal-thread-bubble"><p>@rec.smsBody</p><time>@rec.createdOn.ToString("MM-dd-yy HH:mm")</time></div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="signal-thread-line signal-thread-outgoing">
+                            <div class="signal-thread-bubble"><p>@rec.smsBody</p><time>@rec.createdOn.ToString("MM-dd-yy HH:mm")</time></div>
+                        </div>
+                    }
+                }
+            }
+        </div>
+        <form asp-action="Create" asp-controller="Conversations" method="post" class="signal-thread-compose">
+            <input type="hidden" name="toNum" value="@ViewBag.CustomerNumber" />
+            <label for="signal-chat-text">Your reply</label>
+            <div class="signal-thread-input-row">
+                <textarea class="form-control" id="signal-chat-text" name="smsBody" rows="2" placeholder="Type your message..."></textarea>
+                <button class="btn btn-primary" type="submit"><i class="fa fa-paper-plane" aria-hidden="true"></i> Send</button>
+            </div>
+        </form>
+    </section>
 </div>
-
-
-@*
-<script src="~/assets/js/jquery-3.2.1.min.js" ></script>
-<script src="~/assets/js/popper.min.js"></script>
-<script src="~/assets/js/bootstrap.min.js"></script>
-<script src="~/assets/js/jquery.slimscroll.js"></script>
-<script src="~/assets/js/app.js"></script>*@
-

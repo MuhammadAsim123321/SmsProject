@@ -1,15 +1,15 @@
-﻿@{
+@{
     ViewData["Title"] = "OpenAttachments";
 }
 
 @model List<MmsLinks>
 
-<div style="padding:30px;">
+<div class="sg-attachment-page">
     <div class="jumbotron">
         <h2>@ViewBag.SmsBody</h2>
     </div>
 
-    <table border="1">
+    <table class="table table-bordered sg-attachment-table">
         <thead>
             <tr>
                 <th>File</th>
@@ -46,7 +46,7 @@
                         }
                     </td>
                     <td>
-                        <button onclick="downloadAttachment('@attachment.FileName')">Download</button>
+                        <button class="btn btn-primary btn-sm" onclick="downloadAttachment('@attachment.FileName')"><i class="fa fa-download" aria-hidden="true"></i> Download</button>
                     </td>
                 </tr>
             }

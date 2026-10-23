@@ -1,108 +1,36 @@
-﻿@{
+@{
     var role = Context?.Request?.HttpContext?.Session?.GetString("UserRole") ?? "";
     var isAdmin = role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 }
-
-<style>
-    .sidebar-menu ul li a {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-        white-space: normal; /* allow text to wrap */
-        word-break: break-word;
-        line-height: 1.4;
-        padding: 8px 20px;
-    }
-
-        .sidebar-menu ul li a i {
-            margin-top: 2px;
-            flex-shrink: 0;
-            width: 16px;
-            text-align: center;
-        }
-
-        .sidebar-menu ul li a span {
-            flex: 1;
-        }
-</style>
-
-<div class="sidebar" id="sidebar">
-    <div class="sidebar-inner slimscroll">
-        <div id="sidebar-menu" class="sidebar-menu">
+<aside class="sidebar signal-sidebar" id="sidebar" aria-label="Primary navigation">
+    <div class="sidebar-inner slimscroll signal-sidebar-scroll">
+        <div id="sidebar-menu" class="sidebar-menu signal-sidebar-menu">
+            <div class="signal-sidebar-intro"><span class="signal-sidebar-kicker">WORKSPACE</span><span class="signal-sidebar-description">Messaging &amp; automation</span></div>
             <ul>
-                <li class="menu-title">SMS</li>
-
-                <li>
-                    <a asp-controller="Sms" asp-action="IncomingLogs">
-                        <i class="fa fa-inbox"></i> <span>Incoming SMS</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-controller="Conversations" asp-action="SMS">
-                        <i class="fa fa-paper-plane"></i> <span>Send SMS</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-controller="Sms" asp-action="ScheduledJobs">
-                        <i class="fa fa-clock-o"></i> <span>View Scheduled Jobs</span>
-                    </a>
-                </li>
-
-                <li class="menu-title">IVR</li>
-                <li>
-                    <a asp-controller="IvrOptions" asp-action="Index">
-                        <i class="fa fa-list-alt"></i> <span>Main Options</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-controller="OptionInstructions" asp-action="Index">
-                        <i class="fa fa-info-circle"></i> <span>Options Instructions</span>
-                    </a>
-                </li>
-                <li>
-                    <a asp-controller="IntroSms" asp-action="Create">
-                        <i class="fa fa-commenting-o"></i> <span>Intro SMS</span>
-                    </a>
-                </li>
-
-                <li class="menu-title">Management</li>
-                <li>
-                    <a asp-controller="Technicians" asp-action="Index">
-                        <i class="fa fa-wrench"></i> <span>Technicians</span>
-                    </a>
-                </li>
-
+                <li class="menu-title">MESSAGING</li>
+                <li><a class="@(controller == "Sms" && action == "IncomingLogs" ? "active" : "")" asp-controller="Sms" asp-action="IncomingLogs"><i class="fa fa-inbox" aria-hidden="true"></i><span>Incoming SMS</span></a></li>
+                <li><a class="@(controller == "Conversations" ? "active" : "")" asp-controller="Conversations" asp-action="SMS"><i class="fa fa-paper-plane-o" aria-hidden="true"></i><span>Send SMS</span></a></li>
+                <li><a class="@(controller == "Sms" && action == "ScheduledJobs" ? "active" : "")" asp-controller="Sms" asp-action="ScheduledJobs"><i class="fa fa-clock-o" aria-hidden="true"></i><span>Scheduled jobs</span></a></li>
+                <li class="menu-title">CALL FLOWS</li>
+                <li><a class="@(controller == "IvrOptions" ? "active" : "")" asp-controller="IvrOptions" asp-action="Index"><i class="fa fa-sitemap" aria-hidden="true"></i><span>Main options</span></a></li>
+                <li><a class="@(controller == "OptionInstructions" ? "active" : "")" asp-controller="OptionInstructions" asp-action="Index"><i class="fa fa-list-alt" aria-hidden="true"></i><span>Option instructions</span></a></li>
+                <li><a class="@(controller == "IntroSms" ? "active" : "")" asp-controller="IntroSms" asp-action="Create"><i class="fa fa-comment-o" aria-hidden="true"></i><span>Intro SMS</span></a></li>
+                <li class="menu-title">OPERATIONS</li>
+                <li><a class="@(controller == "Technicians" ? "active" : "")" asp-controller="Technicians" asp-action="Index"><i class="fa fa-wrench" aria-hidden="true"></i><span>Technicians</span></a></li>
+                <li><a class="@(controller == "AutomatedNotifications" ? "active" : "")" asp-controller="AutomatedNotifications" asp-action="Index"><i class="fa fa-bell-o" aria-hidden="true"></i><span>Automated SMS</span></a></li>
                 @if (isAdmin)
                 {
-                    <li class="menu-title">Admin</li>
-                    <li>
-                        <a asp-controller="Twilio" asp-action="Index">
-                            <i class="fa fa-phone"></i> <span>Update Twilio Number</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a asp-controller="ForwardNum" asp-action="Index">
-                            <i class="fa fa-random"></i> <span>Forward Numbers</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a asp-controller="Users" asp-action="Index">
-                            <i class="fa fa-users"></i> <span>Users</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a asp-controller="Twilio" asp-action="BuyNumber">
-                            <i class="fa fa-shopping-cart"></i>
-                            <span>Buy &amp; Configure<br>Twilio Number</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a asp-controller="Schedulers" asp-action="Index">
-                            <i class="fa fa-calendar"></i> <span>Schedulers</span>
-                        </a>
-                    </li>
+                    <li class="menu-title">ADMINISTRATION</li>
+                    <li><a class="@(controller == "Twilio" && action != "BuyNumber" ? "active" : "")" asp-controller="Twilio" asp-action="Index"><i class="fa fa-phone" aria-hidden="true"></i><span>Twilio number</span></a></li>
+                    <li><a class="@(controller == "ForwardNum" ? "active" : "")" asp-controller="ForwardNum" asp-action="Index"><i class="fa fa-exchange" aria-hidden="true"></i><span>Forward numbers</span></a></li>
+                    <li><a class="@(controller == "Users" ? "active" : "")" asp-controller="Users" asp-action="Index"><i class="fa fa-users" aria-hidden="true"></i><span>Users</span></a></li>
+                    <li><a class="@(controller == "Twilio" && action == "BuyNumber" ? "active" : "")" asp-controller="Twilio" asp-action="BuyNumber"><i class="fa fa-shopping-cart" aria-hidden="true"></i><span>Buy &amp; configure number</span></a></li>
+                    <li><a class="@(controller == "Schedulers" ? "active" : "")" asp-controller="Schedulers" asp-action="Index"><i class="fa fa-calendar" aria-hidden="true"></i><span>Schedulers</span></a></li>
                 }
             </ul>
+            <div class="signal-sidebar-footer"><span class="signal-sidebar-footer-icon"><i class="fa fa-shield" aria-hidden="true"></i></span><span>Operations dashboard<small>Secure workspace</small></span></div>
         </div>
     </div>
-</div>
+</aside>

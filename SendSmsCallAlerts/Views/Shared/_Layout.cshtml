@@ -1,112 +1,143 @@
-﻿<!DOCTYPE html>
+@{
+    var role = Context?.Request?.HttpContext?.Session?.GetString("UserRole") ?? "";
+    var userName = Context?.Request?.HttpContext?.Session?.GetString("UserName") ?? "";
+    var isLoggedIn = !string.IsNullOrWhiteSpace(role);
+    var isAdmin = role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
+    var routeController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
+    var routeAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
+    var areaLabel = routeController switch
+    {
+        "Sms" => "Messages",
+        "Conversations" => "Messages",
+        "IvrOptions" => "Voice routing",
+        "OptionInstructions" => "Voice routing",
+        "IntroSms" => "Voice routing",
+        "Twilio" => "Telephony",
+        "ForwardNum" => "Telephony",
+        "Schedulers" => "Automation",
+        "AutomatedNotifications" => "Automation",
+        "SmsTemplates" => "Messaging tools",
+        "Technicians" => "Team",
+        "Users" => "Administration",
+        _ => "Workspace"
+    };
+    var displayPage = routeController switch
+    {
+        "Sms" when routeAction == "IncomingLogs" => "Incoming SMS",
+        "Sms" when routeAction == "ScheduledJobs" => "Scheduled jobs",
+        "Sms" when routeAction == "OpenAttachments" => "Attachments",
+        "Conversations" when routeAction == "SMS" => "Send SMS",
+        "Conversations" when routeAction == "Chat" => "Conversation",
+        "IvrOptions" => "IVR options",
+        "OptionInstructions" => "Option instructions",
+        "IntroSms" => "Intro SMS",
+        "Twilio" when routeAction == "BuyNumber" => "Buy Twilio number",
+        "Twilio" => "Twilio numbers",
+        "ForwardNum" => "Forward numbers",
+        "Schedulers" => "Schedulers",
+        "AutomatedNotifications" => "Automated SMS",
+        "SmsTemplates" => "SMS templates",
+        "Technicians" => "Technicians",
+        "Users" => "Users",
+        _ => routeController
+    };
+    var pageSuffix = routeAction switch
+    {
+        "Create" => "Create",
+        "Edit" => "Edit",
+        "Details" => "Details",
+        "Delete" => "Delete",
+        _ => ""
+    };
+    var pageHeading = string.IsNullOrEmpty(pageSuffix) ? displayPage : $"{pageSuffix} {displayPage}";
+    var shortUser = string.IsNullOrWhiteSpace(userName) ? (isAdmin ? "Admin" : "User") : userName;
+}
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - SendSmsCallAlerts</title>
-    @*    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/SendSmsCallAlerts.styles.css" asp-append-version="true" />*@
-    @* <link rel="shortcut icon" type="image/x-icon" href="~/assets/img/favicon.ico">*@
-    <title>Preclinic - Medical & Hospital - Bootstrap 4 Admin Template</title>
-    <link rel="stylesheet" type="text/css" href="~/assets/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="~/assets/css/font-awesome.min.css">
-    <link rel="stylesheet" type="text/css" href="~/assets/css/style.css">
+    <meta name="theme-color" content="#101e35" />
+    <title>@pageHeading · SendSmsCallAlerts</title>
+    @* Keep the existing Bootstrap 4 assets: older AJAX modals, dropdowns and plugins rely on them. *@
+    <link rel="stylesheet" href="~/assets/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/assets/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/assets/css/style.css" />
+    <link rel="stylesheet" href="~/css/signal-ui.css" asp-append-version="true" />
 </head>
-<body>
-    @*  <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">SendSmsCallAlerts</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-    </header>*@
-    @{
-        var role = Context?.Request?.HttpContext?.Session?.GetString("UserRole") ?? "";
-        var userName = Context?.Request?.HttpContext?.Session?.GetString("UserName") ?? "";
-        var isLoggedIn = !string.IsNullOrWhiteSpace(role);
-        var isAdmin = role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
-    }
-
-    <div class="main-wrapper">
+<body class="signal-app @(isLoggedIn ? "signal-authenticated" : "signal-guest")">
+    <div class="main-wrapper @(isLoggedIn ? "has-sidebar" : "guest-shell")">
         @if (isLoggedIn)
         {
-            <div class="header">
-                <div class="header-left">
-                    @* <a asp-controller="Sms" asp-action="IncomingLogs" class="logo">
-                        <img src="~/assets/img/logo.png" width="35" height="35" alt=""> <span>SMS</span>
-                    </a> *@
+            <header class="header signal-header" role="banner">
+                <div class="header-left signal-brand">
+                    <a asp-controller="Sms" asp-action="IncomingLogs" class="signal-brand-link" aria-label="SMS Control Center — Incoming SMS">
+                        <span class="signal-brand-icon" aria-hidden="true"><i class="fa fa-commenting-o"></i></span>
+                        <span class="signal-brand-text">SMS Hub<span class="signal-brand-sub">CONTROL CENTER</span></span>
+                    </a>
                 </div>
-                <a id="toggle_btn" href="javascript:void(0);"><i class="fa fa-bars"></i></a>
-                <a id="mobile_btn" class="mobile_btn float-left" href="#sidebar"><i class="fa fa-bars"></i></a>
-                <ul class="nav user-menu float-right">
+                @* These IDs are used by the existing assets/js/app.js sidebar handlers. *@
+                <a id="toggle_btn" class="signal-nav-toggle" href="javascript:void(0);" aria-label="Collapse navigation" title="Collapse navigation"><i class="fa fa-bars" aria-hidden="true"></i></a>
+                <a id="mobile_btn" class="mobile_btn signal-mobile-toggle" href="#sidebar" aria-label="Open navigation"><i class="fa fa-bars" aria-hidden="true"></i></a>
+                <div class="signal-topbar-context">
+                    <span class="signal-location-label">@areaLabel</span>
+                    <span class="signal-location-slash" aria-hidden="true">/</span>
+                    <span class="signal-location-page">@pageHeading</span>
+                </div>
+                <ul class="nav user-menu float-right signal-user-menu">
                     <li class="nav-item dropdown has-arrow">
-                        <a href="#" class="dropdown-toggle nav-link user-link" data-toggle="dropdown">
-                            <span class="user-img">
-                                <img class="rounded-circle" src="~/assets/img/user.jpg" width="40" alt="User">
-                                <span class="status online"></span>
-                            </span>
-                            <span>@(string.IsNullOrWhiteSpace(userName) ? (isAdmin ? "Admin" : "User") : userName)</span>
+                        <a href="#" class="dropdown-toggle nav-link user-link signal-account-toggle" data-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
+                            <span class="signal-avatar" aria-hidden="true"><i class="fa fa-user-o"></i></span>
+                            <span class="signal-account-details"><strong>@shortUser</strong><small>@(isAdmin ? "Administrator" : "Team member")</small></span>
+                            <i class="fa fa-angle-down signal-account-chevron" aria-hidden="true"></i>
                         </a>
-                        <div class="dropdown-menu">
-                            <a class="dropdown-item" asp-controller="Account" asp-action="Logout">LogOut</a>
+                        <div class="dropdown-menu dropdown-menu-right signal-account-dropdown">
+                            <div class="signal-dropdown-label">Signed in as <strong>@shortUser</strong></div>
+                            <a class="dropdown-item" asp-controller="Account" asp-action="Logout"><i class="fa fa-sign-out" aria-hidden="true"></i> Log out</a>
                         </div>
                     </li>
                 </ul>
-            </div>
-
+            </header>
             @await Html.PartialAsync("_Sidebar")
+            <div class="sidebar-overlay"></div>
         }
-
-        <div class="page-wrapper">
-            <div class="content container-fluid">
-                @RenderBody()
-            </div>
+        <div class="page-wrapper signal-page-wrapper">
+            <main class="content container-fluid signal-page-content" id="main-content">
+                @if (isLoggedIn)
+                {
+                    <div class="signal-page-context" aria-hidden="true">
+                        <span class="signal-page-eyebrow">@areaLabel</span>
+                        <span class="signal-page-context-dot">•</span>
+                        <span class="signal-page-current">@pageHeading</span>
+                    </div>
+                }
+                <div class="signal-view-surface" data-controller="@routeController" data-action="@routeAction">
+                    @RenderBody()
+                </div>
+            </main>
+            @if (isLoggedIn)
+            {
+                <footer class="signal-footer"><span>SendSmsCallAlerts</span><span>Messaging operations workspace</span></footer>
+            }
         </div>
     </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2024 - snowbro
-        </div>
-    </footer>
-    @*    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>*@
-
+    @* This is intentionally after RenderBody: legacy pages inject their own style tags. *@
+    <link rel="stylesheet" href="~/css/signal-ui-overrides.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-ui-polish.css" asp-append-version="true" />
+    @* Preserve the existing jquery/bootstrap plugin order and AJAX session-expiry behavior. *@
     <script src="~/assets/js/jquery-3.2.1.min.js"></script>
     <script src="~/assets/js/popper.min.js"></script>
     <script src="~/assets/js/bootstrap.min.js"></script>
     <script src="~/assets/js/jquery.slimscroll.js"></script>
     <script src="~/assets/js/app.js"></script>
     <script>
-            $(document).ajaxError(function (e, xhr, opts) {
-
-                if (xhr.status == 403 && xhr.responseText.indexOf("LogOut") != -1) {
-                    //window.location.href = "@Url.Action("Logout", "Account")";
-                    var currentPageUrl = window.location.href;
-
-                    var redirectUrl = "@Url.Action("Logout", "Account")" + "?id=-2&returnUrl=" + encodeURIComponent(currentPageUrl);
-
-                    // Redirect to the logout action with the returnUrl parameter
-                    window.location.href = redirectUrl;
-                }
-
-            });
+        $(document).ajaxError(function (e, xhr, opts) {
+            if (xhr.status === 403 && typeof xhr.responseText === 'string' && xhr.responseText.indexOf('LogOut') !== -1) {
+                var currentPageUrl = window.location.href;
+                var redirectUrl = '@Url.Action("Logout", "Account")' + '?id=-2&returnUrl=' + encodeURIComponent(currentPageUrl);
+                window.location.href = redirectUrl;
+            }
+        });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -21,6 +21,7 @@ namespace SendSmsCallAlerts.Controllers
         {
             //            RegisterAllJobs();
             RecurringJob.AddOrUpdate(() => new SmsJob(dbContext).RegisterAllJobs(), Cron.Minutely, TimeZoneInfo.FindSystemTimeZoneById(TmZn));
+            RecurringJob.AddOrUpdate<AutomatedSmsJob>("automated-sms-minutely", j => j.RunAsync(), Cron.Minutely);
 
         }
 

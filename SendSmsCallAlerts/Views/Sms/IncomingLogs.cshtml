@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "IncomingLogs";
 }
 
@@ -94,7 +94,7 @@
     .page-wrapper { transition: margin-left 0.3s ease; }
 </style>
 
-<div style="padding:20px; max-width:100%; box-sizing:border-box;">
+<div class="sg-sms-log-page">
     <h1 class="mb-3">Incoming SMS</h1>
 
     @if (TempData["SucSms"] != null) { <div class="alert alert-success"><b>@TempData["SucSms"]</b></div> }
@@ -102,7 +102,7 @@
     @if (TempData["ErrMsg"] != null) { <div class="alert alert-danger"><b>@TempData["ErrMsg"]</b></div> }
 
     @* Response-time color legend *@
-    <div style="margin: 0 16px 10px 16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; font-size:0.85rem;">
+    <div class="sg-response-legend">
         <strong>Waiting Time Key:</strong>
         <span style="display:inline-flex;align-items:center;gap:6px;">
             <span style="width:14px;height:14px;background:#FFD700;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Gold — 10–14 min 59 sec
@@ -115,7 +115,7 @@
         </span>
     </div>
 
-    <div style="margin: 0 16px;">
+    <div class="sg-sms-table-zone">
     <table class="table table-bordered table-striped" id="tblRPM">
         <thead>
             <tr>

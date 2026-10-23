@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "Index";
 }
 
@@ -17,7 +17,7 @@ else if (TempData["SMsg"] != null)
 
 @if (ViewBag.TwilioNumber != null)
 {
-    <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
         <h1>Update Twilio Number</h1>
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
             <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
@@ -27,13 +27,13 @@ else if (TempData["SMsg"] != null)
 
     @using (Html.BeginForm("UpdateData", "Twilio", FormMethod.Post, new { @role = "form", @id = "registerForm", @class = "form-horizontal" }))
     {
-        <div style="padding:20px;">
+        <div class="sg-twilio-editor">
             <label>Add Number</label>
             <input type="number" name="data" />
 
             <div class="row">
                 <div class="col-md-8">
-                    <button type="submit" style="margin:10px;" class="btn btn-info">
+                    <button type="submit" class="btn btn-primary">
                         <i class="fa fa-check"></i> Update
                     </button>
                 </div>
@@ -43,7 +43,7 @@ else if (TempData["SMsg"] != null)
 }
 else
 {
-    <div class="d-flex justify-content-between align-items-center mb-2">
+    <div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
         <h1>Add Twilio Number</h1>
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
             <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
@@ -52,13 +52,13 @@ else
 
     @using (Html.BeginForm("StoreData", "Twilio", FormMethod.Post, new { @role = "form", @id = "registerForm", @class = "form-horizontal" }))
     {
-        <div style="padding:20px;">
+        <div class="sg-twilio-editor">
             <label>Add Number</label>
             <input type="number" name="data" />
 
             <div class="row">
                 <div class="col-md-8">
-                    <button type="submit" style="margin:10px;" class="btn btn-info">
+                    <button type="submit" class="btn btn-primary">
                         <i class="fa fa-check"></i> Add
                     </button>
                 </div>

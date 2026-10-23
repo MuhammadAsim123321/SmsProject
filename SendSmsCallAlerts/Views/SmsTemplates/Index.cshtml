@@ -1,10 +1,10 @@
-﻿@model IEnumerable<SendSmsCallAlerts.Models.SmsTemplate>
+@model IEnumerable<SendSmsCallAlerts.Models.SmsTemplate>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "SMS templates";
 }
 
-<h1>All Templates</h1>
+<div class="sg-page-header"><h1>All Templates</h1><div class="sg-page-actions"><a asp-action="Create" class="signal-create-link">Create New</a></div></div>
 
 @if (TempData["StMsg"] != null)
 {
@@ -13,9 +13,8 @@
     </div>
 }
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
+
+<div class="signal-list-card">
 <table class="table">
     <thead>
         <tr>
@@ -59,11 +58,12 @@
             @Html.DisplayFor(modelItem => item.createdOn)
             </td>*@
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a>
-                    @* <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>*@
+                    <a asp-action="Edit" asp-route-id="@item.Id" class="sg-table-link sg-table-link-edit">Edit</a>
+                    @* <a asp-action="Details" asp-route-id="@item.Id">Details</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id" class="sg-table-link sg-table-link-danger">Delete</a>*@
                 </td>
             </tr>
         }
     </tbody>
 </table>
+</div>
