@@ -63,7 +63,6 @@
     <link rel="stylesheet" href="~/assets/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/assets/css/font-awesome.min.css" />
     <link rel="stylesheet" href="~/assets/css/style.css" />
-    <link rel="stylesheet" href="~/css/signal-ui.css" asp-append-version="true" />
 </head>
 <body class="signal-app @(isLoggedIn ? "signal-authenticated" : "signal-guest")">
     <div class="main-wrapper @(isLoggedIn ? "has-sidebar" : "guest-shell")">
@@ -73,7 +72,7 @@
                 <div class="header-left signal-brand">
                     <a asp-controller="Sms" asp-action="IncomingLogs" class="signal-brand-link" aria-label="SMS Control Center — Incoming SMS">
                         <span class="signal-brand-icon" aria-hidden="true"><i class="fa fa-commenting-o"></i></span>
-                        <span class="signal-brand-text">SMS Hub<span class="signal-brand-sub">CONTROL CENTER</span></span>
+                        <span class="signal-brand-text">SMS Hub<span class="signal-brand-sub">MESSAGING PLATFORM</span></span>
                     </a>
                 </div>
                 @* These IDs are used by the existing assets/js/app.js sidebar handlers. *@
@@ -114,9 +113,8 @@
         </div>
     </div>
     @* This is intentionally after RenderBody: legacy pages inject their own style tags. *@
-    <link rel="stylesheet" href="~/css/signal-ui-overrides.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/signal-ui-polish.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/signal-ui-v3.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-ui-next.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-list-tables.css" asp-append-version="true" />
     @* Preserve the existing jquery/bootstrap plugin order and AJAX session-expiry behavior. *@
     <script src="~/assets/js/jquery-3.2.1.min.js"></script>
     <script src="~/assets/js/popper.min.js"></script>
@@ -130,6 +128,33 @@
                 var redirectUrl = '@Url.Action("Logout", "Account")' + '?id=-2&returnUrl=' + encodeURIComponent(currentPageUrl);
                 window.location.href = redirectUrl;
             }
+        });
+    </script>
+    @* Progressive, client-side search only for server-rendered list tables.
+       Does not bind to or interfere with DataTables-backed tables. *@
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('[data-nova-search]').forEach(function (field) {
+                var table = document.getElementById(field.getAttribute('data-nova-search'));
+                if (!table || !table.tBodies || !table.tBodies.length) return;
+                var card = field.closest('.nova-list-card');
+                var meta = document.createElement('div');
+                meta.className = 'nova-list-footer';
+                meta.setAttribute('aria-live', 'polite');
+                if (card) card.appendChild(meta);
+                function filterRows() {
+                    var query = field.value.trim().toLocaleLowerCase();
+                    var visible = 0;
+                    Array.prototype.forEach.call(table.tBodies[0].rows, function (row) {
+                        var matching = !query || row.textContent.toLocaleLowerCase().indexOf(query) !== -1;
+                        row.hidden = !matching;
+                        if (matching) visible++;
+                    });
+                    meta.textContent = visible + (visible === 1 ? ' record' : ' records') + (query ? ' matching your search' : '');
+                }
+                field.addEventListener('input', filterRows);
+                filterRows();
+            });
         });
     </script>
     @await RenderSectionAsync("Scripts", required: false)

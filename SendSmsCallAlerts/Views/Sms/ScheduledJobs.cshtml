@@ -169,10 +169,10 @@
     }
 </style>
 
-<div class="page-card sg-jobs-card">
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+<div class="page-card sg-jobs-card nova-jobs-page">
+    <div class="nova-jobs-heading">
         <div>
-            <div class="page-title"><i class="fa fa-calendar-check me-2" style="color:#70b3db;"></i>Scheduled Jobs</div>
+            <div class="nova-eyebrow">JOBS OVERVIEW</div><h1 class="page-title"><i class="fa fa-calendar-check me-2" aria-hidden="true"></i>Scheduled Jobs</h1>
             <div class="page-subtitle">View and manage all active, paused and completed SMS jobs</div>
         </div>
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
@@ -208,7 +208,7 @@
         </div>
     </div>
 
-    <table class="table" id="tblScheduledJobs">
+    <div class="nova-list-card nova-jobs-table sg-fix-jobs"><div class="nova-list-toolbar"><div class="nova-list-heading"><span class="nova-list-heading-icon"><i class="fa fa-calendar-o"></i></span><div><h2>Scheduled message activity</h2><p>Manage active, paused and completed jobs</p></div></div></div><div class="nova-table-viewport"><table class="table" id="tblScheduledJobs">
         <thead>
             <tr>
                 <th>Job ID</th>
@@ -224,6 +224,7 @@
             </tr>
         </thead>
     </table>
+</div></div>
 </div>
 
 <!-- Confirm Delete Modal -->

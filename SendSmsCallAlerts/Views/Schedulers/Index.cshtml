@@ -4,15 +4,22 @@
     ViewData["Title"] = "Schedulers";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
-    <h1>All Schedulers</h1>
-    <div class="sg-page-actions">
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-calendar-o"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">SCHEDULE LIBRARY</span>
+            <h1>Schedulers</h1>
+            <p>Manage templates and execution schedules</p>
+        </div>
+    </div>
+    <div class="nova-page-actions">
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-outline-secondary btn-sm sg-secondary-action">
         <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
     </a>
         <a asp-action="Create" class="btn btn-primary sg-primary-action">Create New Template</a>
     </div>
-</div>
+</section>
 @if (TempData["ErrMsg"] != null)
 {
     <div class="alert alert-danger"><b>@TempData["ErrMsg"]</b></div>
@@ -23,8 +30,13 @@
 }
 
 
-<div class="signal-list-card">
-<table class="table table-bordered table-striped">
+<section class="nova-list-card sg-fix-schedulers" aria-label="All Schedulers">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>All Schedulers</h2><p>Manage templates and execution schedules</p></div></div>
+        <div class="nova-list-controls"><label class="nova-search" for="search-novaSchedulersTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search All Schedulers</span><input type="search" id="search-novaSchedulersTable" data-nova-search="novaSchedulersTable" placeholder="Search records..." autocomplete="off" /></label></div>
+    </div>
+    <div class="nova-table-viewport">
+<table id="novaSchedulersTable" class="table table-bordered table-striped">
     <thead>
         <tr>
             <th>
@@ -97,3 +109,4 @@
     </tbody>
 </table>
 </div>
+</section>

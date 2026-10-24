@@ -4,7 +4,17 @@
     ViewData["Title"] = "SMS templates";
 }
 
-<div class="sg-page-header"><h1>All Templates</h1><div class="sg-page-actions"><a asp-action="Create" class="signal-create-link sg-primary-action">Create New</a></div></div>
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-file-text-o"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">CONTENT LIBRARY</span>
+            <h1>SMS templates</h1>
+            <p>Reusable message content in one place</p>
+        </div>
+    </div>
+    <div class="nova-page-actions"><a asp-action="Create" class="signal-create-link sg-primary-action"><i class="fa fa-plus" aria-hidden="true"></i> Create template</a></div>
+</section>
 
 @if (TempData["StMsg"] != null)
 {
@@ -14,8 +24,13 @@
 }
 
 
-<div class="signal-list-card">
-<table class="table">
+<section class="nova-list-card" aria-label="All SMS templates">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>All SMS templates</h2><p>Reusable message content in one place</p></div></div>
+        <div class="nova-list-controls"><label class="nova-search" for="search-novaSmsTemplatesTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search All SMS templates</span><input type="search" id="search-novaSmsTemplatesTable" data-nova-search="novaSmsTemplatesTable" placeholder="Search records..." autocomplete="off" /></label></div>
+    </div>
+    <div class="nova-table-viewport">
+<table id="novaSmsTemplatesTable" class="table">
     <thead>
         <tr>
             <th>
@@ -67,3 +82,4 @@
     </tbody>
 </table>
 </div>
+</section>

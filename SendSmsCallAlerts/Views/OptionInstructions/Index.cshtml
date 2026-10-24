@@ -4,19 +4,31 @@
     ViewData["Title"] = "Option instructions";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
-    <h1>Option's Instruction</h1>
-    <div class="sg-page-actions">
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-list-alt"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">INSTRUCTION LIBRARY</span>
+            <h1>Option instructions</h1>
+            <p>Review and organize call flow instructions</p>
+        </div>
+    </div>
+    <div class="nova-page-actions">
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-outline-secondary btn-sm sg-secondary-action">
         <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
     </a>
         <a asp-action="Create" class="sg-create-button signal-create-link sg-primary-action">Create New</a>
     </div>
-</div>
+</section>
 
 
-<div class="signal-list-card">
-<table class="table">
+<section class="nova-list-card" aria-label="All Option instructions">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>All Option instructions</h2><p>Review and organize call flow instructions</p></div></div>
+        <div class="nova-list-controls"><label class="nova-search" for="search-novaOptionInstructionsTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search All Option instructions</span><input type="search" id="search-novaOptionInstructionsTable" data-nova-search="novaOptionInstructionsTable" placeholder="Search records..." autocomplete="off" /></label></div>
+    </div>
+    <div class="nova-table-viewport">
+<table id="novaOptionInstructionsTable" class="table">
     <thead>
         <tr>
             <th>
@@ -59,3 +71,4 @@
     </tbody>
 </table>
 </div>
+</section>
