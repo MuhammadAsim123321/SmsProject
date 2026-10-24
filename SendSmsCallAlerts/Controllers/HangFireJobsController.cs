@@ -9,6 +9,8 @@ namespace SendSmsCallAlerts.Controllers
     public class HangFireJobsController : Controller
     {
         private readonly ApplicationDbContext dbContext;
+        // CHANGED: the time zone now comes from AppSettings:TmZn through IAppClock (used inside SmsJob).
+        // These two lines are kept (commented-out use) for the old scenario below.
         private readonly string TmZn = "Eastern Standard Time";
         //private readonly string TmZn = "Pakistan Standard Time";
 
@@ -20,7 +22,13 @@ namespace SendSmsCallAlerts.Controllers
         public void EnqueueJob()
         {
             //            RegisterAllJobs();
-            RecurringJob.AddOrUpdate(() => new SmsJob(dbContext).RegisterAllJobs(), Cron.Minutely, TimeZoneInfo.FindSystemTimeZoneById(TmZn));
+
+            // OLD (kept for the old scenario): SmsJob used to be created by hand with the DbContext.
+            // It now gets DbContext, IAppClock and ISmsGateway from dependency injection, so this line no longer compiles.
+            //RecurringJob.AddOrUpdate(() => new SmsJob(dbContext).RegisterAllJobs(), Cron.Minutely, TimeZoneInfo.FindSystemTimeZoneById(TmZn));
+
+            // NEW: same recurring job id as before ("SmsJob.RegisterAllJobs"), resolved through DI.
+            RecurringJob.AddOrUpdate<SmsJob>("SmsJob.RegisterAllJobs", j => j.RegisterAllJobs(), Cron.Minutely);
             RecurringJob.AddOrUpdate<AutomatedSmsJob>("automated-sms-minutely", j => j.RunAsync(), Cron.Minutely);
 
         }

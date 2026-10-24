@@ -1,22 +1,15 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿//using Hangfire.Common;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Win32;
 using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Filters;
-using SendSmsCallAlerts.Migrations;
 using SendSmsCallAlerts.Models;
-using System;
-using System.Diagnostics;
-using System.Net.Http;
-using System.Net.Mail;
-using System.Xml.Linq;
+using SendSmsCallAlerts.Services;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Rest.Api.V2010.Account.Message;
-using Twilio.TwiML.Voice;
-using SendSmsCallAlerts.Services;
 
 namespace SendSmsCallAlerts.Controllers
 {
@@ -27,23 +20,21 @@ namespace SendSmsCallAlerts.Controllers
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly string filePath;
         private readonly ApplicationDbContext _context;
-
         private readonly HttpClient _httpClient;
-
-        private readonly GoogleDistanceService _distanceService;
-        private readonly TechnicianAvailabilityService _availabilityService;
+        private readonly JobService _jobService;
+        private readonly IAppClock _clock;
 
         public SmsController(IConfiguration configuration, IWebHostEnvironment hostingEnvironment,
             IHttpClientFactory httpClientFactory, ApplicationDbContext dbContext,
-            GoogleDistanceService distanceService, TechnicianAvailabilityService availabilityService)
+            JobService jobService, IAppClock clock)
         {
             _configuration = configuration;
             _hostingEnvironment = hostingEnvironment;
             filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "data.txt");
             _httpClient = httpClientFactory.CreateClient();
             _context = dbContext;
-            _distanceService = distanceService;
-            _availabilityService = availabilityService;
+            _jobService = jobService;
+            _clock = clock;
         }
 
         public IActionResult IncomingLogs()
@@ -51,13 +42,12 @@ namespace SendSmsCallAlerts.Controllers
             return View();
         }
 
+        // =====================================================================
+        // MEDIA HELPERS (unchanged)
+        // =====================================================================
         private async System.Threading.Tasks.Task GetMMSLink(string sid)
         {
-            var media = MediaResource.Read(
-              pathMessageSid: sid,
-              limit: 20
-          );
-
+            var media = MediaResource.Read(pathMessageSid: sid, limit: 20);
             await ViewMedia(media.First().Sid, media.First().Uri, media.First().ContentType);
         }
 
@@ -205,7 +195,7 @@ namespace SendSmsCallAlerts.Controllers
                 if (ph == null || ph == "") return "N/A";
                 return ph;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return "Error";
             }
@@ -284,10 +274,13 @@ namespace SendSmsCallAlerts.Controllers
             }
         }
 
+        // =====================================================================
+        // MESSAGE DELETE (unchanged)
+        // =====================================================================
         public async Task<string> DeleteMsg(int id)
         {
-            var ivrOptions = await _context.SmsDetails.FindAsync(id);
-            if (ivrOptions != null)
+            var sms = await _context.SmsDetails.FindAsync(id);
+            if (sms != null)
             {
                 var links = _context.MmsLinkss.Where(r => r.SmsId == id).ToList();
 
@@ -300,7 +293,7 @@ namespace SendSmsCallAlerts.Controllers
                 }
 
                 _context.MmsLinkss.RemoveRange(links);
-                _context.SmsDetails.Remove(ivrOptions);
+                _context.SmsDetails.Remove(sms);
             }
 
             await _context.SaveChangesAsync();
@@ -313,8 +306,8 @@ namespace SendSmsCallAlerts.Controllers
             {
                 return Problem("Entity set 'ApplicationDbContext.IvrOption'  is null.");
             }
-            var ivrOptions = await _context.SmsDetails.FindAsync(id);
-            if (ivrOptions != null)
+            var sms = await _context.SmsDetails.FindAsync(id);
+            if (sms != null)
             {
                 var links = _context.MmsLinkss.Where(r => r.SmsId == id).ToList();
 
@@ -327,7 +320,7 @@ namespace SendSmsCallAlerts.Controllers
                 }
 
                 _context.MmsLinkss.RemoveRange(links);
-                _context.SmsDetails.Remove(ivrOptions);
+                _context.SmsDetails.Remove(sms);
             }
 
             await _context.SaveChangesAsync();
@@ -358,7 +351,9 @@ namespace SendSmsCallAlerts.Controllers
             }
         }
 
-        // GET CATEGORIES FOR DROPDOWN
+        // =====================================================================
+        // LOOKUPS FOR THE MODAL
+        // =====================================================================
         [HttpGet]
         public IActionResult GetCategories()
         {
@@ -370,7 +365,6 @@ namespace SendSmsCallAlerts.Controllers
             return Json(categories);
         }
 
-        // ✅ FIXED: GET SCHEDULERS - 
         [HttpGet]
         public IActionResult GetSchedulers()
         {
@@ -382,15 +376,30 @@ namespace SendSmsCallAlerts.Controllers
                     s.name,
                     RunFromId = s.RunFromId ?? 0,
                     TimeToRunId = s.TimeToRunId ?? 0,
-                    HourCount = s.TimeToRun != null ? s.TimeToRun.HourCount : 0  // ADD
-
+                    HourCount = s.TimeToRun != null ? s.TimeToRun.HourCount : 0
                 })
                 .ToList();
 
             return Json(schedulers);
         }
 
-        // DELETE LOGS BY DATE RANGE
+        [HttpGet]
+        public IActionResult GetIvrOptions()
+        {
+            var options = _context.IvrOption
+                .Select(i => new
+                {
+                    i.Id,
+                    i.keyword
+                })
+                .ToList();
+
+            return Json(options);
+        }
+
+        // =====================================================================
+        // LOG DELETE / CSV EXPORT BY DATE
+        // =====================================================================
         [HttpPost]
         public async Task<IActionResult> DeleteLogsByDate(DateTime fromDate, DateTime toDate)
         {
@@ -415,7 +424,7 @@ namespace SendSmsCallAlerts.Controllers
             }
         }
 
-        // DOWNLOAD CSV BY DATE RANGE
+        /// <summary>CSV export. Category / Scheduler now come from the customer's real jobs.</summary>
         [HttpPost]
         public async Task<IActionResult> DownloadLogsByDate(DateTime fromDate, DateTime toDate)
         {
@@ -428,18 +437,20 @@ namespace SendSmsCallAlerts.Controllers
                                   let phoneNumber = sms.smsDirection == "Incoming" ? sms.fromNum : sms.toNum
                                   join contact in _context.ContactDetail on phoneNumber equals contact.PhoneNumber into contactJoin
                                   from c in contactJoin.DefaultIfEmpty()
-                                  join job in _context.JobSchedule on (c != null && sms.smsDirection == "Incoming" ? c.Id : -1) equals job.ContactDetailId into jobJoin
-                                  from j in jobJoin.DefaultIfEmpty()
                                   select new
                                   {
                                       Id = sms.Id,
-                                      Date = sms.createdOn.ToString("MM-dd-yyyy HH:mm"),
+                                      CreatedOn = sms.createdOn,
                                       From = sms.fromNum,
+                                      Direction = sms.smsDirection,
                                       Body = (sms.smsBody ?? "").Replace(",", " ").Replace("\r", " ").Replace("\n", " "),
-                                      Name = c != null ? c.Name : "N/A",
-                                      Category = (j != null && sms.smsDirection == "Incoming") ? j.Category : "N/A",
-                                      Scheduler = (j != null && sms.smsDirection == "Incoming") ? j.Scheduler : "N/A"
+                                      ContactId = c != null ? (int?)c.Id : null,
+                                      Name = c != null ? c.Name : "N/A"
                                   }).ToListAsync();
+
+                var contactIds = logs.Where(l => l.ContactId.HasValue).Select(l => l.ContactId!.Value).Distinct().ToList();
+                var jobs = await _jobService.LoadJobsForContactsAsync(contactIds);
+                var jobsByContact = jobs.GroupBy(j => j.ContactDetailId).ToDictionary(g => g.Key, g => g.ToList());
 
                 var logIds = logs.Select(l => l.Id).ToList();
                 var allAttachements = new List<MmsLinks>();
@@ -455,7 +466,16 @@ namespace SendSmsCallAlerts.Controllers
                 {
                     var smsAttachments = allAttachements.Where(m => m.SmsId == log.Id).Select(m => m.Location).ToList();
                     string attachmentsString = smsAttachments.Any() ? $"\"{string.Join(", ", smsAttachments)}\"" : "N/A";
-                    builder.AppendLine($"{log.Date},{log.From},{log.Body},{attachmentsString},{log.Name},{log.Category},{log.Scheduler}");
+
+                    string category = "N/A", scheduler = "N/A";
+                    if (log.Direction == "Incoming" && log.ContactId.HasValue
+                        && jobsByContact.TryGetValue(log.ContactId.Value, out var cj) && cj.Count > 0)
+                    {
+                        category = string.Join("; ", cj.Select(j => j.Category?.keyword ?? "N/A"));
+                        scheduler = string.Join("; ", cj.Select(j => j.ScheduledJobs.FirstOrDefault()?.Scheduler?.name ?? "N/A"));
+                    }
+
+                    builder.AppendLine($"{log.CreatedOn:MM-dd-yyyy HH:mm},{log.From},{log.Body},{attachmentsString},{log.Name},{category},{scheduler}");
                 }
 
                 var csvBytes = System.Text.Encoding.UTF8.GetBytes(builder.ToString());
@@ -469,43 +489,71 @@ namespace SendSmsCallAlerts.Controllers
             }
         }
 
-        // Scheduled Jobs Page
+        // =====================================================================
+        // SCHEDULED JOBS PAGE (jobs with their message plans)
+        // =====================================================================
         public IActionResult ScheduledJobs()
         {
             return View();
         }
 
-        // Get Scheduled Jobs Data for DataTable
+        /// <summary>One row per message plan; a job without a plan still shows as one row.</summary>
         [HttpGet]
-        public IActionResult GetScheduledJobsData()
+        public async Task<IActionResult> GetScheduledJobsData()
         {
             try
             {
-                var jobs = (from job in _context.AllScheduledJobs
+                var jobs = await _context.Jobs.AsNoTracking()
+                    .Include(j => j.ContactDetail)
+                    .Include(j => j.Technician)
+                    .Include(j => j.Category)
+                    .Include(j => j.ScheduledJobs).ThenInclude(p => p.Scheduler)
+                    .OrderByDescending(j => j.Id)
+                    .ToListAsync();
 
-                            join contact in _context.ContactDetail
-                                on job.ContactDetailId equals contact.Id into contactJoin
-                            from contact in contactJoin.DefaultIfEmpty()
+                var now = _clock.BusinessNow;
+                var rows = new List<object>();
 
-                            join scheduler in _context.Schedulers
-                                on job.SchedulerId equals scheduler.Id into schedulerJoin
-                            from scheduler in schedulerJoin.DefaultIfEmpty()
+                foreach (var j in jobs)
+                {
+                    string effective = j.GetEffectiveStatus(now);
+                    var plans = j.ScheduledJobs.OrderBy(p => p.Id).Select(p => (AllScheduledJob?)p).ToList();
+                    if (plans.Count == 0) plans.Add(null);
 
-                            select new
-                            {
-                                jobId = job.Id,
-                                phoneNumber = contact != null ? (contact.PhoneNumber ?? "N/A") : "N/A",
-                                name = contact != null ? (contact.Name ?? "N/A") : "N/A",
-                                schedulerName = scheduler != null ? (scheduler.name ?? "N/A") : "N/A",
-                                onceOrRepeat = scheduler != null ? (scheduler.onceOrRepeat ?? "N/A") : "N/A",
-                                jobBookDate = job.JobBookDate.ToString("dd-MMM-yyyy"),
-                                jobCompletedDate = job.JobCompletedDate.ToString("dd-MMM-yyyy hh:mm tt"),
-                                status = scheduler != null ? (scheduler.status ?? "N/A") : "N/A",
-                                isPaused = job.IsPaused,
-                                lastExecutedAt = job.LastExecutedAt
-                            }).OrderByDescending(x => x.jobId).ToList();
+                    foreach (var p in plans)
+                    {
+                        bool once = string.Equals(p?.Scheduler?.onceOrRepeat, "Once", StringComparison.OrdinalIgnoreCase);
+                        bool isSent = p != null && once && p.LastExecutedAt != null;
 
-                return Json(new { aaData = jobs });
+                        string status;
+                        if (effective == JobStatus.Cancelled) status = "Cancelled";
+                        else if (effective == JobStatus.Completed) status = "Completed";
+                        else if (p == null) status = effective;               // Scheduled / Confirmed
+                        else if (p.IsPaused) status = "Paused";
+                        else if (isSent) status = "Sent";
+                        else status = "Active";
+
+                        rows.Add(new
+                        {
+                            jobId = j.Id,
+                            planId = p?.Id,
+                            phoneNumber = j.ContactDetail?.PhoneNumber ?? "N/A",
+                            name = j.ContactDetail?.Name ?? "N/A",
+                            category = j.Category?.keyword ?? "N/A",
+                            technician = j.Technician?.FullName ?? "N/A",
+                            schedulerName = p?.Scheduler?.name ?? "N/A",
+                            onceOrRepeat = p?.Scheduler?.onceOrRepeat ?? "N/A",
+                            startAt = j.StartAt.ToString("dd-MMM-yyyy hh:mm tt"),
+                            endAt = j.EndAt.ToString("dd-MMM-yyyy hh:mm tt"),
+                            lastExecutedAt = p?.LastExecutedAt,
+                            status,
+                            isPaused = p?.IsPaused ?? false,
+                            isSent
+                        });
+                    }
+                }
+
+                return Json(new { aaData = rows });
             }
             catch (Exception ex)
             {
@@ -513,36 +561,32 @@ namespace SendSmsCallAlerts.Controllers
             }
         }
 
-        // Toggle Pause/Resume for a Job
         [HttpPost]
-        public async Task<IActionResult> TogglePauseJob(int jobId)
+        public async Task<IActionResult> TogglePausePlan(int planId)
         {
-            var job = await _context.AllScheduledJobs.FindAsync(jobId);
-            if (job == null)
-            {
-                return Json(new { success = false, message = "Job not found." });
-            }
-            job.IsPaused = !job.IsPaused;
-            _context.AllScheduledJobs.Update(job);
+            var plan = await _context.AllScheduledJobs.FindAsync(planId);
+            if (plan == null) return Json(new { success = false, message = "Scheduled message not found." });
+
+            plan.IsPaused = !plan.IsPaused;
             await _context.SaveChangesAsync();
-            return Json(new { success = true, isPaused = job.IsPaused });
+            return Json(new { success = true, isPaused = plan.IsPaused });
         }
 
-        // Delete a Scheduled Job
+        /// <summary>Removes the message plan only. The job (appointment) stays; cancel it from the Incoming SMS modal.</summary>
         [HttpPost]
-        public async Task<IActionResult> DeleteScheduledJob(int jobId)
+        public async Task<IActionResult> DeletePlan(int planId)
         {
-            var job = await _context.AllScheduledJobs.FindAsync(jobId);
-            if (job != null)
-            {
-                _context.AllScheduledJobs.Remove(job);
-                await _context.SaveChangesAsync();
-                return Json(new { success = true });
-            }
-            return Json(new { success = false, message = "Job not found." });
+            var plan = await _context.AllScheduledJobs.FindAsync(planId);
+            if (plan == null) return Json(new { success = false, message = "Scheduled message not found." });
+
+            _context.AllScheduledJobs.Remove(plan);
+            await _context.SaveChangesAsync();
+            return Json(new { success = true });
         }
 
-        // GetIncomingLogs
+        // =====================================================================
+        // INCOMING SMS GRID
+        // =====================================================================
         private async Task<List<SmsDetailsVm>> GetIncomingLogs(string num)
         {
             var rawData = await (from sms in _context.SmsDetails
@@ -571,17 +615,10 @@ namespace SendSmsCallAlerts.Controllers
                 .Distinct()
                 .ToList();
 
-            var allJobs = await (from j in _context.AllScheduledJobs
-                                 join s in _context.Schedulers on j.SchedulerId equals s.Id
-                                 where contactIds.Contains(j.ContactDetailId ?? 0)
-                                      
-                                 select new { Job = j, Scheduler = s }).ToListAsync();
+            var jobs = await _jobService.LoadJobsForContactsAsync(contactIds);
+            var jobsByContact = jobs.GroupBy(j => j.ContactDetailId).ToDictionary(g => g.Key, g => g.ToList());
 
-            var categories = await _context.IvrOption.ToListAsync();
-
-            // Task 4: Load all outgoing messages for response-time matching.
-            // For each incoming SMS (fromNum = customer), find the earliest outgoing reply
-            // sent TO that same customer number AFTER the incoming message arrived.
+            // response-time matching: first outgoing reply to the same customer after the incoming message
             var allOutgoing = await _context.SmsDetails
                 .Where(s => s.smsDirection == "Outgoing")
                 .Select(s => new { s.toNum, s.createdOn })
@@ -592,24 +629,14 @@ namespace SendSmsCallAlerts.Controllers
             foreach (var item in rawData)
             {
                 bool isIncoming = item.sms.smsDirection == "Incoming";
-                var contactJobs = allJobs
-                    .Where(j => item.contact != null && j.Job.ContactDetailId == item.contact.Id)
-                    .ToList();
+                var contactJobs = item.contact != null && jobsByContact.TryGetValue(item.contact.Id, out var found)
+                    ? found
+                    : new List<Job>();
 
-                string displayName = item.contact?.Name ?? "N/A";
-                string displayAddress = item.contact?.Address ?? "N/A";
-                string displayStreetAddress = item.contact?.StreetAddress ?? item.sms.StreetAddress ?? "N/A";
-                string displayCityState = item.contact?.CityState ?? item.sms.CityState ?? "N/A";
-                string displayZipCode = item.contact?.ZipCode ?? item.sms.ZipCode ?? "N/A";
-                string displayEmail = item.contact?.Email ?? "N/A";
-
-                // Task 4: Calculate response time for incoming messages only.
                 DateTime? respondedOn = null;
                 double? waitingMinutes = null;
                 if (isIncoming)
                 {
-                    // The customer's number is in fromNum for incoming messages.
-                    // We look for an outgoing message sent TO that customer after this message arrived.
                     var customerNum = item.sms.fromNum;
                     var incomingTime = item.sms.createdOn;
                     var reply = allOutgoing
@@ -624,357 +651,60 @@ namespace SendSmsCallAlerts.Controllers
                     }
                 }
 
+                var vm = new SmsDetailsVm
+                {
+                    Id = item.sms.Id,
+                    fromNum = item.sms.fromNum,
+                    toNum = item.sms.toNum,
+                    smsBody = item.sms.smsBody,
+                    smsDirection = item.sms.smsDirection,
+                    IsReadYesOrNo = item.sms.IsReadYesOrNo,
+                    dt = item.sms.createdOn.ToString("MM-dd-yy HH:mm"),
+                    createdOn = item.sms.createdOn,
+                    imgPath = item.sms.imgPath,
+                    attchmentsCount = item.attchmentsCount,
+                    name = item.contact?.Name ?? "N/A",
+                    address = item.contact?.Address ?? "N/A",
+                    streetAddress = item.contact?.StreetAddress ?? "N/A",
+                    cityState = item.contact?.CityState ?? "N/A",
+                    zipCode = item.contact?.ZipCode ?? "N/A",
+                    email = item.contact?.Email ?? "N/A",
+                    RespondedOn = respondedOn,
+                    WaitingMinutes = waitingMinutes
+                };
+
                 if (contactJobs.Any())
                 {
-                    // Prefer the category saved on the contact. Fall back to the
-                    // scheduler category for older contacts that predate CategoryId.
-                    var categoryIds = item.contact?.CategoryId.HasValue == true
-                        ? new[] { item.contact.CategoryId.Value }
-                        : contactJobs.Select(c => c.Scheduler.templateOrAudioId).Distinct().ToArray();
-
-                    var categoryNames = categoryIds.Select(id =>
-                    {
-                        var cat = categories.FirstOrDefault(x => x.Id == id);
-                        return cat != null && !string.IsNullOrEmpty(cat.keyword) ? cat.keyword : "N/A";
-                    }).ToList();
-
-                    var schedulerNames = contactJobs
-                        .Select(c => !string.IsNullOrEmpty(c.Scheduler.name) ? c.Scheduler.name : "N/A")
-                        .ToList();
-
-                    var bookDates = contactJobs
-                        .Select(c => c.Job.JobBookDate == DateTime.MinValue ? "N/A" : c.Job.JobBookDate.ToString("dd/MM/yyyy"))
-                        .ToList();
-                    var bookTimes = contactJobs
-                                .Select(c => c.Job.JobBookDate == DateTime.MinValue ? "N/A" : c.Job.JobBookDate.ToString("hh:mm tt"))
-                                    .ToList();
-
-                    result.Add(new SmsDetailsVm
-                    {
-                        Id = item.sms.Id,
-                        fromNum = item.sms.fromNum,
-                        toNum = item.sms.toNum,
-                        smsBody = item.sms.smsBody,
-                        smsDirection = item.sms.smsDirection,
-                        IsReadYesOrNo = item.sms.IsReadYesOrNo,
-                        dt = item.sms.createdOn.ToString("MM-dd-yy HH:mm"),
-                        createdOn = item.sms.createdOn,
-                        imgPath = item.sms.imgPath,
-                        attchmentsCount = item.attchmentsCount,
-                        name = displayName,
-                        address = displayAddress,
-                        streetAddress = displayStreetAddress,
-                        cityState = displayCityState,
-                        zipCode = displayZipCode,
-                        email = displayEmail,
-                        category = string.Join(", ", categoryNames),
-                        scheduler = string.Join(", ", schedulerNames),
-                        jobBookDatesList = string.Join(", ", bookDates),
-                        jobBookTimesList = string.Join(", ", bookTimes),
-                        JobBookDate = contactJobs.FirstOrDefault()?.Job.JobBookDate,
-                        SchedulerId = contactJobs.FirstOrDefault()?.Scheduler.Id ?? 0,
-                        RespondedOn = respondedOn,
-                        WaitingMinutes = waitingMinutes
-                    });
+                    var first = contactJobs[0];
+                    vm.category = string.Join(", ", contactJobs.Select(j => j.Category?.keyword ?? "N/A"));
+                    vm.scheduler = string.Join(", ", contactJobs.Select(j => j.ScheduledJobs.FirstOrDefault()?.Scheduler?.name ?? "N/A"));
+                    vm.jobBookDatesList = string.Join(", ", contactJobs.Select(j => j.StartAt.ToString("dd/MM/yyyy")));
+                    vm.jobBookTimesList = string.Join(", ", contactJobs.Select(j => j.StartAt.ToString("hh:mm tt")));
+                    vm.JobBookDate = first.StartAt;
+                    vm.SchedulerId = first.ScheduledJobs.FirstOrDefault()?.SchedulerId ?? 0;
                 }
                 else
                 {
-                    result.Add(new SmsDetailsVm
-                    {
-                        Id = item.sms.Id,
-                        fromNum = item.sms.fromNum,
-                        toNum = item.sms.toNum,
-                        smsBody = item.sms.smsBody,
-                        smsDirection = item.sms.smsDirection,
-                        IsReadYesOrNo = item.sms.IsReadYesOrNo,
-                        dt = item.sms.createdOn.ToString("MM-dd-yy HH:mm"),
-                        createdOn = item.sms.createdOn,
-                        imgPath = item.sms.imgPath,
-                        attchmentsCount = item.attchmentsCount,
-                        name = displayName,
-                        address = displayAddress,
-                        streetAddress = displayStreetAddress,
-                        cityState = displayCityState,
-                        zipCode = displayZipCode,
-                        email = displayEmail,
-                        category = item.contact?.CategoryId is int contactCategoryId
-                            ? (categories.FirstOrDefault(x => x.Id == contactCategoryId)?.keyword ?? "N/A")
-                            : "N/A",
-                        scheduler = "N/A",
-                        jobBookDatesList = "N/A",
-                        jobBookTimesList = "N/A",
-                        JobBookDate = null,
-                        SchedulerId = 0,
-                        RespondedOn = respondedOn,
-                        WaitingMinutes = waitingMinutes
-                    });
+                    vm.category = "N/A";
+                    vm.scheduler = "N/A";
+                    vm.jobBookDatesList = "N/A";
+                    vm.jobBookTimesList = "N/A";
+                    vm.JobBookDate = null;
+                    vm.SchedulerId = 0;
                 }
+
+                result.Add(vm);
             }
 
             return result.OrderByDescending(x => x.createdOn).ToList();
         }
 
-        // GetIvrOptions
-        [HttpGet]
-        public IActionResult GetIvrOptions()
-        {
-            var options = _context.IvrOption
-                .Select(i => new
-                {
-                    i.Id,
-                    i.keyword
-                })
-                .ToList();
-
-            return Json(options);
-        }
-
-        public async System.Threading.Tasks.Task SaveAndSendSMS(Scheduler sch)
-        {
-            try
-            {
-                var locLst = _context.MmsLinkss.Where(r => r.SchedulerId == sch.Id).ToList();
-                if (locLst.Count() > 0)
-                {
-                    var mediaUrl = new List<Uri>();
-                    foreach (var rec in locLst)
-                    {
-                        mediaUrl.Add(new Uri(rec.Location));
-                    }
-                    int smsId = await SaveSmsLog(sch.toNum, sch.fromNum, sch.smsBody, "Outgoing");
-                    foreach (var r in locLst)
-                    {
-                        r.SmsId = smsId;
-                    }
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    await SaveSmsLog(sch.toNum, sch.fromNum, sch.smsBody, "Outgoing");
-                }
-            }
-            catch (Exception e)
-            {
-                await SaveSmsLog(sch.toNum, sch.fromNum, sch.smsBody + "Error:" + e.ToString(), "OutgoingFailed");
-            }
-        }
-
-        private async System.Threading.Tasks.Task<int> SaveSmsLog(string toNum, string fromNum, string body, string direction)
-        {
-            var newSms = new SmsDetail
-            {
-                toNum = toNum ?? "",
-                fromNum = fromNum ?? "",
-                smsBody = body ?? "",
-                smsDirection = direction,
-                createdOn = DateTime.Now,
-                IsReadYesOrNo = "No"
-            };
-            _context.SmsDetails.Add(newSms);
-            await _context.SaveChangesAsync();
-            return newSms.Id;
-        }
-
-        // ✅ FIXED: UpdateSmsDetails 
-        [HttpPost]
-        public async Task<IActionResult> UpdateSmsDetails(SmsUpdateDto model)
-        {
-            try
-            {
-                string phoneNumber = model.fromNum;
-                if (string.IsNullOrEmpty(phoneNumber)) return Json(new { success = false, message = "Phone number is required." });
-
-                int categoryId = 0;
-                if (!string.IsNullOrEmpty(model.category)) int.TryParse(model.category, out categoryId);
-
-                // ---- Technician check + distance (only when a job is being scheduled) ----
-                int? technicianIdForJob = null;
-                double? technicianDistanceMiles = null;
-                if (model.smsDirection != "Outgoing"
-                    && model.schedulerId.HasValue && model.schedulerId.Value > 0
-                    && model.technicianId.HasValue && model.technicianId.Value > 0)
-                {
-                    var tech = await _context.Technicians.AsNoTracking()
-                        .FirstOrDefaultAsync(t => t.Id == model.technicianId.Value);
-                    if (tech == null)
-                        return Json(new { success = false, message = "Selected technician was not found." });
-
-                    if (!model.JobBookDate.HasValue || !model.JobCompletedDate.HasValue)
-                        return Json(new { success = false, message = "Select both Job Book Date and Job Completed Date when assigning a technician." });
-
-                    var existingContactId = await _context.ContactDetail
-                        .Where(c => c.PhoneNumber == model.fromNum)
-                        .Select(c => (int?)c.Id)
-                        .FirstOrDefaultAsync();
-
-                    var slot = await _availabilityService.CheckJobSlotAsync(
-                        tech.Id, model.JobBookDate.Value, model.JobCompletedDate.Value,
-                        existingContactId, model.schedulerId);
-
-                    if (!slot.Allowed)
-                        return Json(new { success = false, message = slot.Message });
-
-                    technicianIdForJob = tech.Id;
-                    technicianDistanceMiles = await _distanceService.GetDistanceInMilesOrNull(model.zipCode, tech.ZipCode);
-                }
-
-                var contact = await _context.ContactDetail.FirstOrDefaultAsync(c => c.PhoneNumber == phoneNumber);
-
-                if (contact != null)
-                {
-                    contact.Name = model.name;
-                    contact.Email = model.email;
-                    // Update split address fields
-                    contact.StreetAddress = model.streetAddress;
-                    contact.CityState = model.cityState;
-                    contact.ZipCode = model.zipCode;
-                    _context.ContactDetail.Update(contact);
-                }
-                else
-                {
-                    contact = new ContactDetail 
-                    { 
-                        Name = model.name, 
-                        Email = model.email, 
-                        PhoneNumber = phoneNumber,
-                        StreetAddress = model.streetAddress,
-                        CityState = model.cityState,
-                        ZipCode = model.zipCode
-                    };
-                    _context.ContactDetail.Add(contact);
-                    await _context.SaveChangesAsync();
-                }
-
-                // Save the selected service category on the contact. Do not overwrite
-                // Scheduler.templateOrAudioId because schedulers are shared between contacts.
-                if (model.smsDirection != "Outgoing" && categoryId > 0)
-                {
-                    contact.CategoryId = categoryId;
-                }
-
-                var smsToUpdate = await _context.SmsDetails.Where(s => s.fromNum == phoneNumber).ToListAsync();
-                foreach (var sms in smsToUpdate) { sms.ContactDetailId = contact.Id; }
-                _context.SmsDetails.UpdateRange(smsToUpdate);
-
-                if (model.smsDirection == "Outgoing")
-                {
-                    await _context.SaveChangesAsync();
-                    return Json(new { success = true, isOutgoing = true, message = "Contact details updated successfully." });
-                }
-
-                if (model.schedulerId.HasValue && model.schedulerId.Value > 0)
-                {
-                    var newScheduledJob = new AllScheduledJob
-                    {
-                        ContactDetailId = contact.Id,
-                        SchedulerId = model.schedulerId.Value,
-                        AssignedDate = GetTime(),
-                        JobBookDate = model.JobBookDate ?? DateTime.Now,
-                        JobCompletedDate = model.JobCompletedDate ?? DateTime.Now,
-                        CustomDate = model.CustomDate,
-                        CustomHours = model.CustomHours,
-                        TechnicianId = technicianIdForJob,
-                        DistanceMiles = technicianDistanceMiles
-                    };
-                    _context.AllScheduledJobs.Add(newScheduledJob);
-                    if (technicianIdForJob.HasValue) contact.AssignedTechnicianId = technicianIdForJob;
-                }
-
-                await _context.SaveChangesAsync();
-                return Json(new { success = true, isOutgoing = false });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // GetContactDetailsByPhone
-        [HttpGet]
-        public async Task<IActionResult> GetContactDetailsByPhone(string phoneNumber)
-        {
-            try
-            {
-                var contact = await _context.ContactDetail
-                    .Include(c => c.AssignedTechnician)
-                    .FirstOrDefaultAsync(c => c.PhoneNumber == phoneNumber);
-
-                if (contact == null)
-                {
-                    return Json(new { success = true, found = false });
-                }
-
-                var activeJobs = await (from j in _context.AllScheduledJobs
-                                        join s in _context.Schedulers on j.SchedulerId equals s.Id
-                                        where j.ContactDetailId == contact.Id
-                                        select new
-                                        {
-                                            jobId = j.Id,
-                                            schedulerName = s.name
-                                        }).ToListAsync();
-
-                // Get the first scheduler's category ID if exists
-                var firstScheduler = await (from j in _context.AllScheduledJobs
-                                            join s in _context.Schedulers on j.SchedulerId equals s.Id
-                                            where j.ContactDetailId == contact.Id
-                                            select s)
-                                            .FirstOrDefaultAsync();
-
-                int? categoryId = contact.CategoryId ?? firstScheduler?.templateOrAudioId;
-
-                return Json(new
-                {
-                    success = true,
-                    found = true,
-                    name = contact.Name ?? "",
-                    email = contact.Email ?? "",
-                    address = contact.Address ?? "",
-                    streetAddress = contact.StreetAddress ?? "",
-                    cityState = contact.CityState ?? "",
-                    zipCode = contact.ZipCode ?? "",
-                    assignedTechnicianId = contact.AssignedTechnicianId,
-                    assignedTechnicianName = contact.AssignedTechnician?.FullName ?? "",
-                    categoryId = categoryId,
-                    activeJobs = activeJobs
-                });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // Delete Scheduler
-        [HttpPost]
-        public async Task<IActionResult> DeleteScheduler(int schedulerId)
-        {
-            try
-            {
-                var scheduler = await _context.Schedulers.FindAsync(schedulerId);
-                if (scheduler == null)
-                {
-                    return Json(new { success = false, message = "Scheduler not found." });
-                }
-
-                string phoneNumber = scheduler.toNum;
-
-                _context.Schedulers.Remove(scheduler);
-                await _context.SaveChangesAsync();
-
-                return Json(new { success = true, phoneNumber = phoneNumber });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = ex.Message });
-            }
-        }
-
-        // GetData
         public async Task<JsonResult> GetData()
         {
             string accountSid = _configuration["AppSettings:AccountSid"];
             string authToken = _configuration["AppSettings:AuthToken"];
-            TwilioClient.Init(accountSid, authToken);
+            if (!string.IsNullOrEmpty(accountSid) && !string.IsNullOrEmpty(authToken))
+                TwilioClient.Init(accountSid, authToken);
 
             List<SmsDetailsVm> stats = await GetIncomingLogs(GetTwilioNumber());
 
@@ -1010,7 +740,6 @@ namespace SendSmsCallAlerts.Controllers
                 conversation.jobBookTimesList,
                 conversation.JobBookDate,
                 conversation.SchedulerId,
-                // Task 4: response time fields
                 incomingDate = conversation.smsDirection == "Incoming"
                     ? conversation.createdOn.ToString("MM-dd-yyyy") : "",
                 incomingTime = conversation.smsDirection == "Incoming"
@@ -1030,56 +759,107 @@ namespace SendSmsCallAlerts.Controllers
             });
         }
 
-        private DateTime GetTime()
-        {
-            string TmZn = _configuration["AppSettings:TmZn"];
-            TimeZoneInfo easternTimeZone = TimeZoneInfo.FindSystemTimeZoneById(TmZn);
-            DateTime usEastCoastNow = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, easternTimeZone);
-            return usEastCoastNow;
-        }
-
-        // NEW: Assign Technician to Contact
-        [HttpPost]
-        public async Task<JsonResult> AssignTechnician(string phoneNumber, int technicianId)
+        // =====================================================================
+        // MODAL: LOAD + SAVE (all rules live in JobService)
+        // =====================================================================
+        [HttpGet]
+        public async Task<IActionResult> GetContactDetailsByPhone(string phoneNumber)
         {
             try
             {
-                var contact = await _context.ContactDetail
-                    .FirstOrDefaultAsync(c => c.PhoneNumber == phoneNumber);
-
-                if (contact == null)
-                {
-                    return Json(new { success = false, message = "Contact not found." });
-                }
-
-                var technician = await _context.Technicians.FindAsync(technicianId);
-                if (technician == null)
-                {
-                    return Json(new { success = false, message = "Technician not found." });
-                }
-
-                contact.AssignedTechnicianId = technicianId;
-                await _context.SaveChangesAsync();
-
-                return Json(new { 
-                    success = true, 
-                    message = $"Technician {technician.FullName} assigned successfully.",
-                    technicianName = technician.FullName
-                });
+                var view = await _jobService.GetContactViewAsync(phoneNumber);
+                return Json(view);
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error: " + ex.Message });
+                return Json(new { found = false, error = ex.Message });
             }
         }
 
-        // Task 4: Format waiting time as "Xm Ys"
+        /// <summary>The single Update button: contact + job + message plan, all or nothing.</summary>
+        [HttpPost]
+        public async Task<IActionResult> SaveContactJob([FromBody] SaveContactJobRequest request)
+        {
+            if (request == null)
+                return Json(new SaveResult { Success = false, Message = "Invalid request." });
+
+            var result = await _jobService.SaveAsync(request);
+            return Json(result);
+        }
+
+        // =====================================================================
+        // OTHER
+        // =====================================================================
+        public async System.Threading.Tasks.Task SaveAndSendSMS(Scheduler sch)
+        {
+            try
+            {
+                var locLst = _context.MmsLinkss.Where(r => r.SchedulerId == sch.Id).ToList();
+                if (locLst.Count() > 0)
+                {
+                    int smsId = await SaveSmsLog(sch.toNum, sch.fromNum, sch.smsBody, "Outgoing");
+                    foreach (var r in locLst)
+                    {
+                        r.SmsId = smsId;
+                    }
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    await SaveSmsLog(sch.toNum, sch.fromNum, sch.smsBody, "Outgoing");
+                }
+            }
+            catch (Exception e)
+            {
+                await SaveSmsLog(sch.toNum, sch.fromNum, sch.smsBody + "Error:" + e.ToString(), "OutgoingFailed");
+            }
+        }
+
+        private async System.Threading.Tasks.Task<int> SaveSmsLog(string? toNum, string? fromNum, string body, string direction)
+        {
+            var newSms = new SmsDetail
+            {
+                toNum = toNum ?? "",
+                fromNum = fromNum ?? "",
+                smsBody = body ?? "",
+                smsDirection = direction,
+                createdOn = _clock.UtcNow,
+                IsReadYesOrNo = "No"
+            };
+            _context.SmsDetails.Add(newSms);
+            await _context.SaveChangesAsync();
+            return newSms.Id;
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DeleteScheduler(int schedulerId)
+        {
+            try
+            {
+                var scheduler = await _context.Schedulers.FindAsync(schedulerId);
+                if (scheduler == null)
+                {
+                    return Json(new { success = false, message = "Scheduler not found." });
+                }
+
+                string? phoneNumber = scheduler.toNum;
+
+                _context.Schedulers.Remove(scheduler);
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, phoneNumber = phoneNumber });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
         private static string FormatWaitingTime(double totalMinutes)
         {
             int minutes = (int)Math.Floor(totalMinutes);
             int seconds = (int)Math.Round((totalMinutes - minutes) * 60);
             return $"{minutes}m {seconds}s";
         }
-
     }
 }

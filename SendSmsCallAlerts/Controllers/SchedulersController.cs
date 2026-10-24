@@ -335,8 +335,8 @@ namespace SendSmsCallAlerts.Controllers
 
                 // ADDED: Only update fields that are still present in the form
                 existingScheduler.name = scheduler.name;
-                existingScheduler.fromNum = scheduler.fromNum;
-                existingScheduler.toNum = scheduler.toNum;
+                //existingScheduler.fromNum = scheduler.fromNum;
+                //existingScheduler.toNum = scheduler.toNum;
                 existingScheduler.smsBody = scheduler.smsBody;
                 existingScheduler.onceOrRepeat = scheduler.onceOrRepeat;
                 existingScheduler.status = scheduler.status;
@@ -365,8 +365,9 @@ namespace SendSmsCallAlerts.Controllers
                     await DeleteAndSaveImagUrls(existingScheduler.Id, mmsImg);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                ViewBag.ErMsg = "Could not save the scheduler: " + ex.Message;
                 ViewBag.TimeToRunList = await _context.TimeToRun.ToListAsync();
                 ViewBag.RunFromList = await _context.RunFrom.ToListAsync();
                 return View(scheduler);

@@ -1,9 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿//using Hangfire.Common;
+using Microsoft.EntityFrameworkCore;
 using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Models;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
-using Twilio.Types;
 
 namespace SendSmsCallAlerts.Services
 {
@@ -26,27 +24,26 @@ namespace SendSmsCallAlerts.Services
         private readonly ApplicationDbContext db;
         private readonly IConfiguration config;
         private readonly ILogger<AutomatedSmsService> logger;
-        private readonly TimeZoneInfo tz;
-        private readonly string accountSid, authToken, twilioNumber, companyName;
+        private readonly IAppClock clock;
+        private readonly ISmsGateway gateway;
+        private readonly string companyName;
         private readonly int maxJobsChars;
 
-        public AutomatedSmsService(ApplicationDbContext db, IConfiguration config, ILogger<AutomatedSmsService> logger)
+        public AutomatedSmsService(ApplicationDbContext db, IConfiguration config, ILogger<AutomatedSmsService> logger,
+            IAppClock clock, ISmsGateway gateway)
         {
             this.db = db;
             this.config = config;
             this.logger = logger;
-            tz = TimeZoneInfo.FindSystemTimeZoneById(config["AppSettings:TmZn"] ?? "UTC");
-            accountSid = config["AppSettings:AccountSid"] ?? "";
-            authToken = config["AppSettings:AuthToken"] ?? "";
-            twilioNumber = config["AppSettings:TwilioNumber"] ?? "";
+            this.clock = clock;
+            this.gateway = gateway;
             companyName = config["AutomatedSms:CompanyName"] ?? "Our Team";
             maxJobsChars = config.GetValue<int?>("AutomatedSms:MaxJobsListCharacters") ?? 1400;
         }
 
-        // ---------- time helpers ----------
-        public DateTime BusinessNow() => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
-        public DateTime ToBusiness(DateTime utc) =>
-            TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(utc, DateTimeKind.Utc), tz);
+        // ---------- time helpers (kept public: other code may call them) ----------
+        public DateTime BusinessNow() => clock.BusinessNow;
+        public DateTime ToBusiness(DateTime utc) => clock.ToBusiness(utc);
 
         private bool IsDue(AutomatedSmsSetting s, DateTime nowLocal)
         {
@@ -84,8 +81,6 @@ namespace SendSmsCallAlerts.Services
             AutomatedSmsSetting s, string occurrenceKey, bool dryRun, DateTime nowLocal, CancellationToken ct = default)
         {
             var items = await BuildItemsAsync(s, nowLocal, ct);
-            bool twilioConfigured = !string.IsNullOrEmpty(accountSid) && !string.IsNullOrEmpty(authToken);
-            if (!dryRun && twilioConfigured) TwilioClient.Init(accountSid, authToken);
 
             foreach (var item in items)
             {
@@ -124,30 +119,18 @@ namespace SendSmsCallAlerts.Services
                     continue;
                 }
 
-                bool delivered = false;
-                try
+                // Real or simulated send is decided by AppSettings:SmsMode inside the gateway.
+                var send = await gateway.SendAsync(item.Phone, item.Body);
+                bool delivered = send.Success;
+                if (send.Success)
                 {
-                    if (twilioConfigured)
-                    {
-                        if (string.IsNullOrEmpty(twilioNumber))
-                            throw new InvalidOperationException("AppSettings:TwilioNumber is empty.");
-                        await MessageResource.CreateAsync(
-                            body: item.Body,
-                            from: new PhoneNumber(twilioNumber),
-                            to: new PhoneNumber(item.Phone));
-                        log.Status = AutomatedSmsStatus.Sent;
-                    }
-                    else
-                    {
-                        log.Status = AutomatedSmsStatus.NoTwilio;
-                    }
-                    delivered = true;
+                    log.Status = send.Simulated ? AutomatedSmsStatus.NoTwilio : AutomatedSmsStatus.Sent;
                     log.SentAt = DateTime.UtcNow;
                 }
-                catch (Exception ex)
+                else
                 {
                     log.Status = AutomatedSmsStatus.Failed;
-                    log.ErrorMessage = Truncate(ex.Message, 1000);
+                    log.ErrorMessage = Truncate(send.Error ?? "Send failed", 1000);
                 }
                 item.Status = log.Status;
 
@@ -155,7 +138,7 @@ namespace SendSmsCallAlerts.Services
                 {
                     var sms = new SmsDetail
                     {
-                        fromNum = twilioNumber,
+                        fromNum = send.From,
                         toNum = item.Phone,
                         smsBody = item.Body,
                         smsDirection = "Outgoing",
@@ -213,10 +196,9 @@ namespace SendSmsCallAlerts.Services
         private async Task<List<AutomatedSmsItem>> BuildDailySummaryAsync(AutomatedSmsSetting s, DateTime nowLocal, CancellationToken ct)
         {
             var jobs = await TomorrowJobsAsync(nowLocal, ct);
-            var cats = await CategoriesAsync(ct);
             var tomorrow = nowLocal.Date.AddDays(1);
 
-            var byTech = jobs.Where(j => TechId(j) != null).GroupBy(j => TechId(j)!.Value).ToList();
+            var byTech = jobs.Where(j => j.TechnicianId != null).GroupBy(j => j.TechnicianId!.Value).ToList();
             var techIds = byTech.Select(g => g.Key).ToList();
             var techs = await db.Technicians.AsNoTracking().Where(t => techIds.Contains(t.Id)).ToListAsync(ct);
 
@@ -226,7 +208,7 @@ namespace SendSmsCallAlerts.Services
                 var tJobs = byTech.First(g => g.Key == t.Id).ToList();
                 var full = TechFullName(t);
                 var lines = tJobs.Select((j, i) =>
-                    $"{i + 1}) {j.JobBookDate:h:mm tt} - {CategoryName(cats, j)}\n" +
+                    $"{i + 1}) {j.StartAt:h:mm tt} - {j.Category?.keyword ?? ""}\n" +
                     $"   {(j.ContactDetail != null ? CustomerFullName(j.ContactDetail) : "")}\n" +
                     $"   {(j.ContactDetail != null ? Addr(j.ContactDetail) : "")}").ToList();
 
@@ -247,7 +229,6 @@ namespace SendSmsCallAlerts.Services
         private async Task<List<AutomatedSmsItem>> BuildCustomerReminderAsync(AutomatedSmsSetting s, DateTime nowLocal, CancellationToken ct)
         {
             var jobs = await TomorrowJobsAsync(nowLocal, ct);
-            var cats = await CategoriesAsync(ct);
             var allTechs = await db.Technicians.AsNoTracking().ToListAsync(ct);
             var techNames = allTechs.ToDictionary(t => t.Id, t => TechFullName(t));
             var optOut = (await db.OptOuts.Select(o => o.PhoneNumber).ToListAsync(ct))
@@ -258,17 +239,17 @@ namespace SendSmsCallAlerts.Services
             foreach (var g in jobs.Where(j => j.ContactDetail != null).GroupBy(j => j.ContactDetail!.Id)) // one SMS per customer
             {
                 var contact = g.First().ContactDetail!;
-                var list = g.OrderBy(j => j.JobBookDate).ToList();
+                var list = g.OrderBy(j => j.StartAt).ToList();
 
                 var vars = new Dictionary<string, string>
                 {
                     ["customerName"] = CustomerFullName(contact),
-                    ["category"] = string.Join(", ", list.Select(j => CategoryName(cats, j)).Where(x => x != "").Distinct()),
+                    ["category"] = string.Join(", ", list.Select(j => j.Category?.keyword ?? "").Where(x => x != "").Distinct()),
                     ["jobDate"] = tomorrow.ToString("dd-MMM-yyyy"),
-                    ["jobTime"] = string.Join(", ", list.Select(j => j.JobBookDate.ToString("h:mm tt"))),
+                    ["jobTime"] = string.Join(", ", list.Select(j => j.StartAt.ToString("h:mm tt"))),
                     ["technicianName"] = string.Join(", ", list
-                        .Where(j => TechId(j) != null && techNames.ContainsKey(TechId(j)!.Value))
-                        .Select(j => techNames[TechId(j)!.Value]).Distinct()),
+                        .Where(j => j.TechnicianId != null && techNames.ContainsKey(j.TechnicianId.Value))
+                        .Select(j => techNames[j.TechnicianId!.Value]).Distinct()),
                     ["companyName"] = companyName
                 };
                 var item = MakeItem(RecipientTypes.Customer, contact.Id, CustomerFullName(contact),
@@ -282,36 +263,24 @@ namespace SendSmsCallAlerts.Services
         }
 
         // ---------- helpers ----------
-        private static int? TechId(AllScheduledJob j) => j.TechnicianId;
-
-        private async Task<List<AllScheduledJob>> TomorrowJobsAsync(DateTime nowLocal, CancellationToken ct)
+        /// <summary>Tomorrow's jobs that are not cancelled (Scheduled / Confirmed).</summary>
+        private async Task<List<Job>> TomorrowJobsAsync(DateTime nowLocal, CancellationToken ct)
         {
             var start = nowLocal.Date.AddDays(1);
             var end = start.AddDays(1);
-            return await db.AllScheduledJobs.AsNoTracking()
+            return await db.Jobs.AsNoTracking()
                 .Include(j => j.ContactDetail)
-                .Include(j => j.Scheduler)
-                .Where(j => !j.IsPaused && j.JobBookDate >= start && j.JobBookDate < end)
-                .OrderBy(j => j.JobBookDate)
+                .Include(j => j.Category)
+                .Where(j => j.Status != JobStatus.Cancelled && j.StartAt >= start && j.StartAt < end)
+                .OrderBy(j => j.StartAt)
                 .ToListAsync(ct);
-        }
-
-        private async Task<Dictionary<int, string>> CategoriesAsync(CancellationToken ct)
-        {
-            var rows = await db.IvrOption.AsNoTracking().ToListAsync(ct);
-            return rows.GroupBy(x => x.Id).ToDictionary(g => g.Key, g => g.First().keyword ?? "");
-        }
-
-        private static string CategoryName(Dictionary<int, string> cats, AllScheduledJob j)
-        {
-            var id = j.Scheduler?.templateOrAudioId;
-            return id != null && cats.TryGetValue(id.Value, out var name) ? name : "";
         }
 
         private static string Addr(ContactDetail c) => c.Address ?? "";
 
         private static string FirstWord(string full) =>
             full.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? full;
+
         public static string TechFullName(Technician t)
         {
             var combined = $"{t.FirstName} {t.LastName}".Trim();
@@ -325,9 +294,10 @@ namespace SendSmsCallAlerts.Services
         }
 
         public static string CustomerFullName(ContactDetail c) => (c.Name ?? "").Trim();
+
         private AutomatedSmsItem MakeItem(string type, int id, string name, string? rawPhone, string body, int? contactId)
         {
-            var phone = NormalizePhone(rawPhone);
+            var phone = gateway.NormalizePhone(rawPhone);
             return new AutomatedSmsItem
             {
                 RecipientType = type,
@@ -359,16 +329,6 @@ namespace SendSmsCallAlerts.Services
 
         private static string Digits(string? s) => new string((s ?? "").Where(char.IsDigit).ToArray());
         private static string Last10(string? s) { var d = Digits(s); return d.Length > 10 ? d.Substring(d.Length - 10) : d; }
-
-        private static string NormalizePhone(string? raw)
-        {
-            raw = (raw ?? "").Trim();
-            var d = Digits(raw);
-            if (d.Length == 0) return "";
-            if (raw.StartsWith("+")) return "+" + d;                 // already has a country code: keep it
-            if (d.Length >= 10) return "+1" + d.Substring(d.Length - 10);  // same rule as SendSms
-            return "";                                               // too short: skipped with "No phone number"
-        }
 
         private static string Truncate(string s, int max) => s.Length <= max ? s : s.Substring(0, max);
     }

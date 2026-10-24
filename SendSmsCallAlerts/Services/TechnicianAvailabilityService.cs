@@ -1,10 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿//using Hangfire.Common;
+using Microsoft.EntityFrameworkCore;
 using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Models;
 
 namespace SendSmsCallAlerts.Services
 {
-    public record AvailabilityCheckResult(bool Allowed, bool Configured, string Message);
+    /// <summary>Field = key of the form field the message belongs to (jobStartAt / jobEndAt).</summary>
+    public record AvailabilityCheckResult(bool Allowed, bool Configured, string Message, string? Field = null);
 
     public class TechnicianAvailabilityService
     {
@@ -50,15 +52,15 @@ namespace SendSmsCallAlerts.Services
                 {
                     DayOfWeek = d,
                     IsAvailable = on,
-                    StartTime = on ? row.StartTime : null,
-                    EndTime = on ? row.EndTime : null
+                    StartTime = on ? row!.StartTime : null,
+                    EndTime = on ? row!.EndTime : null
                 });
             }
             return result;
         }
 
         /// <summary>Returns an error message, or null when valid.</summary>
-        public static string Validate(List<TechnicianAvailability> week)
+        public static string? Validate(List<TechnicianAvailability> week)
         {
             if (!week.Any(w => w.IsAvailable))
                 return "Select at least one available day.";
@@ -75,7 +77,7 @@ namespace SendSmsCallAlerts.Services
         }
 
         /// <summary>e.g. "Mon-Fri 09:00-17:00; Sat 09:00-13:00"</summary>
-        public static string BuildSummary(IEnumerable<TechnicianAvailability> rows)
+        public static string BuildSummary(IEnumerable<TechnicianAvailability>? rows)
         {
             var list = rows?.ToList() ?? new List<TechnicianAvailability>();
             var ordered = DisplayOrder.Select(d => list.FirstOrDefault(r => r.DayOfWeek == d)).ToList();
@@ -90,14 +92,14 @@ namespace SendSmsCallAlerts.Services
                 int j = i;
                 while (j + 1 < ordered.Count
                        && ordered[j + 1] != null
-                       && ordered[j + 1].IsAvailable
-                       && ordered[j + 1].StartTime == r.StartTime
-                       && ordered[j + 1].EndTime == r.EndTime)
+                       && ordered[j + 1]!.IsAvailable
+                       && ordered[j + 1]!.StartTime == r.StartTime
+                       && ordered[j + 1]!.EndTime == r.EndTime)
                     j++;
 
                 var label = i == j
                     ? DayNames[r.DayOfWeek]
-                    : $"{DayNames[r.DayOfWeek]}-{DayNames[ordered[j].DayOfWeek]}";
+                    : $"{DayNames[r.DayOfWeek]}-{DayNames[ordered[j]!.DayOfWeek]}";
                 parts.Add($"{label} {Fmt(r.StartTime)}-{Fmt(r.EndTime)}");
                 i = j + 1;
             }
@@ -105,8 +107,8 @@ namespace SendSmsCallAlerts.Services
             return parts.Count == 0 ? "Not configured" : string.Join("; ", parts);
         }
 
-        /// <summary>Is the technician available at this local business date/time?</summary>
-        public static AvailabilityCheckResult Check(IEnumerable<TechnicianAvailability> rows, DateTime when)
+        /// <summary>Is the technician available at this local business date/time? (start time only)</summary>
+        public static AvailabilityCheckResult Check(IEnumerable<TechnicianAvailability>? rows, DateTime when)
         {
             var list = rows?.ToList() ?? new List<TechnicianAvailability>();
             if (list.Count == 0)
@@ -114,12 +116,12 @@ namespace SendSmsCallAlerts.Services
 
             var row = list.FirstOrDefault(r => r.DayOfWeek == (int)when.DayOfWeek);
             if (row == null || !row.IsAvailable || row.StartTime == null || row.EndTime == null)
-                return new AvailabilityCheckResult(false, true, $"Technician is not available on {when:dddd}.");
+                return new AvailabilityCheckResult(false, true, $"Technician is not available on {when:dddd}.", "jobStartAt");
 
             var t = when.TimeOfDay;
             if (t < row.StartTime || t >= row.EndTime)
                 return new AvailabilityCheckResult(false, true,
-                    $"Technician works {Fmt(row.StartTime)}-{Fmt(row.EndTime)} on {when:dddd}.");
+                    $"Technician works {Fmt(row.StartTime)}-{Fmt(row.EndTime)} on {when:dddd}.", "jobStartAt");
 
             return new AvailabilityCheckResult(true, true, "Available.");
         }
@@ -132,55 +134,115 @@ namespace SendSmsCallAlerts.Services
                 .ToListAsync();
             return Check(rows, when);
         }
+
         /// <summary>
-        /// Validates a full job slot: end after start, same day, inside working hours,
-        /// and no overlap with another job of the same technician.
+        /// Working-hours part of a slot check (no database): end after start, same day,
+        /// start inside hours, end not after closing time.
         /// </summary>
-        public async Task<AvailabilityCheckResult> CheckJobSlotAsync(
-            int technicianId, DateTime start, DateTime end, int? excludeContactId, int? excludeSchedulerId)
+        public static AvailabilityCheckResult CheckSlotHours(IEnumerable<TechnicianAvailability>? rows, DateTime start, DateTime end)
         {
             if (end <= start)
-                return new AvailabilityCheckResult(false, true, "Job end time must be after the start time.");
-
+                return new AvailabilityCheckResult(false, true, "End time must be after the start time.", "jobEndAt");
             if (start.Date != end.Date)
-                return new AvailabilityCheckResult(false, true, "Job must start and end on the same day.");
+                return new AvailabilityCheckResult(false, true, "Job must start and end on the same day.", "jobEndAt");
 
+            var list = rows?.ToList() ?? new List<TechnicianAvailability>();
+
+            var startCheck = Check(list, start);
+            if (!startCheck.Allowed) return startCheck;
+
+            var row = list.FirstOrDefault(r => r.DayOfWeek == (int)start.DayOfWeek);
+            if (row != null && row.IsAvailable && row.EndTime.HasValue && end.TimeOfDay > row.EndTime.Value)
+            {
+                return new AvailabilityCheckResult(false, true,
+                    $"Job ends at {Fmt(end.TimeOfDay)}, after the technician's working hours end ({Fmt(row.EndTime)}).", "jobEndAt");
+            }
+
+            return new AvailabilityCheckResult(true, startCheck.Configured, "Available.");
+        }
+
+        /// <summary>
+        /// Full slot check for one technician: working hours + no overlap with another
+        /// non-cancelled job. excludeJobId = the job being edited (so it never clashes with itself).
+        /// </summary>
+        public async Task<AvailabilityCheckResult> CheckJobSlotAsync(int technicianId, DateTime start, DateTime end, int? excludeJobId = null)
+        {
             var rows = await _context.TechnicianAvailabilities
                 .AsNoTracking()
                 .Where(a => a.TechnicianId == technicianId)
                 .ToListAsync();
 
-            // 1) start inside working hours
-            var startCheck = Check(rows, start);
-            if (!startCheck.Allowed) return startCheck;
+            var hours = CheckSlotHours(rows, start, end);
+            if (!hours.Allowed) return hours;
 
-            // 2) end inside working hours
-            var row = rows.FirstOrDefault(r => r.DayOfWeek == (int)start.DayOfWeek);
-            if (row != null && row.IsAvailable && row.EndTime.HasValue && end.TimeOfDay > row.EndTime.Value)
-            {
-                return new AvailabilityCheckResult(false, true,
-                    $"Job ends at {Fmt(end.TimeOfDay)}, after the technician's working hours end ({Fmt(row.EndTime)}).");
-            }
-
-            // 3) no overlap with another job of this technician
-            var overlapQuery = _context.AllScheduledJobs
+            int exclude = excludeJobId ?? 0;
+            var clash = await _context.Jobs
                 .AsNoTracking()
                 .Where(j => j.TechnicianId == technicianId
-                            && j.JobBookDate < end
-                            && start < j.JobCompletedDate);
+                            && j.Status != JobStatus.Cancelled
+                            && j.Id != exclude
+                            && j.StartAt < end
+                            && start < j.EndAt)
+                .OrderBy(j => j.StartAt)
+                .FirstOrDefaultAsync();
 
-            // ignore the same customer + same scheduler (re-saving the same job)
-            if (excludeContactId.HasValue)
-                overlapQuery = overlapQuery.Where(j => !(j.ContactDetailId == excludeContactId && j.SchedulerId == excludeSchedulerId));
-
-            var clash = await overlapQuery.OrderBy(j => j.JobBookDate).FirstOrDefaultAsync();
             if (clash != null)
             {
                 return new AvailabilityCheckResult(false, true,
-                    $"Technician is already booked {clash.JobBookDate:dd-MMM HH:mm} to {clash.JobCompletedDate:HH:mm} (job #{clash.Id}).");
+                    $"Technician is already booked {clash.StartAt:dd-MMM HH:mm} to {clash.EndAt:HH:mm} (job #{clash.Id}).", "jobStartAt");
             }
 
-            return new AvailabilityCheckResult(true, startCheck.Configured, "Available.");
+            return new AvailabilityCheckResult(true, hours.Configured, "Available.");
+        }
+
+        /// <summary>
+        /// Availability of many technicians at once (used by the modal's technician dropdown).
+        /// Technicians must be loaded with their Availabilities. end == null -> start-time check only.
+        /// </summary>
+        public async Task<Dictionary<int, AvailabilityCheckResult>> CheckManyAsync(
+            IEnumerable<Technician> technicians, DateTime start, DateTime? end, int? excludeJobId)
+        {
+            var techs = technicians.ToList();
+            var result = new Dictionary<int, AvailabilityCheckResult>();
+            bool hasEnd = end.HasValue && end.Value > start;
+
+            var booked = new Dictionary<int, List<Job>>();
+            if (hasEnd)
+            {
+                var ids = techs.Select(t => t.Id).ToList();
+                int exclude = excludeJobId ?? 0;
+                var endValue = end!.Value;
+                var jobs = await _context.Jobs.AsNoTracking()
+                    .Where(j => j.TechnicianId != null
+                                && ids.Contains(j.TechnicianId.Value)
+                                && j.Status != JobStatus.Cancelled
+                                && j.Id != exclude
+                                && j.StartAt < endValue
+                                && start < j.EndAt)
+                    .ToListAsync();
+                booked = jobs.GroupBy(j => j.TechnicianId!.Value).ToDictionary(g => g.Key, g => g.ToList());
+            }
+
+            foreach (var t in techs)
+            {
+                AvailabilityCheckResult r;
+                if (hasEnd)
+                {
+                    r = CheckSlotHours(t.Availabilities, start, end!.Value);
+                    if (r.Allowed && booked.TryGetValue(t.Id, out var clashes))
+                    {
+                        var c = clashes.OrderBy(x => x.StartAt).First();
+                        r = new AvailabilityCheckResult(false, true,
+                            $"Technician is already booked {c.StartAt:dd-MMM HH:mm} to {c.EndAt:HH:mm} (job #{c.Id}).", "jobStartAt");
+                    }
+                }
+                else
+                {
+                    r = Check(t.Availabilities, start);
+                }
+                result[t.Id] = r;
+            }
+            return result;
         }
 
         private static string Fmt(TimeSpan? t) => t.HasValue ? t.Value.ToString(@"hh\:mm") : "--:--";

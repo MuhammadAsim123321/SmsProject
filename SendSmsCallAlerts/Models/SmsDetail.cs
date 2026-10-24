@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.AspNetCore.Mvc;
 
 namespace SendSmsCallAlerts.Models
 {
@@ -16,16 +15,14 @@ namespace SendSmsCallAlerts.Models
         public string? dt { get; set; }
         public DateTime createdOn { get; set; }
         public string? imgPath { get; set; }
-        // ✅ NEW: Link to ContactDetail for unified data
+
+        // link to the customer (set by the webhook and by JobService)
         public int? ContactDetailId { get; set; }
 
         [ForeignKey("ContactDetailId")]
         public virtual ContactDetail? ContactDetail { get; set; }
-        public int? ScheduledJobId { get; set; }
 
-        // NEW: Split address fields (for backward compatibility and direct storage)
-        public string? StreetAddress { get; set; }
-        public string? CityState { get; set; }
-        public string? ZipCode { get; set; }
+        // the message plan (AllScheduledJob) that sent this outgoing message; FK is set up in ApplicationDbContext
+        public int? ScheduledJobId { get; set; }
     }
 }

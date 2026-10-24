@@ -15,8 +15,11 @@ namespace SendSmsCallAlerts.Models
         public DateTime createdOn { get; set; }
         public DateTime executionTime { get; set; }
         public string status { get; set; }
-        public string fromNum { get; set; }
-        public string toNum { get; set; }
+
+        // no longer entered on the form: the sender comes from AppSettings:TwilioNumber
+        public string? fromNum { get; set; }
+        public string? toNum { get; set; }
+
         public string smsBody { get; set; }
         public DateTime? JobBookDate { get; set; }
 
@@ -31,8 +34,5 @@ namespace SendSmsCallAlerts.Models
 
         [ForeignKey("RunFromId")]
         public virtual RunFrom RunFrom { get; set; }
-
-
-
     }
 }
