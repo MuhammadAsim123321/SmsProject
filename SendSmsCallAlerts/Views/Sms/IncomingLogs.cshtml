@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = "IncomingLogs";
 }
 
@@ -37,6 +37,15 @@
     #tblRPM tbody tr:nth-child(odd)  { background-color: #fff; }
     #tblRPM tbody tr:nth-child(even) { background-color: #f2f2f2; }
     #tblRPM tbody tr:hover           { background-color: #e8f4fc; cursor: pointer; }
+
+    /* Waiting-time colour rows — inline style wins over nth-child but we also need
+       to ensure hover doesn't wipe the tint completely */
+    #tblRPM tbody tr.row-gold           { background-color: #E6F9EC !important; border-left: 4px solid #28A745; }
+    #tblRPM tbody tr.row-orange         { background-color: #FFE5B4 !important; border-left: 4px solid #FFA500; }
+    #tblRPM tbody tr.row-red            { background-color: #FFD0D0 !important; border-left: 4px solid #FF4444; }
+    #tblRPM tbody tr.row-gold:hover     { background-color: #cff0d9 !important; }
+    #tblRPM tbody tr.row-orange:hover   { background-color: #f5d89a !important; }
+    #tblRPM tbody tr.row-red:hover      { background-color: #f5b8b8 !important; }
 
     div.dataTables_wrapper div.dataTables_length select {
         width: 70px !important;
@@ -105,7 +114,7 @@
     <div class="sg-response-legend">
         <strong>Waiting Time Key:</strong>
         <span style="display:inline-flex;align-items:center;gap:6px;">
-            <span style="width:14px;height:14px;background:#FFD700;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Gold — 10–14 min 59 sec
+            <span style="width:14px;height:14px;background:#28A745;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Green — 0–14 min 59 sec
         </span>
         <span style="display:inline-flex;align-items:center;gap:6px;">
             <span style="width:14px;height:14px;background:#FFA500;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Orange — 15–19 min 59 sec
@@ -116,7 +125,7 @@
     </div>
 
     <div class="sg-sms-table-zone">
-    <table class="table table-bordered table-striped" id="tblRPM">
+    <table class="table table-bordered" id="tblRPM">
         <thead>
             <tr>
                 <th>From</th>
@@ -347,12 +356,7 @@
         // Task 4: color incoming rows based on waiting time
         "createdRow": function (row, data) {
             if (data.smsDirection === "Incoming" && data.waitingColor) {
-                var colorMap = { gold: '#FFF8DC', orange: '#FFE5B4', red: '#FFD0D0' };
-                var borderMap = { gold: '#FFD700', orange: '#FFA500', red: '#FF4444' };
-                $(row).css({
-                    'background-color': colorMap[data.waitingColor] || '',
-                    'border-left': '4px solid ' + (borderMap[data.waitingColor] || 'transparent')
-                });
+                $(row).addClass('row-' + data.waitingColor);
             }
         },
         "initComplete": function () {
@@ -440,7 +444,7 @@
                 "defaultContent": "",
                 "render": function (data, type, row) {
                     if (row.smsDirection !== "Incoming") return "";
-                    var colorMap = { gold: '#B8860B', orange: '#CC6600', red: '#CC0000' };
+                    var colorMap = { gold: '#1a7a35', orange: '#CC6600', red: '#CC0000' };
                     var color = colorMap[row.waitingColor] || '#555';
                     var weight = row.waitingColor ? 'bold' : 'normal';
                     return '<span style="color:' + color + '; font-weight:' + weight + ';">' + (data || "Pending") + '</span>';

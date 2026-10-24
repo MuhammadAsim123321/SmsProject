@@ -34,7 +34,7 @@
         public double? WaitingMinutes { get; set; }
 
         /// <summary>
-        /// "gold" | "orange" | "red" | "" based on WaitingMinutes for incoming messages
+        /// "gold" (0–14m59s) | "orange" (15–19m59s) | "red" (20m+) | "" based on WaitingMinutes for incoming messages
         /// </summary>
         public string WaitingColor
         {
@@ -43,8 +43,7 @@
                 if (smsDirection != "Incoming" || WaitingMinutes == null) return "";
                 if (WaitingMinutes >= 20) return "red";
                 if (WaitingMinutes >= 15) return "orange";
-                if (WaitingMinutes >= 10) return "gold";
-                return "";
+                return "gold"; // 0–14 min 59 sec
             }
         }
     }
