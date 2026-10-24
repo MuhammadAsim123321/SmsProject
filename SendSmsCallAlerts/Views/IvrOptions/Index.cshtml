@@ -4,19 +4,31 @@
     ViewData["Title"] = "IVR options";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
-    <h1>Options List</h1>
-    <div class="sg-page-actions">
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-sitemap"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">MENU CONFIGURATION</span>
+            <h1>IVR options</h1>
+            <p>Manage available menu options and their routing</p>
+        </div>
+    </div>
+    <div class="nova-page-actions">
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-outline-secondary btn-sm sg-secondary-action">
         <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
     </a>
         <a asp-action="Create" class="sg-create-button signal-create-link sg-primary-action">Create New</a>
     </div>
-</div>
+</section>
 
 
-<div class="signal-list-card">
-<table class="table">
+<section class="nova-list-card" aria-label="All IVR options">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>All IVR options</h2><p>Manage available menu options and their routing</p></div></div>
+        <div class="nova-list-controls"><label class="nova-search" for="search-novaIvrOptionsTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search All IVR options</span><input type="search" id="search-novaIvrOptionsTable" data-nova-search="novaIvrOptionsTable" placeholder="Search records..." autocomplete="off" /></label></div>
+    </div>
+    <div class="nova-table-viewport">
+<table id="novaIvrOptionsTable" class="table">
     <thead>
         <tr>
             <th>
@@ -53,3 +65,4 @@
     </tbody>
 </table>
 </div>
+</section>

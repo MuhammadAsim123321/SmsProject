@@ -1,0 +1,288 @@
+/* SMSHub NOVA — targeted list/table repair, October 2026.
+   Loaded AFTER signal-ui-next.css. No changes to form submission,
+   AJAX routes, DataTables sorting/searching or modal callbacks. */
+
+/* Shared table appearance — similar to the IVR/Main Options list. */
+body.signal-app .signal-view-surface .nova-list-card {
+  min-width: 0;
+}
+body.signal-app .signal-view-surface .nova-list-card .nova-table-viewport {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0 !important;
+  background: #fff;
+  font-size: 13px;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table thead th {
+  padding: 13px 17px !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+  vertical-align: middle !important;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  background: #f5f5fd !important;
+  color: #62638b !important;
+  border: 0 !important;
+  border-bottom: 1px solid #e8e8f3 !important;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table tbody td {
+  padding: 11px 17px !important;
+  line-height: 1.45 !important;
+  vertical-align: middle !important;
+  height: auto !important;
+  min-height: 0 !important;
+  font-size: 12.75px !important;
+  border: 0 !important;
+  border-bottom: 1px solid #eeeff7 !important;
+  color: #444b65;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table tbody tr {
+  height: auto !important;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table tbody tr:last-child td {
+  border-bottom: 0 !important;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table tbody td .btn,
+body.signal-app .signal-view-surface .nova-list-card table.table tbody td .sg-table-link {
+  width: auto !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 32px !important;
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+  overflow-wrap: normal !important;
+  word-break: keep-all !important;
+  writing-mode: horizontal-tb !important;
+  line-height: 1.25 !important;
+  padding: 7px 12px !important;
+  margin: 2px 4px 2px 0 !important;
+  border-radius: 9px !important;
+  font-size: 12px !important;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table tbody td .sg-table-link {
+  text-decoration: none !important;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table td form.d-inline,
+body.signal-app .signal-view-surface .nova-list-card table.table td form[style*="display:inline"] {
+  display: inline-flex !important;
+  margin: 2px 4px 2px 0 !important;
+  vertical-align: middle !important;
+}
+
+/* DataTables often generates TWO copies of the table when scrollX is on.
+   The content table and cloned header need the same generous width. */
+body.signal-app .signal-view-surface .nova-list-card .dataTables_wrapper,
+body.signal-app .signal-view-surface .nova-list-card .dataTables_scroll,
+body.signal-app .signal-view-surface .nova-list-card .dataTables_scrollHead,
+body.signal-app .signal-view-surface .nova-list-card .dataTables_scrollBody {
+  max-width: 100%;
+  min-width: 0;
+}
+body.signal-app .signal-view-surface .nova-list-card .dataTables_scrollBody {
+  overflow-x: auto !important;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+body.signal-app .signal-view-surface .nova-list-card .dataTables_scrollHead {
+  overflow: hidden !important;
+}
+
+/* Incoming SMS — 19 columns: NEVER compress into a 1100px table. */
+body.signal-app .signal-view-surface .sg-fix-inbox .sg-sms-table-zone,
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM_wrapper {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM,
+body.signal-app .signal-view-surface .sg-fix-inbox .dataTables_scrollHeadInner table,
+body.signal-app .signal-view-surface .sg-fix-inbox .dataTables_scrollBody table {
+  width: 3160px !important;
+  min-width: 3160px !important;
+  max-width: none !important;
+  table-layout: fixed !important;
+}
+body.signal-app .signal-view-surface .sg-fix-inbox .dataTables_scrollHeadInner {
+  width: 3160px !important;
+  min-width: 3160px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM thead th,
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody td {
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle !important;
+  line-height: 1.4 !important;
+  padding: 10px 12px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody td {
+  height: 49px !important;
+  max-height: 56px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(1),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(1) {width:145px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(2),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(2) {width:315px !important;max-width:315px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(3),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(3) {width:154px !important;max-width:154px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(4),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(4) {width:116px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(5),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(5) {width:174px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(6),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(6) {width:220px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(7),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(7) {width:175px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(8),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(8) {width:112px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(9),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(9) {width:222px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(10),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(10) {width:155px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(11),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(11) {width:152px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(12),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(12) {width:150px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(13),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(13) {width:154px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(14),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(14) {width:144px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(15),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(15) {width:125px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(16),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(16) {width:148px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(17),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(17) {width:134px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(18),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(18) {width:140px !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM th:nth-child(19),
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(19) {width:225px !important;min-width:225px !important;max-width:225px !important;overflow:visible !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM td:nth-child(3) {
+  white-space: nowrap !important;
+  word-break: normal !important;
+}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM .action-btns {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 7px !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM .action-btns .btn {
+  min-width: 71px !important;
+  width: auto !important;
+  flex: 0 0 auto !important;
+  padding: 7px 12px !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+}
+/* Keep the existing response-time colour key meaningful even though
+   NOVA applies alternating row backgrounds with !important. */
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr[style*="rgb(255, 215, 0)"] td {background:#fff9dd !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr[style*="rgb(255, 165, 0)"] td {background:#fff0d8 !important;}
+body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr[style*="rgb(255, 68, 68)"] td {background:#ffeded !important;}
+
+/* Other wide list screens: preserve readable, horizontal action buttons. */
+body.signal-app .signal-view-surface .sg-fix-jobs #tblScheduledJobs,
+body.signal-app .signal-view-surface .sg-fix-jobs .dataTables_scrollHeadInner table,
+body.signal-app .signal-view-surface .sg-fix-jobs .dataTables_scrollBody table {
+  min-width: 1480px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-jobs #tblScheduledJobs th:last-child,
+body.signal-app .signal-view-surface .sg-fix-jobs #tblScheduledJobs td:last-child {
+  min-width: 190px !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-jobs #tblScheduledJobs td:last-child > div {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 7px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians {
+  min-width: 1280px !important;
+  width: 100% !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:last-child,
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td:last-child {
+  min-width: 190px !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td:last-child .btn {
+  margin-right: 6px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-users #tblRPM,
+body.signal-app .signal-view-surface .sg-fix-users .dataTables_scrollHeadInner table,
+body.signal-app .signal-view-surface .sg-fix-users .dataTables_scrollBody table {
+  min-width: 900px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-numbers #tblRPM,
+body.signal-app .signal-view-surface .sg-fix-numbers .dataTables_scrollHeadInner table,
+body.signal-app .signal-view-surface .sg-fix-numbers .dataTables_scrollBody table {
+  min-width: 620px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable {
+  min-width: 1050px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-automated-actions {
+  width: auto !important;
+  min-width: 370px !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-automated-actions form {
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-schedulers #novaSchedulersTable {
+  min-width: 840px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-schedulers #novaSchedulersTable th:last-child,
+body.signal-app .signal-view-surface .sg-fix-schedulers #novaSchedulersTable td:last-child {
+  min-width: 162px !important;
+  white-space: nowrap !important;
+}
+
+/* No squeezed words or tiny button columns on phone/tablet. Only the table
+   scrolls; the page header and sidebar remain at viewport width. */
+@media(max-width: 991.98px) {
+  body.signal-app .signal-view-surface .nova-list-card .nova-table-viewport {
+    overflow-x: auto !important;
+  }
+  body.signal-app .signal-view-surface .nova-list-card .dataTables_wrapper .row {
+    min-width: 0 !important;
+  }
+}
+@media(max-width: 767.98px) {
+  body.signal-app .signal-view-surface .nova-list-card table.table thead th {
+    padding: 11px 13px !important;
+  }
+  body.signal-app .signal-view-surface .nova-list-card table.table tbody td {
+    padding: 10px 13px !important;
+  }
+  body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody td {
+    height: 46px !important;
+  }
+  body.signal-app .signal-view-surface .nova-list-card .dataTables_wrapper > .row {
+    padding: 11px 13px !important;
+  }
+}

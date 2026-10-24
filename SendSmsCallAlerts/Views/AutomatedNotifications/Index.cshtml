@@ -9,20 +9,32 @@
 <partial name="_AutoSmsHead" />
 
 <div class="sg-content-stack">
-    <div class="d-flex justify-content-between align-items-center mb-3 signal-heading-row">
-        <h1>Automated SMS</h1>
-        <div class="sg-page-actions"><a asp-action="Create" class="btn btn-primary sg-primary-action">
+    <section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-bell-o"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">SCHEDULE RULES</span>
+            <h1>Automated SMS</h1>
+            <p>Configure schedules and view delivery activity</p>
+        </div>
+    </div>
+    <div class="nova-page-actions"><a asp-action="Create" class="btn btn-primary sg-primary-action">
             <i class="fa fa-plus me-1"></i> New setting
         </a></div>
-    </div>
+</section>
 
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success"><b>@TempData["Success"]</b></div>
     }
 
-    <div class="table-responsive sg-table-card">
-        <table class="table table-bordered table-striped">
+    <section class="nova-list-card sg-fix-automation" aria-label="Automated settings">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>Automated settings</h2><p>Scheduled messages and recipient rules</p></div></div>
+        <div class="nova-list-controls"><label class="nova-search" for="search-novaAutomatedTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search Automated settings</span><input type="search" id="search-novaAutomatedTable" data-nova-search="novaAutomatedTable" placeholder="Search records..." autocomplete="off" /></label></div>
+    </div>
+    <div class="nova-table-viewport">
+<table id="novaAutomatedTable" class="table table-bordered table-striped">
             <thead style="background: #70b3db; color: white;">
                 <tr>
                     <th>Name</th>
@@ -45,7 +57,7 @@
                         <td>@s.RecipientType</td>
                         <td>@schedule</td>
                         <td style="white-space:pre-wrap">@s.TemplateBody</td>
-                        <td>@(s.IsActive ? "Yes" : "No")</td>
+                        <td><span class="nova-status @(s.IsActive ? "nova-status--active" : "nova-status--muted")">@(s.IsActive ? "Active" : "Inactive")</span></td>
                         <td class="sg-automated-actions">
                             <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-primary">Edit</a>
                             <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post" class="d-inline">
@@ -65,10 +77,15 @@
             </tbody>
         </table>
     </div>
+</section>
 
-    <div class="sg-section-header"><h2>Recent activity</h2><span class="sg-section-meta">Latest 50 events</span></div>
-    <div class="table-responsive sg-table-card">
-        <table class="table table-sm table-bordered">
+    <section class="nova-list-card" aria-label="Recent activity log">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>Recent activity log</h2><p>Latest 50 automation events</p></div></div>
+        <div class="nova-list-controls"><label class="nova-search" for="search-novaActivityTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search Recent activity log</span><input type="search" id="search-novaActivityTable" data-nova-search="novaActivityTable" placeholder="Search records..." autocomplete="off" /></label></div>
+    </div>
+    <div class="nova-table-viewport">
+<table id="novaActivityTable" class="table table-sm table-bordered">
             <thead><tr><th>When</th><th>Setting</th><th>Recipient</th><th>Phone</th><th>Status</th><th>Note</th></tr></thead>
             <tbody>
                 @foreach (var l in logs)
@@ -85,4 +102,5 @@
             </tbody>
         </table>
     </div>
+</section>
 </div>

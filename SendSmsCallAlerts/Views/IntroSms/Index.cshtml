@@ -4,10 +4,25 @@
     ViewData["Title"] = "Intro SMS";
 }
 
-<div class="sg-page-header sg-page-header--list"><h1>Intro SMS</h1></div>
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-comment-o"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">MESSAGE LIBRARY</span>
+            <h1>Intro SMS</h1>
+            <p>Review your current introductory messages</p>
+        </div>
+    </div>
+    
+</section>
 
-<div class="signal-list-card">
-<table class="table">
+<section class="nova-list-card" aria-label="All Intro SMS">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>All Intro SMS</h2><p>Review your current introductory messages</p></div></div>
+        <div class="nova-list-controls"><label class="nova-search" for="search-novaIntroSmsTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search All Intro SMS</span><input type="search" id="search-novaIntroSmsTable" data-nova-search="novaIntroSmsTable" placeholder="Search records..." autocomplete="off" /></label></div>
+    </div>
+    <div class="nova-table-viewport">
+<table id="novaIntroSmsTable" class="table">
     <thead>
         <tr>
             <th>
@@ -33,3 +48,4 @@
     </tbody>
 </table>
 </div>
+</section>

@@ -2,12 +2,10 @@
     ViewData["Title"] = "Index";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
-    <h1>Buy Number</h1>
-    <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
-        <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
-    </a>
-</div>
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group"><span class="nova-heading-icon"><i class="fa fa-phone"></i></span><div class="nova-heading-copy"><span class="nova-eyebrow">NUMBER SEARCH</span><h1>Find a Twilio number</h1><p>Search available numbers by area code</p></div></div>
+    <div class="nova-page-actions"><a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm sg-secondary-action"><i class="fa fa-arrow-left me-1"></i> Back to SMS Logs</a></div>
+</section>
 
 @if (TempData["StMsg"] != null)
 {
@@ -19,14 +17,11 @@
 <link href="~/css/bootstrapcopyfromlive.min.css" rel="stylesheet" />
 <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
 
-@if (TempData["StMsg"] != null)
-{
-    <div class="alert alert-success">
-        <b>@TempData["StMsg"]</b>
-    </div>
-}
 
-<div class="row">
+
+<div class="nova-list-card nova-area-card">
+    <div class="nova-list-toolbar"><div class="nova-list-heading"><span class="nova-list-heading-icon"><i class="fa fa-search"></i></span><div><h2>Area code lookup</h2><p>Enter an area code to search available numbers</p></div></div></div>
+    <div class="nova-area-body"><div class="row">
     <div class="col-md-4">
         @* <form asp-action="LiveAvailablePhoneNumbers" asp-controller="TwilioLive">*@
         <div class="form-group">
@@ -38,8 +33,11 @@
             <button onclick="SearchRecord()" class="btn btn-primary">Search</button>
         </div>
     </div>
+</div></div>
 </div>
-
+<section class="nova-list-card sg-fix-numbers" aria-label="Available numbers">
+    <div class="nova-list-toolbar"><div class="nova-list-heading"><span class="nova-list-heading-icon"><i class="fa fa-phone"></i></span><div><h2>Available numbers</h2><p>Browse matching Twilio numbers</p></div></div></div>
+    <div class="nova-table-viewport">
 <table class="table table-bordered table-striped" id="tblRPM">
     <thead style="background: #70b3db;">
         <tr>
@@ -51,7 +49,8 @@
 
     </thead>
 </table>
-
+    </div>
+</section>
 <div>
 </div>
 

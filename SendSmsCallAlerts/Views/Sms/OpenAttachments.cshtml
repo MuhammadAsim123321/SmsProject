@@ -4,11 +4,20 @@
 
 @model List<MmsLinks>
 
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-paperclip"></i></span>
+        <div class="nova-heading-copy"><span class="nova-eyebrow">MEDIA LIBRARY</span><h1>Message attachments</h1><p>Review and download media shared in this conversation</p></div>
+    </div>
+</section>
 <div class="sg-attachment-page">
     <div class="jumbotron">
         <h2>@ViewBag.SmsBody</h2>
     </div>
 
+    <section class="nova-list-card" aria-label="Attachments">
+        <div class="nova-list-toolbar"><div class="nova-list-heading"><span class="nova-list-heading-icon"><i class="fa fa-paperclip" aria-hidden="true"></i></span><div><h2>Attached files</h2><p>Media and download options</p></div></div></div>
+        <div class="nova-table-viewport">
     <table class="table table-bordered sg-attachment-table">
         <thead>
             <tr>
@@ -52,6 +61,8 @@
             }
         </tbody>
     </table>
+        </div>
+    </section>
 
 </div>
 

@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "IncomingLogs";
 }
 
@@ -37,15 +37,6 @@
     #tblRPM tbody tr:nth-child(odd)  { background-color: #fff; }
     #tblRPM tbody tr:nth-child(even) { background-color: #f2f2f2; }
     #tblRPM tbody tr:hover           { background-color: #e8f4fc; cursor: pointer; }
-
-    /* Waiting-time colour rows — inline style wins over nth-child but we also need
-       to ensure hover doesn't wipe the tint completely */
-    #tblRPM tbody tr.row-gold           { background-color: #E6F9EC !important; border-left: 4px solid #28A745; }
-    #tblRPM tbody tr.row-orange         { background-color: #FFE5B4 !important; border-left: 4px solid #FFA500; }
-    #tblRPM tbody tr.row-red            { background-color: #FFD0D0 !important; border-left: 4px solid #FF4444; }
-    #tblRPM tbody tr.row-gold:hover     { background-color: #cff0d9 !important; }
-    #tblRPM tbody tr.row-orange:hover   { background-color: #f5d89a !important; }
-    #tblRPM tbody tr.row-red:hover      { background-color: #f5b8b8 !important; }
 
     div.dataTables_wrapper div.dataTables_length select {
         width: 70px !important;
@@ -104,7 +95,17 @@
 </style>
 
 <div class="sg-sms-log-page">
-    <div class="sg-page-header sg-inbox-heading"><div class="sg-title-block"><h1>Incoming SMS</h1><p class="sg-page-intro">Manage incoming conversations and job details.</p></div></div>
+    <section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-inbox"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">MESSAGE INBOX</span>
+            <h1>Incoming SMS</h1>
+            <p>Review inbound messages, contact details and follow-up actions</p>
+        </div>
+    </div>
+    
+</section>
 
     @if (TempData["SucSms"] != null) { <div class="alert alert-success"><b>@TempData["SucSms"]</b></div> }
     @if (TempData["SucMsg"] != null) { <div class="alert alert-success"><b>@TempData["SucMsg"]</b></div> }
@@ -114,7 +115,7 @@
     <div class="sg-response-legend">
         <strong>Waiting Time Key:</strong>
         <span style="display:inline-flex;align-items:center;gap:6px;">
-            <span style="width:14px;height:14px;background:#28A745;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Green — 0–14 min 59 sec
+            <span style="width:14px;height:14px;background:#FFD700;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Gold — 10–14 min 59 sec
         </span>
         <span style="display:inline-flex;align-items:center;gap:6px;">
             <span style="width:14px;height:14px;background:#FFA500;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Orange — 15–19 min 59 sec
@@ -124,8 +125,8 @@
         </span>
     </div>
 
-    <div class="sg-sms-table-zone">
-    <table class="table table-bordered" id="tblRPM">
+    <div class="nova-list-card nova-inbox-card sg-fix-inbox"><div class="nova-list-toolbar"><div class="nova-list-heading"><span class="nova-list-heading-icon"><i class="fa fa-comments-o" aria-hidden="true"></i></span><div><h2>Message inbox</h2><p>Search, review and manage received messages</p></div></div><div class="nova-list-controls"><span class="nova-table-hint"><i class="fa fa-sliders" aria-hidden="true"></i> Use filters below</span></div></div><div class="sg-sms-table-zone">
+    <table class="table table-bordered table-striped" id="tblRPM">
         <thead>
             <tr>
                 <th>From</th>
@@ -151,6 +152,7 @@
         </thead>
     </table>
     </div>
+</div>
 
     @await Html.PartialAsync("_IncomingEditModal")
 
@@ -255,7 +257,7 @@
             { "width": "100px", "targets": 15 },  // Responded Date
             { "width": "100px", "targets": 16 },  // Responded Time
             { "width": "90px",  "targets": 17 },  // Waiting Time
-            { "width": "140px", "targets": 18, "orderable": false }  // Actions
+            { "width": "195px", "targets": 18, "orderable": false }  // Actions
         ],
         "language": {
             "emptyTable": "No record found.",
@@ -264,7 +266,12 @@
         // Task 4: color incoming rows based on waiting time
         "createdRow": function (row, data) {
             if (data.smsDirection === "Incoming" && data.waitingColor) {
-                $(row).addClass('row-' + data.waitingColor);
+                var colorMap = { gold: '#FFF8DC', orange: '#FFE5B4', red: '#FFD0D0' };
+                var borderMap = { gold: '#FFD700', orange: '#FFA500', red: '#FF4444' };
+                $(row).css({
+                    'background-color': colorMap[data.waitingColor] || '',
+                    'border-left': '4px solid ' + (borderMap[data.waitingColor] || 'transparent')
+                });
             }
         },
         "initComplete": function () {
@@ -352,7 +359,7 @@
                 "defaultContent": "",
                 "render": function (data, type, row) {
                     if (row.smsDirection !== "Incoming") return "";
-                    var colorMap = { gold: '#1a7a35', orange: '#CC6600', red: '#CC0000' };
+                    var colorMap = { gold: '#B8860B', orange: '#CC6600', red: '#CC0000' };
                     var color = colorMap[row.waitingColor] || '#555';
                     var weight = row.waitingColor ? 'bold' : 'normal';
                     return '<span style="color:' + color + '; font-weight:' + weight + ';">' + (data || "Pending") + '</span>';
