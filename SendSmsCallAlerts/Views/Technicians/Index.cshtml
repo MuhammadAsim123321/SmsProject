@@ -123,16 +123,7 @@
                     </tr>
                 }
             }
-            else
-            {
-                <tr>
-                    <td colspan="8" style="text-align: center; padding: 20px; color: #999;">
-                        @* CHANGE 4: 7 -> 8 *@
-                        <i class="fa fa-inbox"></i> No technicians found.
-                        <a asp-action="Create" style="color: #007bff; text-decoration: underline;">Create one now</a>
-                    </td>
-                </tr>
-            }
+            
         </tbody>
     </table>
     </div>
@@ -145,18 +136,15 @@
 <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    // The shared layout loads its own jQuery after the page body. Keep a reference
-    // to the jQuery instance that has DataTables attached so that the plugin is
-    // still available when this page's ready handler runs.
     var techTableJQuery = window.jQuery;
 
     techTableJQuery(function () {
         techTableJQuery('#tblTechnicians').DataTable({
             "order": [[0, 'asc']],
             "pageLength": 25,
-            "columnDefs": [{ "targets": 7, "orderable": false }],   // Actions column is now index 7
+            "columnDefs": [{ "targets": 7, "orderable": false }],
             "language": {
-                "emptyTable": "No technicians found."
+                "emptyTable": "No technicians found. <a href='@Url.Action("Create", "Technicians")'>Create one now</a>"
             }
         });
     });
