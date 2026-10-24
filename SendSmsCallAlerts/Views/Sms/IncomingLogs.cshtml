@@ -1,4 +1,4 @@
-﻿@{
+@{
     ViewData["Title"] = "IncomingLogs";
 }
 
@@ -34,38 +34,9 @@
         max-width: 200px;
     }
 
-    /* Match Main Options: all message rows are plain white, no striping. */
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr,
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr:nth-child(odd),
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr:nth-child(even),
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr.odd,
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr.even {
-        background: #ffffff !important;
-        --bs-table-bg: #ffffff;
-        --bs-table-striped-bg: #ffffff;
-        --bs-table-accent-bg: transparent;
-    }
-
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr td,
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr:nth-child(odd) td,
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr:nth-child(even) td {
-        background: #ffffff !important;
-        background-color: #ffffff !important;
-        --bs-table-bg: #ffffff;
-        --bs-table-accent-bg: transparent;
-        box-shadow: none !important;
-    }
-
-    /* Match the light-lavender header (#f5f5fd) on hover. */
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr:hover,
-    body.signal-app .signal-view-surface .sg-fix-inbox #tblRPM tbody tr:hover td {
-        background: #f5f5fd !important;
-        background-color: #f5f5fd !important;
-        --bs-table-bg: #f5f5fd;
-        --bs-table-accent-bg: transparent;
-        box-shadow: none !important;
-        cursor: pointer;
-    }
+    #tblRPM tbody tr:nth-child(odd)  { background-color: #fff; }
+    #tblRPM tbody tr:nth-child(even) { background-color: #f2f2f2; }
+    #tblRPM tbody tr:hover           { background-color: #e8f4fc; cursor: pointer; }
 
     div.dataTables_wrapper div.dataTables_length select {
         width: 70px !important;
@@ -155,7 +126,7 @@
     </div>
 
     <div class="nova-list-card nova-inbox-card sg-fix-inbox"><div class="nova-list-toolbar"><div class="nova-list-heading"><span class="nova-list-heading-icon"><i class="fa fa-comments-o" aria-hidden="true"></i></span><div><h2>Message inbox</h2><p>Search, review and manage received messages</p></div></div><div class="nova-list-controls"><span class="nova-table-hint"><i class="fa fa-sliders" aria-hidden="true"></i> Use filters below</span></div></div><div class="sg-sms-table-zone">
-    <table class="table table-bordered" id="tblRPM">
+    <table class="table table-bordered table-striped" id="tblRPM">
         <thead>
             <tr>
                 <th>From</th>
@@ -183,98 +154,7 @@
     </div>
 </div>
 
-    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog sg-inbox-edit-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Update Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="updateForm">
-                        <input type="hidden" id="mSmsDirection" />
-                        <input type="hidden" id="mSchedulerId" />
-                        <input type="hidden" id="mOriginalFromNum" />
-                        <input type="hidden" id="mOriginalToNum" />
-                        <div class="sg-inbox-contact-grid">
-                            <div class="mb-3 sg-field-phone"><label for="mFromNum">Phone</label><input type="text" id="mFromNum" class="form-control" readonly /></div>
-                            <div class="mb-3"><label for="mName">Name</label><input type="text" id="mName" class="form-control m-input" /></div>
-                            <div class="mb-3 sg-field-email"><label for="mEmail">Email</label><input type="email" id="mEmail" class="form-control m-input" /></div>
-                            <div class="mb-3 sg-field-street"><label for="mStreetAddress">Street Address</label><input type="text" id="mStreetAddress" class="form-control m-input" placeholder="123 Main Street" /></div>
-                            <div class="mb-3"><label for="mCityState">City/State</label><input type="text" id="mCityState" class="form-control m-input" placeholder="City, State" /></div>
-                            <div class="mb-3"><label for="mZipCode">ZIP Code</label><input type="text" id="mZipCode" class="form-control m-input" placeholder="12345" /></div>
-                        </div>
-
-                        <div id="jobScheduleSection">
-                            <hr />
-                            <h6>Scheduler Details</h6>
-                            <div id="activeJobsContainer" class="mb-3 d-flex flex-wrap gap-2"></div>
-                            <div class="mb-3">
-                                <label>Category</label>
-                                <select id="mCategory" class="form-select m-input" onchange="handleCategoryChange()">
-                                    <option value="">Select Category</option>
-                                </select>
-                            </div>
-                            
-                            <!-- NEW: Technician Assignment Section -->
-                            <div class="mb-3" id="technicianSection">
-                                <label>Assign Technician</label>
-                                <div class="input-group">
-                                    <select id="mTechnician" class="form-select m-input">
-                                        <option value="">-- Select a Technician --</option>
-                                    </select>
-                                    <button type="button" class="btn btn-success" id="btnAssignTechnician">
-                                        <i class="fa fa-user-check"></i> Assign
-                                    </button>
-                                </div>
-                                <small class="form-text text-muted" id="currentTechnicianInfo"></small>
-                                <small class="d-block" id="technicianAvailabilityInfo"></small>
-                            </div>
-
-                            <div class="mb-3">
-                                <label>Scheduler Template</label>
-                                <select id="mSchedularTemplate" class="form-select m-input" onchange="handleTemplateChange()">
-                                    <option value="">-- Select a Scheduler Template --</option>
-                                </select>
-                            </div>
-                            <div class="mb-3" id="customDateFieldContainer" style="display:none;">
-                                <label>Custom Date</label>
-                                <input type="date" id="mCustomDate" class="form-control m-input" />
-                            </div>
-                            <div class="mb-3" id="customDaysHoursContainer" style="display:none;">
-                                <label>Custom Days &amp; Hours</label>
-                                <div class="d-flex gap-2">
-                                    <div class="input-group">
-                                        <input type="number" id="mCustomDays" class="form-control m-input" placeholder="0" min="0" max="30" />
-                                        <span class="input-group-text">Days</span>
-                                    </div>
-                                    <div class="input-group">
-                                        <input type="number" id="mCustomHoursVal" class="form-control m-input" placeholder="0" min="0" max="23" />
-                                        <span class="input-group-text">Hours</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label>Job Book Date</label>
-                                <input type="datetime-local" id="mJobBookDate" class="form-control m-input" />
-                            </div>
-                            <div class="mb-3">
-                                <label>Job Completed Date</label>
-                                <input type="datetime-local" id="mJobCompletedDate" class="form-control m-input" />
-                            </div>
-                        </div>
-                        <div id="outgoingAlert" class="alert alert-warning" style="display:none;">
-                            <strong>Note:</strong> Job Schedule data cannot be saved for outgoing messages.
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="button" id="btnUpdate" class="btn btn-primary" disabled>Update</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    @await Html.PartialAsync("_IncomingEditModal")
 
     <div class="modal fade" id="deleteRangeModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
@@ -340,7 +220,6 @@
 <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    var currentRowData = null;
 
     function formatFiveItems(data) {
         if (data && data !== "N/A" && typeof data === 'string') {
@@ -384,11 +263,13 @@
             "emptyTable": "No record found.",
             "processing": '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>'
         },
-        // Preserve the waiting-time border indicator without tinting message rows
+        // Task 4: color incoming rows based on waiting time
         "createdRow": function (row, data) {
             if (data.smsDirection === "Incoming" && data.waitingColor) {
+                var colorMap = { gold: '#FFF8DC', orange: '#FFE5B4', red: '#FFD0D0' };
                 var borderMap = { gold: '#FFD700', orange: '#FFA500', red: '#FF4444' };
                 $(row).css({
+                    'background-color': colorMap[data.waitingColor] || '',
                     'border-left': '4px solid ' + (borderMap[data.waitingColor] || 'transparent')
                 });
             }
@@ -490,7 +371,7 @@
                 "orderable": false,
                 "render": function (data, type, row) {
                     return '<div class="action-btns">' +
-                        '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); EditRecord(\'' + row.fromNum + '\')">Reply</button>' +
+                        '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); EditRecord(\'' + (row.smsDirection === "Incoming" ? row.fromNum : row.toNum) + '\')">Reply</button>' +
                         '<button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); DeleteRecord(' + row.id + ')">Delete</button>' +
                         '</div>';
                 }
@@ -788,7 +669,9 @@
             }
         });
     }
+
 </script>
+@await Html.PartialAsync("_IncomingEditScripts")
 
 
 
