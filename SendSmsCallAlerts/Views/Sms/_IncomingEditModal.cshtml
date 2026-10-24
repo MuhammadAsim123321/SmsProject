@@ -1,0 +1,154 @@
+﻿@* ===========================================================================
+   Update modal: 1 Contact | 2 Job | 3 Scheduler, ONE Update button.
+   Drop-in replacement for the old <div class="modal fade" id="editModal"> block.
+   Uses the sg-inbox-* layout classes from your latest IncomingLogs page.
+   =========================================================================== *@
+<style>
+    #editModal .section-card { border: 1px solid #dbe7f1; border-radius: 8px; margin-bottom: 14px; }
+    #editModal .section-card > .section-head { background: #eef6fb; padding: 8px 14px; font-weight: 600; color: #2c5b7a; border-bottom: 1px solid #dbe7f1; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
+    #editModal .section-card > .section-body { padding: 14px; }
+    #editModal .section-body label { font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; }
+    .job-chip { border: 1px solid #b9d3e6; background: #fff; border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; }
+    .job-chip:hover { background: #e8f4fc; }
+    .job-chip.active { background: #70b3db; color: #fff; border-color: #5a9fc7; }
+    .job-chip.cancelled { text-decoration: line-through; opacity: .7; }
+</style>
+
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable sg-inbox-edit-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateForm" novalidate onsubmit="return false;">
+                    <input type="hidden" id="mSmsDirection" />
+                    <input type="hidden" id="mSourceSmsId" />
+                    <input type="hidden" id="mJobId" />
+
+                    <div id="formError" class="alert alert-danger" style="display:none;"></div>
+
+                    @* ---------- 1. CONTACT ---------- *@
+                    <div class="section-card">
+                        <div class="section-head"><span><i class="fa fa-user me-2"></i>1. Contact</span></div>
+                        <div class="section-body">
+                            <div class="sg-inbox-contact-grid">
+                                <div class="mb-3 sg-field-phone"><label for="mFromNum">Phone</label><input type="text" id="mFromNum" class="form-control" readonly /></div>
+                                <div class="mb-3">
+                                    <label for="mName">Name *</label>
+                                    <input type="text" id="mName" class="form-control" data-field="contactName" maxlength="100" />
+                                    <div class="invalid-feedback" id="err-contactName"></div>
+                                </div>
+                                <div class="mb-3 sg-field-email">
+                                    <label for="mEmail">Email</label>
+                                    <input type="email" id="mEmail" class="form-control" data-field="contactEmail" />
+                                    <div class="invalid-feedback" id="err-contactEmail"></div>
+                                </div>
+                                <div class="mb-3 sg-field-street"><label for="mStreetAddress">Street Address</label><input type="text" id="mStreetAddress" class="form-control" placeholder="123 Main Street" /></div>
+                                <div class="mb-3"><label for="mCityState">City/State</label><input type="text" id="mCityState" class="form-control" placeholder="City, State" /></div>
+                                <div class="mb-3">
+                                    <label for="mZipCode">ZIP Code</label>
+                                    <input type="text" id="mZipCode" class="form-control" data-field="contactZip" placeholder="12345" />
+                                    <div class="invalid-feedback" id="err-contactZip"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ---------- 2. JOB ---------- *@
+                    <div class="section-card" id="jobCard">
+                        <div class="section-head">
+                            <span><i class="fa fa-screwdriver-wrench me-2"></i>2. Job</span>
+                            <button type="button" id="btnNewJob" class="btn btn-sm btn-outline-primary"><i class="fa fa-plus me-1"></i>New job</button>
+                        </div>
+                        <div class="section-body">
+                            <div id="jobChips" class="d-flex flex-wrap gap-2 mb-2"></div>
+                            <div id="jobMode" class="small text-muted mb-3"></div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label>Category *</label>
+                                    <select id="mCategory" class="form-select" data-field="jobCategory">
+                                        <option value="">Select Category</option>
+                                    </select>
+                                    <div class="invalid-feedback" id="err-jobCategory"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label>Technician *</label>
+                                    <select id="mTechnician" class="form-select" data-field="jobTechnician">
+                                        <option value="">-- Select category first --</option>
+                                    </select>
+                                    <div class="invalid-feedback" id="err-jobTechnician"></div>
+                                    <small class="d-block mt-1" id="technicianAvailabilityInfo"></small>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Job Start *</label>
+                                    <input type="datetime-local" id="mStartAt" class="form-control" data-field="jobStartAt" />
+                                    <div class="invalid-feedback" id="err-jobStartAt"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Job End *</label>
+                                    <input type="datetime-local" id="mEndAt" class="form-control" data-field="jobEndAt" />
+                                    <div class="invalid-feedback" id="err-jobEndAt"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>Status</label>
+                                    <select id="mStatus" class="form-select" data-field="jobStatus">
+                                        <option value="Scheduled">Scheduled</option>
+                                        <option value="Confirmed">Confirmed</option>
+                                        <option value="Cancelled">Cancelled</option>
+                                    </select>
+                                    <div class="invalid-feedback" id="err-jobStatus"></div>
+                                    <small class="text-muted d-block mt-1" id="statusHint"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* ---------- 3. SCHEDULER ---------- *@
+                    <div class="section-card" id="schedulerCard">
+                        <div class="section-head"><span><i class="fa fa-clock me-2"></i>3. Scheduler (messages for this job)</span></div>
+                        <div class="section-body">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label>Scheduler Template</label>
+                                    <select id="mSchedularTemplate" class="form-select" data-field="schedulerTemplate">
+                                        <option value="">-- None (no messages) --</option>
+                                    </select>
+                                    <div class="invalid-feedback" id="err-schedulerTemplate"></div>
+                                </div>
+                                <div class="col-md-6" id="customDateFieldContainer" style="display:none;">
+                                    <label>Custom Date *</label>
+                                    <input type="date" id="mCustomDate" class="form-control" data-field="schedulerCustomDate" />
+                                    <div class="invalid-feedback" id="err-schedulerCustomDate"></div>
+                                </div>
+                                <div class="col-md-12" id="customDaysHoursContainer" style="display:none;">
+                                    <label>Custom Days &amp; Hours *</label>
+                                    <div class="d-flex gap-2">
+                                        <div class="input-group">
+                                            <input type="number" id="mCustomDays" class="form-control" data-field="schedulerCustomHours" placeholder="0" min="0" max="365" />
+                                            <span class="input-group-text">Days</span>
+                                        </div>
+                                        <div class="input-group">
+                                            <input type="number" id="mCustomHoursVal" class="form-control" data-field="schedulerCustomHours" placeholder="0" min="0" max="23" />
+                                            <span class="input-group-text">Hours</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-danger small mt-1" id="err-schedulerCustomHours"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="outgoingAlert" class="alert alert-warning" style="display:none;">
+                        <strong>Note:</strong> This is an outgoing message. Only the contact details are saved; open an incoming message of this customer to add a job.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" id="btnUpdate" class="btn btn-primary" disabled>Update</button>
+            </div>
+        </div>
+    </div>
+</div>

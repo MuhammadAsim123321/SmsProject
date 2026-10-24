@@ -10,9 +10,9 @@ namespace SendSmsCallAlerts.Models
 
         [Required]
         [StringLength(100)]
-        public string Name { get; set; }
+        public string Name { get; set; } = "";
 
-        // LEGACY: Kept for backward compatibility - computed property
+        // computed from the three fields below, not stored
         [NotMapped]
         public string? Address
         {
@@ -23,7 +23,6 @@ namespace SendSmsCallAlerts.Models
             }
         }
 
-        // NEW: Split address fields
         public string? StreetAddress { get; set; }
         public string? CityState { get; set; }
         public string? ZipCode { get; set; }
@@ -33,19 +32,7 @@ namespace SendSmsCallAlerts.Models
 
         public string? PhoneNumber { get; set; }
 
-        // Per-contact service category. Kept separate from Scheduler.templateOrAudioId
-        // so updating one contact cannot change the category/template of shared schedulers.
-        public int? CategoryId { get; set; }
-
-        //public string? FormNo { get; set; }
-
-        // NEW: Technician assignment
-        public int? AssignedTechnicianId { get; set; }
-
-        [ForeignKey("AssignedTechnicianId")]
-        public virtual Technician? AssignedTechnician { get; set; }
-
-        // Navigation property for Table 2
-        public virtual ICollection<JobSchedule> JobSchedules { get; set; }
+        // the customer's appointments (category and technician now live on Job)
+        public virtual ICollection<Job> Jobs { get; set; } = new List<Job>();
     }
 }

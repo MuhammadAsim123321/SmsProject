@@ -16,6 +16,9 @@ using Twilio.AspNet.Core;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.TwiML;
 //using Twilio.TwiML.Voice;
+using SendSmsCallAlerts.Services;
+
+using Job = SendSmsCallAlerts.Models.Job;
 
 namespace SendSmsCallAlerts.Controllers
 {
@@ -24,14 +27,17 @@ namespace SendSmsCallAlerts.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IConfiguration _configuration;
+        private readonly JobService _jobService;
 
         public IncomingController(ApplicationDbContext context, IWebHostEnvironment hostingEnvironment,
-            IConfiguration configuration)
+     IConfiguration configuration, JobService jobService)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
             _configuration = configuration;
+            _jobService = jobService;
         }
+        private string ForwardingNumber => (_configuration["AppSettings:ForwardingNumber"] ?? "").Trim();
 
         [HttpPost]
         public async Task<IActionResult> Received(SmsRequest request, int numMedia)
@@ -73,6 +79,13 @@ namespace SendSmsCallAlerts.Controllers
             smsDetail.createdOn = DateTime.UtcNow;
             smsDetail.IsReadYesOrNo = "No";
 
+            // link the message to the customer right away when the number is already known
+            var knownContactId = await _context.ContactDetail.AsNoTracking()
+                .Where(c => c.PhoneNumber == smsDetail.fromNum)
+                .Select(c => (int?)c.Id)
+                .FirstOrDefaultAsync();
+            if (knownContactId.HasValue) smsDetail.ContactDetailId = knownContactId;
+
             _context.Add(smsDetail);
             _context.SaveChanges();
 
@@ -89,7 +102,7 @@ namespace SendSmsCallAlerts.Controllers
 
             try
             {
-                if (smsDetail.fromNum == "+18557233022" || smsDetail.toNum == "+18557233022")
+                if (ForwardingNumber.Length > 0 && (smsDetail.fromNum == ForwardingNumber || smsDetail.toNum == ForwardingNumber))
                     await ForwardMessage(smsDetail, imgUrlList);
             }
             catch (Exception ex) { }
@@ -119,6 +132,10 @@ namespace SendSmsCallAlerts.Controllers
             {
                 await HandleConfirm(smsDetail);
             }
+            else if (body == "stop")
+            {
+                await HandleStop(smsDetail);
+            }
         }
 
 
@@ -126,87 +143,49 @@ namespace SendSmsCallAlerts.Controllers
         {
             try
             {
-                var contact = _context.ContactDetail
-                    .FirstOrDefault(c => c.PhoneNumber == smsDetail.fromNum);
-
+                var contact = await _context.ContactDetail.FirstOrDefaultAsync(c => c.PhoneNumber == smsDetail.fromNum);
                 if (contact == null) return;
-
-                smsDetail.ContactDetailId = contact.Id;
-                _context.SmsDetails.Update(smsDetail);
-
-                var jobs = _context.AllScheduledJobs
-                    .Include(j => j.Scheduler)
-                    .Where(j => j.ContactDetailId == contact.Id && j.IsPaused == false)
-                    .ToList();
-
-                foreach (var job in jobs)
-                    job.IsPaused = true;
-
-                bool alreadyOptedOut = _context.OptOuts.Any(o => o.PhoneNumber == smsDetail.fromNum);
-                if (!alreadyOptedOut)
-                {
-                    _context.OptOuts.Add(new OptOut
-                    {
-                        PhoneNumber = smsDetail.fromNum,
-                        ReceivedAt = DateTime.UtcNow
-                    });
-                }
-
-                await _context.SaveChangesAsync();
-                await SendNotification("cancel", smsDetail, contact, jobs);
+                var job = await _jobService.CancelNextUpcomingAsync(smsDetail.fromNum);
+                if (job != null) await SendNotification("cancel", contact, job);
             }
             catch (Exception ex) { }
         }
-
 
         private async Task HandleConfirm(SmsDetail smsDetail)
         {
             try
             {
-                var contact = _context.ContactDetail
-                    .FirstOrDefault(c => c.PhoneNumber == smsDetail.fromNum);
-
+                var contact = await _context.ContactDetail.FirstOrDefaultAsync(c => c.PhoneNumber == smsDetail.fromNum);
                 if (contact == null) return;
-
-                smsDetail.ContactDetailId = contact.Id;
-                _context.SmsDetails.Update(smsDetail);
-                await _context.SaveChangesAsync();
-
-                var jobs = _context.AllScheduledJobs
-                    .Include(j => j.Scheduler)
-                    .Where(j => j.ContactDetailId == contact.Id && j.IsPaused == false)
-                    .ToList();
-
-                await SendNotification("confirm", smsDetail, contact, jobs);
+                var job = await _jobService.ConfirmNextUpcomingAsync(smsDetail.fromNum);
+                if (job != null) await SendNotification("confirm", contact, job);
             }
             catch (Exception ex) { }
         }
 
-
-        private async Task SendNotification(string type, SmsDetail smsDetail, ContactDetail contact, List<AllScheduledJob> jobs)
+        private async Task HandleStop(SmsDetail smsDetail)
         {
-            if (type == "cancel")
+            try
             {
-                foreach (var job in jobs)
+                bool alreadyOptedOut = await _context.OptOuts.AnyAsync(o => o.PhoneNumber == smsDetail.fromNum);
+                if (!alreadyOptedOut)
                 {
-                    string category = job.Scheduler?.name ?? "N/A";
-                    string jobBookedDate = job.JobBookDate.ToString("dd-MMM-yyyy");
-                    string jobBookedTime = job.JobBookDate.ToString("hh:mm tt");
-                    string message = $"Customer {contact.Name} cancelled {category} on {jobBookedDate} at {jobBookedTime}, reschedule customer";
-
+                    _context.OptOuts.Add(new OptOut { PhoneNumber = smsDetail.fromNum, ReceivedAt = DateTime.UtcNow });
+                    await _context.SaveChangesAsync();
                 }
             }
-            else if (type == "confirm")
-            {
-                foreach (var job in jobs)
-                {
-                    string category = job.Scheduler?.name ?? "N/A";
-                    string jobBookedDate = job.JobBookDate.ToString("dd-MMM-yyyy");
-                    string jobBookedTime = job.JobBookDate.ToString("hh:mm tt");
-                    string message = $"Customer {contact.Name} confirmed {category} on {jobBookedDate} at {jobBookedTime}";
+            catch (Exception ex) { }
+        }
 
-                }
-            }
+        // builds the staff message; still not delivered anywhere (same as before)
+        private Task SendNotification(string type, ContactDetail contact, Job job)
+        {
+            string category = job.Category?.keyword ?? "service";
+            string when = $"{job.StartAt:dd-MMM-yyyy} at {job.StartAt:hh:mm tt}";
+            string message = type == "cancel"
+                ? $"Customer {contact.Name} cancelled {category} on {when}, reschedule customer"
+                : $"Customer {contact.Name} confirmed {category} on {when}";
+            return Task.CompletedTask;
         }
 
         private async Task<bool> IvrSms(SmsDetail smsDetail)
@@ -448,7 +427,7 @@ namespace SendSmsCallAlerts.Controllers
                         var message = await Task.Run(() => MessageResource.Create(
                                     body: smsDetail.fromNum.Substring(2, 10) + " " + smsDetail.smsBody,
                                     //from: new Twilio.Types.PhoneNumber(smsDetail.toNum),
-                                    from: new Twilio.Types.PhoneNumber("+18557233022"),
+                                    from: new Twilio.Types.PhoneNumber(ForwardingNumber),
                                     to: new Twilio.Types.PhoneNumber(num),
                                     mediaUrl: mediaUrl
                                 ));
@@ -467,7 +446,7 @@ namespace SendSmsCallAlerts.Controllers
                         var message = await Task.Run(() => MessageResource.Create(
                                     body: smsDetail.fromNum.Substring(2, 10) + " " + smsDetail.smsBody,
                                     //  from: new Twilio.Types.PhoneNumber(smsDetail.toNum),
-                                    from: new Twilio.Types.PhoneNumber("+18557233022"),
+                                    from: new Twilio.Types.PhoneNumber(ForwardingNumber),
                                     to: new Twilio.Types.PhoneNumber(num)
                                 ));
                     }

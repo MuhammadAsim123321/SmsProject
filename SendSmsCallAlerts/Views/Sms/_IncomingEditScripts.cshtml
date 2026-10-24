@@ -1,0 +1,325 @@
+﻿@* ===========================================================================
+   Scripts for the new update modal. Place it AFTER your main <script> block in
+   IncomingLogs.cshtml (it uses RpmDatatable and showResult from that block).
+   It REPLACES these old pieces of that block (delete them, see IMPLEMENTATION_STEPS.md):
+     row click handler, '.m-input' handler, #btnUpdate click, handleTemplateChange,
+     removeActiveJob, handleCategoryChange, showTechnicianHint, the 3 change/ready
+     handlers after it, and the #btnAssignTechnician handler.
+   =========================================================================== *@
+<script>
+    (function () {
+        var contactJobs = [];       // jobs of the customer in the open modal
+        var techRequestToken = 0;   // ignores stale technician responses
+
+        function esc(s) { return $('<div>').text(s == null ? '' : s).html(); }
+        function fmtDt(v) { return (v || '').replace('T', ' '); }
+        function toInt(v) { var n = parseInt(v, 10); return isNaN(n) || n <= 0 ? null : n; }
+
+        // the CUSTOMER's number: incoming rows -> fromNum, outgoing rows -> toNum
+        function customerNumber(row) { return row.smsDirection === 'Incoming' ? row.fromNum : row.toNum; }
+
+        // ---------------------------------------------------------------- reset / errors
+        function resetModal() {
+            contactJobs = [];
+            techRequestToken++;
+            $('#updateForm').find('input[type=text], input[type=email], input[type=datetime-local], input[type=date], input[type=number]').val('');
+            $('#updateForm').find('select').each(function () { this.selectedIndex = 0; });
+            $('#mJobId, #mSourceSmsId, #mSmsDirection').val('');
+            $('#mTechnician').html('<option value="">-- Select category first --</option>');
+            $('#jobChips').empty();
+            $('#jobMode, #statusHint, #technicianAvailabilityInfo').text('');
+            $('#customDateFieldContainer, #customDaysHoursContainer, #formError').hide();
+            $('#mStatus').prop('disabled', false);
+            clearErrors();
+            $('#btnUpdate').prop('disabled', true);
+        }
+
+        function clearErrors() {
+            $('#updateForm .is-invalid').removeClass('is-invalid');
+            $('#updateForm .invalid-feedback').text('');
+            $('#err-schedulerCustomHours').text('');
+            $('#formError').hide().text('');
+        }
+
+        function showErrors(errors, message) {
+            clearErrors();
+            var first = null;
+            $.each(errors || {}, function (key, msg) {
+                var $inputs = $('[data-field="' + key + '"]');
+                $inputs.addClass('is-invalid');
+                $('#err-' + key).text(msg);
+                if (!first && $inputs.length) first = $inputs.first();
+            });
+            if (message) $('#formError').text(message).show();
+            if (first) { first[0].scrollIntoView({ block: 'center' }); first.trigger('focus'); }
+        }
+
+        // ---------------------------------------------------------------- open from a grid row
+        $('#tblRPM tbody').on('click', 'tr', function () {
+            var data = RpmDatatable.row(this).data();
+            if (!data) return;
+
+            var isOutgoing = data.smsDirection === 'Outgoing';
+            var phone = customerNumber(data);
+
+            resetModal();
+            $('#mSmsDirection').val(data.smsDirection);
+            $('#mSourceSmsId').val(isOutgoing ? '' : data.id);
+            $('#mFromNum').val(phone);
+            $('#jobCard, #schedulerCard').toggle(!isOutgoing);
+            $('#outgoingAlert').toggle(isOutgoing);
+
+            $.get('/Sms/GetContactDetailsByPhone', { phoneNumber: phone }, function (res) {
+                if (res.found) {
+                    $('#mName').val(res.name || '');
+                    $('#mEmail').val(res.email || '');
+                    $('#mStreetAddress').val(res.streetAddress || '');
+                    $('#mCityState').val(res.cityState || '');
+                    $('#mZipCode').val(res.zipCode || '');
+                    contactJobs = res.jobs || [];
+                } else {
+                    $('#mName').val(data.name === 'N/A' ? '' : data.name);
+                    $('#mEmail').val(data.email === 'N/A' ? '' : data.email);
+                }
+
+                if (!isOutgoing) {
+                    renderChips();
+                    // open the next upcoming job (not cancelled / completed); otherwise a blank new job
+                    var active = contactJobs.filter(function (j) { return j.effectiveStatus === 'Scheduled' || j.effectiveStatus === 'Confirmed'; });
+                    active.sort(function (a, b) { return a.startAt < b.startAt ? -1 : 1; });
+                    if (active.length) loadJob(active[0]); else startNewJob();
+                }
+
+                $('#btnUpdate').prop('disabled', true);
+                $('#editModal').modal('show');
+            });
+        });
+
+        // ---------------------------------------------------------------- job chips
+        function renderChips() {
+            var $c = $('#jobChips').empty();
+            $.each(contactJobs, function (i, j) {
+                var label = '#' + j.id + ' · ' + esc(j.categoryName || 'No category') + ' · ' + esc(fmtDt(j.startAt)) +
+                    ' · ' + esc(j.technicianName || 'No technician') + ' · ' + esc(j.effectiveStatus);
+                $('<button type="button" class="job-chip"></button>')
+                    .attr('data-job-id', j.id)
+                    .toggleClass('cancelled', j.effectiveStatus === 'Cancelled')
+                    .html(label)
+                    .on('click', function () { loadJob(j); })
+                    .appendTo($c);
+            });
+        }
+
+        function markChip(jobId) {
+            $('#jobChips .job-chip').removeClass('active');
+            if (jobId) $('#jobChips .job-chip[data-job-id="' + jobId + '"]').addClass('active');
+        }
+
+        function clearJobAndSchedulerFields() {
+            $('#mCategory').val('');
+            $('#mTechnician').html('<option value="">-- Select category first --</option>');
+            $('#mStartAt, #mEndAt, #mCustomDate, #mCustomDays, #mCustomHoursVal').val('');
+            $('#mSchedularTemplate').val('');
+            $('#technicianAvailabilityInfo').text('');
+            handleTemplateChange();
+        }
+
+        function startNewJob() {
+            $('#mJobId').val('');
+            clearJobAndSchedulerFields();
+            $('#mStatus').val('Scheduled').prop('disabled', true);
+            $('#statusHint').text('');
+            $('#jobMode').text('New job');
+            markChip(null);
+            clearErrors();
+        }
+
+        function loadJob(j) {
+            $('#mJobId').val(j.id);
+            clearJobAndSchedulerFields();
+            $('#mCategory').val(j.categoryId || '');
+            $('#mStartAt').val(j.startAt);
+            $('#mEndAt').val(j.endAt);
+            $('#mStatus').val(j.status).prop('disabled', false);
+            $('#statusHint').text(j.effectiveStatus === 'Completed' ? 'Completed automatically (end time has passed).' : '');
+            $('#jobMode').text('Editing job #' + j.id);
+
+            var plan = (j.plans && j.plans.length) ? j.plans[0] : null;
+            if (plan) {
+                $('#mSchedularTemplate').val(plan.schedulerId || '');
+                handleTemplateChange();
+                if (plan.customDate) $('#mCustomDate').val(plan.customDate);
+                if (plan.customHours) {
+                    $('#mCustomDays').val(Math.floor(plan.customHours / 24));
+                    $('#mCustomHoursVal').val(plan.customHours % 24);
+                }
+            }
+            markChip(j.id);
+            clearErrors();
+            loadTechnicians(j.technicianId);
+        }
+
+        $('#btnNewJob').on('click', startNewJob);
+
+        // ---------------------------------------------------------------- technician dropdown
+        function loadTechnicians(keepId) {
+            var categoryId = $('#mCategory').val();
+            var $t = $('#mTechnician');
+            if (!categoryId) { $t.html('<option value="">-- Select category first --</option>'); showTechnicianHint(); return; }
+
+            var previous = keepId || $t.val();
+            $t.html('<option value="">Loading technicians...</option>');
+
+            var query = { customerZip: ($('#mZipCode').val() || '').trim(), categoryId: categoryId };
+            if ($('#mStartAt').val()) query.jobStartAt = $('#mStartAt').val();
+            if ($('#mEndAt').val()) query.jobEndAt = $('#mEndAt').val();
+            if ($('#mJobId').val()) query.excludeJobId = $('#mJobId').val();
+
+            var token = ++techRequestToken;
+            $.get('/Technicians/GetFilteredTechnicians', query, function (list) {
+                if (token !== techRequestToken) return;   // a newer request replaced this one
+                $t.empty();
+                if (!Array.isArray(list)) { $t.append('<option value="">Error loading technicians</option>'); return; }
+                if (list.length === 0) { $t.append('<option value="">No technicians for this category</option>'); showTechnicianHint(); return; }
+
+                $t.append('<option value="">-- Select a Technician --</option>');
+                list.forEach(function (t) {
+                    var text = t.label + (t.isAvailable ? '' : ' - NOT available at selected time');
+                    $('<option></option>').val(t.id).text(text)
+                        .attr('data-summary', t.availabilitySummary || '')
+                        .attr('data-available', t.isAvailable ? '1' : '0')
+                        .attr('data-message', t.availabilityMessage || '')
+                        .appendTo($t);
+                });
+                if (previous) $t.val(previous);
+                showTechnicianHint();
+            });
+        }
+
+        function showTechnicianHint() {
+            var $opt = $('#mTechnician option:selected');
+            var $info = $('#technicianAvailabilityInfo');
+            if (!$opt.val()) { $info.text('').removeClass('text-danger text-muted'); return; }
+            var text = 'Working hours: ' + ($opt.attr('data-summary') || 'Not configured');
+            if ($opt.attr('data-available') === '0') {
+                text += ' | ' + ($opt.attr('data-message') || 'Not available at the selected time.');
+                $info.text(text).removeClass('text-muted').addClass('text-danger');
+            } else {
+                $info.text(text).removeClass('text-danger').addClass('text-muted');
+            }
+        }
+
+        // category change clears the technician; start/end/ZIP changes keep the current choice
+        $('#mCategory').on('change', function () { $('#mTechnician').val(''); loadTechnicians(null); });
+        $('#mTechnician').on('change', showTechnicianHint);
+        $('#mStartAt, #mEndAt, #mZipCode').on('change', function () { if ($('#mCategory').val()) loadTechnicians(null); });
+
+        // ---------------------------------------------------------------- scheduler template
+        function handleTemplateChange() {
+            var $o = $('#mSchedularTemplate option:selected');
+            var runFromId = parseInt($o.attr('data-runfromid'), 10);
+            var hourCount = parseInt($o.attr('data-hourcount'), 10);
+
+            if (runFromId === 2) { $('#customDateFieldContainer').show(); }
+            else { $('#customDateFieldContainer').hide(); $('#mCustomDate').val(''); }
+
+            if (hourCount === -1) { $('#customDaysHoursContainer').show(); }
+            else { $('#customDaysHoursContainer').hide(); $('#mCustomDays').val(''); $('#mCustomHoursVal').val(''); }
+        }
+        $('#mSchedularTemplate').on('change', handleTemplateChange);
+
+        // ---------------------------------------------------------------- save (one button)
+        // any edit enables Update and clears that field's red text
+        $('#updateForm').on('input change', 'input, select', function () {
+            $('#btnUpdate').prop('disabled', false);
+            var key = $(this).attr('data-field');
+            if (key) {
+                $('[data-field="' + key + '"]').removeClass('is-invalid');
+                $('#err-' + key).text('');
+            }
+        });
+
+        function buildPayload() {
+            var isOutgoing = $('#mSmsDirection').val() === 'Outgoing';
+            var days = parseInt($('#mCustomDays').val(), 10) || 0;
+            var hrs = parseInt($('#mCustomHoursVal').val(), 10) || 0;
+            var total = days * 24 + hrs;
+
+            return {
+                phoneNumber: $('#mFromNum').val(),
+                smsDirection: $('#mSmsDirection').val(),
+                sourceSmsId: toInt($('#mSourceSmsId').val()),
+                contact: {
+                    name: $('#mName').val(),
+                    email: $('#mEmail').val(),
+                    streetAddress: $('#mStreetAddress').val(),
+                    cityState: $('#mCityState').val(),
+                    zipCode: $('#mZipCode').val()
+                },
+                job: isOutgoing ? null : {
+                    jobId: toInt($('#mJobId').val()),
+                    categoryId: toInt($('#mCategory').val()),
+                    technicianId: toInt($('#mTechnician').val()),
+                    startAt: $('#mStartAt').val() || null,
+                    endAt: $('#mEndAt').val() || null,
+                    status: $('#mStatus').val()
+                },
+                scheduler: isOutgoing ? null : {
+                    schedulerId: toInt($('#mSchedularTemplate').val()),
+                    customDate: $('#mCustomDate').val() || null,
+                    customHours: total > 0 ? total : null
+                }
+            };
+        }
+
+        // same rules as the server (the server stays the authority)
+        function validateClient(p) {
+            var e = {};
+            if (!(p.contact.name || '').trim()) e.contactName = 'Customer name is required.';
+            if (p.contact.email && !/^[^\s\x40]+\x40[^\s\x40]+\.[^\s\x40]+$/.test(p.contact.email.trim())) e.contactEmail = 'Enter a valid email address.';
+            if (p.contact.zipCode && !/^\d{5}(-\d{4})?$/.test(p.contact.zipCode.trim())) e.contactZip = 'Enter a valid ZIP code (12345 or 12345-6789).';
+
+            if (p.job) {
+                var anyJob = p.job.jobId || p.job.categoryId || p.job.technicianId || p.job.startAt || p.job.endAt || (p.scheduler && p.scheduler.schedulerId);
+                if (anyJob) {
+                    if (!p.job.categoryId) e.jobCategory = 'Select a service category.';
+                    if (!p.job.technicianId) e.jobTechnician = 'Select a technician.';
+                    if (!p.job.startAt) e.jobStartAt = 'Select the job start date and time.';
+                    if (!p.job.endAt) e.jobEndAt = 'Select the job end date and time.';
+                    if (p.job.startAt && p.job.endAt) {
+                        if (p.job.endAt <= p.job.startAt) e.jobEndAt = 'End time must be after the start time.';
+                        else if (p.job.startAt.substr(0, 10) !== p.job.endAt.substr(0, 10)) e.jobEndAt = 'Job must start and end on the same day.';
+                    }
+                }
+            }
+            return e;
+        }
+
+        $('#btnUpdate').on('click', function () {
+            var payload = buildPayload();
+            var clientErrors = validateClient(payload);
+            if (Object.keys(clientErrors).length) { showErrors(clientErrors, 'Please fix the highlighted fields.'); return; }
+
+            var $btn = $(this);
+            $btn.prop('disabled', true);
+            $.ajax({
+                url: '/Sms/SaveContactJob',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload)
+            }).done(function (res) {
+                if (res.success) {
+                    $('#editModal').modal('hide');
+                    showResult('Success', 'Details updated successfully.', 'text-success');
+                    RpmDatatable.ajax.reload(null, false);
+                } else {
+                    $btn.prop('disabled', false);
+                    showErrors(res.errors, res.message || 'Update failed.');
+                }
+            }).fail(function () {
+                $btn.prop('disabled', false);
+                showErrors({}, 'Server error. Please try again.');
+            });
+        });
+    })();
+</script>

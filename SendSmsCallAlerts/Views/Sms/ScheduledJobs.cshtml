@@ -214,10 +214,12 @@
                 <th>Job ID</th>
                 <th>Phone Number</th>
                 <th>Name</th>
+                <th>Category</th>
+                <th>Technician</th>
                 <th>Template Name</th>
                 <th>Type</th>
-                <th>Booked Date</th>
-                <th>Completed Date</th>
+                <th>Start</th>
+                <th>End</th>
                 <th>Last Sent</th>
                 <th>Status</th>
                 <th>Actions</th>
@@ -298,72 +300,58 @@
                     if (data.isPaused) $(row).addClass('paused-row');
                 },
                 "columns": [
-                    {
-                        "data": "jobId",
-                        "width": "60px",
-                        "render": function(data) {
-                            return '<span style="font-weight:600; color:#70b3db;">#' + data + '</span>';
-                        }
-                    },
+                    { "data": "jobId", "width": "60px", "render": function (d) { return '<span style="font-weight:600; color:#70b3db;">#' + d + '</span>'; } },
                     { "data": "phoneNumber" },
-                    {
-                        "data": "name",
-                        "render": function(data) {
-                            return '<span style="font-weight:500;">' + (data || 'N/A') + '</span>';
-                        }
-                    },
+                    { "data": "name", "render": function (d) { return '<span style="font-weight:500;">' + (d || 'N/A') + '</span>'; } },
+                    { "data": "category" },
+                    { "data": "technician" },
                     { "data": "schedulerName" },
                     {
                         "data": "onceOrRepeat",
-                        "render": function(data) {
+                        "render": function (data) {
                             if (!data || data === 'N/A') return 'N/A';
-                            var cls = data.toLowerCase() === 'once' ? 'type-once' : 'type-repeat';
-                            var icon = data.toLowerCase() === 'once' ? 'fa-bolt' : 'fa-sync-alt';
-                            return '<span class="' + cls + '"><i class="fa ' + icon + ' me-1"></i>' + data + '</span>';
+                            var once = data.toLowerCase() === 'once';
+                            return '<span class="' + (once ? 'type-once' : 'type-repeat') + '"><i class="fa ' + (once ? 'fa-bolt' : 'fa-sync-alt') + ' me-1"></i>' + data + '</span>';
                         }
                     },
-                    { "data": "jobBookDate" },
-                    { "data": "jobCompletedDate" },
+                    { "data": "startAt" },
+                    { "data": "endAt" },
                     {
                         "data": "lastExecutedAt",
-                        "render": function (data) {
+                        "render": function (data, type, row) {
+                            if (row.planId == null) return '<span class="text-muted">—</span>';
                             if (!data) return '<span class="badge-never"><i class="fa fa-clock me-1"></i>Never Sent</span>';
-                            var sentDate  = new Date(data);
-                            var today     = new Date();
-                            var isToday   = sentDate.toDateString() === today.toDateString();
-                            var timeStr   = sentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            var formatted = sentDate.toLocaleDateString() + ' ' + timeStr;
-                            if (isToday) {
+                            var sent = new Date(data), today = new Date();
+                            var timeStr = sent.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            if (sent.toDateString() === today.toDateString())
                                 return '<span class="badge-sent-today"><i class="fa fa-check-circle me-1"></i>Today ' + timeStr + '</span>';
-                            }
-                            return '<span class="badge-sent-old"><i class="fa fa-calendar-alt me-1"></i>' + formatted + '</span>';
+                            return '<span class="badge-sent-old"><i class="fa fa-calendar-alt me-1"></i>' + sent.toLocaleDateString() + ' ' + timeStr + '</span>';
                         }
                     },
                     {
                         "data": "status",
-                        "render": function (data, type, row) {
-                            if (row.isPaused)
-                                return '<span class="badge bg-warning text-dark"><i class="fa fa-pause me-1"></i>Paused</span>';
-                            if (row.onceOrRepeat && row.onceOrRepeat.toLowerCase() === 'once' && data && data.toLowerCase() === 'sent')
-                                return '<span class="badge bg-success"><i class="fa fa-check me-1"></i>Sent</span>';
-                            return '<span class="badge bg-primary"><i class="fa fa-play me-1"></i>Active</span>';
+                        "render": function (data) {
+                            var map = {
+                                'Paused': '<span class="badge bg-warning text-dark"><i class="fa fa-pause me-1"></i>Paused</span>',
+                                'Sent': '<span class="badge bg-success"><i class="fa fa-check me-1"></i>Sent</span>',
+                                'Cancelled': '<span class="badge bg-danger">Cancelled</span>',
+                                'Completed': '<span class="badge bg-secondary">Completed</span>',
+                                'Confirmed': '<span class="badge bg-info text-dark">Confirmed</span>',
+                                'Scheduled': '<span class="badge bg-primary">Scheduled</span>',
+                                'Active': '<span class="badge bg-primary"><i class="fa fa-play me-1"></i>Active</span>'
+                            };
+                            return map[data] || data;
                         }
                     },
                     {
-                        "data": null,
-                        "searchable": false,
-                        "orderable": false,
+                        "data": null, "searchable": false, "orderable": false,
                         "render": function (data, type, row) {
-                            var deleteBtn = '<button class="btn btn-del btn-sm rounded-2" onclick="showDeleteConfirm(' + row.jobId + ')"><i class="fa fa-trash"></i></button>';
-
-                            if (row.onceOrRepeat && row.onceOrRepeat.toLowerCase() === 'once' && row.status && row.status.toLowerCase() === 'sent') {
-                                return '<div class="d-flex gap-1 align-items-center"><span class="text-success fw-bold small"><i class="fa fa-check-circle"></i> Sent</span>' + deleteBtn + '</div>';
-                            }
-
+                            if (row.planId == null) return '<span class="text-muted small">No message plan</span>';
+                            var deleteBtn = '<button class="btn btn-del btn-sm rounded-2" onclick="showDeleteConfirm(' + row.planId + ')"><i class="fa fa-trash"></i></button>';
+                            if (row.isSent) return '<div class="d-flex gap-1 align-items-center"><span class="text-success fw-bold small"><i class="fa fa-check-circle"></i> Sent</span>' + deleteBtn + '</div>';
                             var pauseBtn = row.isPaused
-                                ? '<button class="btn btn-resume btn-sm rounded-2" onclick="togglePause(' + row.jobId + ')"><i class="fa fa-play me-1"></i>Resume</button>'
-                                : '<button class="btn btn-pause btn-sm rounded-2" onclick="togglePause(' + row.jobId + ')"><i class="fa fa-pause me-1"></i>Pause</button>';
-
+                                ? '<button class="btn btn-resume btn-sm rounded-2" onclick="togglePause(' + row.planId + ')"><i class="fa fa-play me-1"></i>Resume</button>'
+                                : '<button class="btn btn-pause btn-sm rounded-2" onclick="togglePause(' + row.planId + ')"><i class="fa fa-pause me-1"></i>Pause</button>';
                             return '<div class="d-flex gap-1">' + pauseBtn + deleteBtn + '</div>';
                         }
                     }
@@ -372,18 +360,18 @@
         });
 
         function updateStats(data) {
-            var total   = data.length;
-            var paused  = data.filter(function(r) { return r.isPaused; }).length;
-            var sent    = data.filter(function(r) { return r.status && r.status.toLowerCase() === 'sent'; }).length;
-            var active  = total - paused - sent;
+            var total = data.length;
+            var paused = data.filter(function (r) { return r.status === 'Paused'; }).length;
+            var sent = data.filter(function (r) { return r.status === 'Sent'; }).length;
+            var active = data.filter(function (r) { return ['Active', 'Scheduled', 'Confirmed'].indexOf(r.status) >= 0; }).length;
             $('#statTotal').text(total);
-            $('#statActive').text(active < 0 ? 0 : active);
+            $('#statActive').text(active);
             $('#statPaused').text(paused);
             $('#statSent').text(sent);
         }
 
         function togglePause(jobId) {
-            $.post("/Sms/TogglePauseJob", { jobId: jobId }, function (res) {
+            $.post("/Sms/TogglePausePlan", { planId: jobId }, function (res) {
                 if (res.success) {
                     showResult("Success", "Job has been " + (res.isPaused ? "Paused" : "Resumed") + ".", "text-success");
                     JobsDatatable.ajax.reload(null, false);
@@ -401,7 +389,7 @@
         $('#btnConfirmDelete').click(function () {
             var jobId = $('#deleteJobId').val();
             $('#confirmDeleteModal').modal('hide');
-            $.post("/Sms/DeleteScheduledJob", { jobId: jobId }, function (res) {
+            $.post("/Sms/DeletePlan", { planId: jobId }, function (res) {
                 if (res.success) {
                     showResult("Success", "Scheduled job deleted successfully.", "text-success");
                     JobsDatatable.ajax.reload(null, false);

@@ -205,25 +205,13 @@ namespace SendSmsCallAlerts.Controllers
                 if (technician == null)
                     return Json(new { success = false, message = "Technician not found." });
 
-                var assignedContactsCount = await _context.ContactDetail
-                    .Where(c => c.AssignedTechnicianId == id)
-                    .CountAsync();
-
-                if (assignedContactsCount > 0)
-                {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"Cannot delete technician. They are currently assigned to {assignedContactsCount} contact(s)."
-                    });
-                }
-                var jobCount = await _context.AllScheduledJobs.CountAsync(j => j.TechnicianId == id);
+                var jobCount = await _context.Jobs.CountAsync(j => j.TechnicianId == id);
                 if (jobCount > 0)
                 {
                     return Json(new
                     {
                         success = false,
-                        message = $"Cannot delete technician. They are assigned to {jobCount} scheduled job(s)."
+                        message = $"Cannot delete technician. They are assigned to {jobCount} job(s)."
                     });
                 }
 
@@ -281,8 +269,10 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // GET /Technicians/GetFilteredTechnicians?customerZip=10001&categoryId=3&jobDateTime=2026-10-23T10:00
+        // GET /Technicians/GetFilteredTechnicians?customerZip=10001&categoryId=3&jobStartAt=2026-10-27T10:00&jobEndAt=2026-10-27T12:00&excludeJobId=5
         [HttpGet]
-        public async Task<JsonResult> GetFilteredTechnicians(string customerZip, int? categoryId, DateTime? jobDateTime)
+        public async Task<JsonResult> GetFilteredTechnicians(string customerZip, int? categoryId,
+            DateTime? jobStartAt, DateTime? jobEndAt, int? excludeJobId)
         {
             try
             {
@@ -301,6 +291,11 @@ namespace SendSmsCallAlerts.Controllers
 
                 var technicians = await query.ToListAsync();
 
+                // availability for all technicians at once (working hours + overlap with other jobs)
+                Dictionary<int, AvailabilityCheckResult> checks = null;
+                if (jobStartAt.HasValue)
+                    checks = await _availabilityService.CheckManyAsync(technicians, jobStartAt.Value, jobEndAt, excludeJobId);
+
                 // Distance lookups in parallel (max 5 at once); results are cached in the service
                 using var gate = new SemaphoreSlim(5);
                 var tasks = technicians.Select(async tech =>
@@ -313,9 +308,8 @@ namespace SendSmsCallAlerts.Controllers
                         finally { gate.Release(); }
                     }
 
-                    var check = jobDateTime.HasValue
-                        ? TechnicianAvailabilityService.Check(tech.Availabilities, jobDateTime.Value)
-                        : null;
+                    AvailabilityCheckResult check = null;
+                    if (checks != null) checks.TryGetValue(tech.Id, out check);
 
                     return new TechnicianOption
                     {

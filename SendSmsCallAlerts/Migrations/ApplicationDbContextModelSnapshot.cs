@@ -33,45 +33,31 @@ namespace SendSmsCallAlerts.Migrations
                     b.Property<DateTime>("AssignedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("ContactDetailId")
-                        .IsRequired()
-                        .HasColumnType("int");
-
                     b.Property<DateTime?>("CustomDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int?>("CustomHours")
                         .HasColumnType("int");
 
-                    b.Property<double?>("DistanceMiles")
-                        .HasColumnType("float");
-
                     b.Property<bool>("IsPaused")
                         .HasColumnType("bit");
 
-                    b.Property<DateTime>("JobBookDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("JobCompletedDate")
-                        .HasColumnType("datetime2");
+                    b.Property<int>("JobId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("LastExecutedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("SchedulerId")
-                        .IsRequired()
-                        .HasColumnType("int");
-
-                    b.Property<int?>("TechnicianId")
+                    b.Property<int>("SchedulerId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ContactDetailId");
-
                     b.HasIndex("SchedulerId");
 
-                    b.HasIndex("TechnicianId");
+                    b.HasIndex("JobId", "SchedulerId")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_AllScheduledJobs_Job_Scheduler");
 
                     b.ToTable("AllScheduledJobs");
                 });
@@ -237,12 +223,6 @@ namespace SendSmsCallAlerts.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("AssignedTechnicianId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("CategoryId")
-                        .HasColumnType("int");
-
                     b.Property<string>("CityState")
                         .HasColumnType("nvarchar(max)");
 
@@ -255,7 +235,8 @@ namespace SendSmsCallAlerts.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("StreetAddress")
                         .HasColumnType("nvarchar(max)");
@@ -265,7 +246,10 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AssignedTechnicianId");
+                    b.HasIndex("PhoneNumber")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_ContactDetail_Phone")
+                        .HasFilter("[PhoneNumber] IS NOT NULL");
 
                     b.ToTable("ContactDetail");
                 });
@@ -423,7 +407,7 @@ namespace SendSmsCallAlerts.Migrations
                         });
                 });
 
-            modelBuilder.Entity("SendSmsCallAlerts.Models.JobSchedule", b =>
+            modelBuilder.Entity("SendSmsCallAlerts.Models.Job", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -431,27 +415,50 @@ namespace SendSmsCallAlerts.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int?>("CategoryId")
+                        .HasColumnType("int");
 
                     b.Property<int>("ContactDetailId")
                         .HasColumnType("int");
 
-                    b.Property<bool>("IsPaused")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("JobBookDate")
+                    b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Scheduler")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<double?>("DistanceMiles")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("EndAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("SourceSmsId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("TechnicianId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CategoryId");
+
                     b.HasIndex("ContactDetailId");
 
-                    b.ToTable("JobSchedule");
+                    b.HasIndex("SourceSmsId");
+
+                    b.HasIndex("TechnicianId", "StartAt", "EndAt")
+                        .HasDatabaseName("IX_Jobs_Technician_Time");
+
+                    b.ToTable("Jobs");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.MmsLinks", b =>
@@ -565,7 +572,7 @@ namespace SendSmsCallAlerts.Migrations
                         new
                         {
                             Id = 4,
-                            RunFromName = "Job Created Date"
+                            RunFromName = "Job End Date"
                         });
                 });
 
@@ -601,7 +608,6 @@ namespace SendSmsCallAlerts.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("fromNum")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("name")
@@ -628,7 +634,6 @@ namespace SendSmsCallAlerts.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("toNum")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -648,9 +653,6 @@ namespace SendSmsCallAlerts.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("CityState")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int?>("ContactDetailId")
                         .HasColumnType("int");
 
@@ -659,12 +661,6 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.Property<int?>("ScheduledJobId")
                         .HasColumnType("int");
-
-                    b.Property<string>("StreetAddress")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ZipCode")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("createdOn")
                         .HasColumnType("datetime2");
@@ -694,6 +690,8 @@ namespace SendSmsCallAlerts.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ContactDetailId");
+
+                    b.HasIndex("ScheduledJobId");
 
                     b.ToTable("SmsDetails");
                 });
@@ -930,9 +928,9 @@ namespace SendSmsCallAlerts.Migrations
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.AllScheduledJob", b =>
                 {
-                    b.HasOne("SendSmsCallAlerts.Models.ContactDetail", "ContactDetail")
-                        .WithMany()
-                        .HasForeignKey("ContactDetailId")
+                    b.HasOne("SendSmsCallAlerts.Models.Job", "Job")
+                        .WithMany("ScheduledJobs")
+                        .HasForeignKey("JobId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -942,15 +940,9 @@ namespace SendSmsCallAlerts.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("SendSmsCallAlerts.Models.Technician", "Technician")
-                        .WithMany()
-                        .HasForeignKey("TechnicianId");
-
-                    b.Navigation("ContactDetail");
+                    b.Navigation("Job");
 
                     b.Navigation("Scheduler");
-
-                    b.Navigation("Technician");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsLog", b =>
@@ -964,24 +956,36 @@ namespace SendSmsCallAlerts.Migrations
                     b.Navigation("Setting");
                 });
 
-            modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>
+            modelBuilder.Entity("SendSmsCallAlerts.Models.Job", b =>
                 {
-                    b.HasOne("SendSmsCallAlerts.Models.Technician", "AssignedTechnician")
-                        .WithMany("AssignedContacts")
-                        .HasForeignKey("AssignedTechnicianId");
+                    b.HasOne("SendSmsCallAlerts.Models.IvrOptions", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
-                    b.Navigation("AssignedTechnician");
-                });
-
-            modelBuilder.Entity("SendSmsCallAlerts.Models.JobSchedule", b =>
-                {
                     b.HasOne("SendSmsCallAlerts.Models.ContactDetail", "ContactDetail")
-                        .WithMany("JobSchedules")
+                        .WithMany("Jobs")
                         .HasForeignKey("ContactDetailId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("SendSmsCallAlerts.Models.SmsDetail", "SourceSms")
+                        .WithMany()
+                        .HasForeignKey("SourceSmsId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SendSmsCallAlerts.Models.Technician", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Category");
+
                     b.Navigation("ContactDetail");
+
+                    b.Navigation("SourceSms");
+
+                    b.Navigation("Technician");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.Scheduler", b =>
@@ -1009,6 +1013,11 @@ namespace SendSmsCallAlerts.Migrations
                         .WithMany()
                         .HasForeignKey("ContactDetailId");
 
+                    b.HasOne("SendSmsCallAlerts.Models.AllScheduledJob", null)
+                        .WithMany()
+                        .HasForeignKey("ScheduledJobId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("ContactDetail");
                 });
 
@@ -1030,13 +1039,16 @@ namespace SendSmsCallAlerts.Migrations
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>
                 {
-                    b.Navigation("JobSchedules");
+                    b.Navigation("Jobs");
+                });
+
+            modelBuilder.Entity("SendSmsCallAlerts.Models.Job", b =>
+                {
+                    b.Navigation("ScheduledJobs");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.Technician", b =>
                 {
-                    b.Navigation("AssignedContacts");
-
                     b.Navigation("Availabilities");
                 });
 #pragma warning restore 612, 618

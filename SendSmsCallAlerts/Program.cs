@@ -28,6 +28,10 @@ builder.Services.AddScoped<TechnicianAvailabilityService>();
 builder.Services.AddScoped<AutomatedSmsService>();
 builder.Services.AddScoped<AutomatedSmsJob>();
 
+builder.Services.AddSingleton<IAppClock, AppClock>();
+builder.Services.AddSingleton<ISmsGateway, SmsGateway>();
+builder.Services.AddScoped<JobService>();
+
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = long.MaxValue; // Set the maximum form size to a large value.

@@ -37,12 +37,8 @@ namespace SendSmsCallAlerts.Models
         [NotMapped]
         public string FullName => $"{FirstName} {LastName}";
 
-        // Navigation property for assigned contacts
-        public virtual ICollection<ContactDetail>? AssignedContacts { get; set; }
-
-        // NEW: weekly availability (7 rows)
+        // weekly availability (7 rows)
         [ValidateNever]
         public virtual ICollection<TechnicianAvailability>? Availabilities { get; set; } = new List<TechnicianAvailability>();
-
     }
 }
