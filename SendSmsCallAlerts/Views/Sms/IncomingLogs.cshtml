@@ -1,4 +1,4 @@
-@{
+﻿@{
     ViewData["Title"] = "IncomingLogs";
 }
 
@@ -115,13 +115,13 @@
     <div class="sg-response-legend">
         <strong>Waiting Time Key:</strong>
         <span style="display:inline-flex;align-items:center;gap:6px;">
-            <span style="width:14px;height:14px;background:#FFD700;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Gold — 10–14 min 59 sec
+            <span style="width:14px;height:14px;background:#B8860B;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Gold — 10–14 min 59 sec
         </span>
         <span style="display:inline-flex;align-items:center;gap:6px;">
-            <span style="width:14px;height:14px;background:#FFA500;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Orange — 15–19 min 59 sec
+            <span style="width:14px;height:14px;background:#b35a00;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Orange — 15–19 min 59 sec
         </span>
         <span style="display:inline-flex;align-items:center;gap:6px;">
-            <span style="width:14px;height:14px;background:#FF4444;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Red — 20 min or more
+            <span style="width:14px;height:14px;background:#cc0000;border-radius:3px;display:inline-block;border:1px solid #ccc;"></span>Red — 20 min or more
         </span>
     </div>
 
@@ -263,15 +263,14 @@
             "emptyTable": "No record found.",
             "processing": '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>'
         },
-        // Task 4: color incoming rows based on waiting time
+        // Task 4: color incoming rows based on waiting time — text only, no background change
         "createdRow": function (row, data) {
             if (data.smsDirection === "Incoming" && data.waitingColor) {
-                var colorMap = { gold: '#FFF8DC', orange: '#FFE5B4', red: '#FFD0D0' };
-                var borderMap = { gold: '#FFD700', orange: '#FFA500', red: '#FF4444' };
-                $(row).css({
-                    'background-color': colorMap[data.waitingColor] || '',
-                    'border-left': '4px solid ' + (borderMap[data.waitingColor] || 'transparent')
-                });
+                var textColorMap = { gold: '#B8860B', orange: '#b35a00', red: '#cc0000' };
+                var color = textColorMap[data.waitingColor];
+                if (color) {
+                    $('td', row).css({ 'color': color, 'font-weight': '600' });
+                }
             }
         },
         "initComplete": function () {
@@ -359,7 +358,7 @@
                 "defaultContent": "",
                 "render": function (data, type, row) {
                     if (row.smsDirection !== "Incoming") return "";
-                    var colorMap = { gold: '#B8860B', orange: '#CC6600', red: '#CC0000' };
+                    var colorMap = { gold: '#B8860B', orange: '#b35a00', red: '#cc0000' };
                     var color = colorMap[row.waitingColor] || '#555';
                     var weight = row.waitingColor ? 'bold' : 'normal';
                     return '<span style="color:' + color + '; font-weight:' + weight + ';">' + (data || "Pending") + '</span>';
