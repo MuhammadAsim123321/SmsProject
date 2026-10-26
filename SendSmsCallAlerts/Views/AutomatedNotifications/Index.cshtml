@@ -64,7 +64,7 @@
                                 <button class="btn btn-sm btn-warning">@(s.IsActive ? "Deactivate" : "Activate")</button>
                             </form>
                             <form asp-action="RunNow" asp-route-id="@s.Id" method="post" class="d-inline"
-                                  onsubmit="return confirm('Preview only: shows who would get what tomorrow. Nothing is sent. Continue?');">
+                                  onsubmit="return confirm('Preview only: shows recipients and messages for this notification type. Nothing is sent. Continue?');">
                                 <button class="btn btn-sm btn-success">Run Now (test)</button>
                             </form>
                             <form asp-action="Delete" asp-route-id="@s.Id" method="post" class="d-inline"

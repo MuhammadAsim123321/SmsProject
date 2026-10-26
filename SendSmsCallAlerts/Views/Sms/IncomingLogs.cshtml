@@ -393,7 +393,7 @@
         if (!data) return;
         currentRowData = data;
 
-        var isOutgoing = data.smsDirection === "Outgoing";
+        var isOutgoing = (data.smsDirection || "").indexOf("Outgoing") === 0;
         $('#mSmsDirection').val(data.smsDirection);
         $('#mFromNum').val(data.fromNum);
         $('#mOriginalFromNum').val(data.fromNum);

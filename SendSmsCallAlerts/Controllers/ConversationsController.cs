@@ -5,9 +5,8 @@ using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Migrations;
 using SendSmsCallAlerts.Models;
+using SendSmsCallAlerts.Services;
 using System.Xml.Linq;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
 
 namespace SendSmsCallAlerts.Controllers
 {
@@ -18,19 +17,30 @@ namespace SendSmsCallAlerts.Controllers
         private readonly IConfiguration _configuration;
         private readonly string filePath;
         private readonly ApplicationDbContext _context;
+        private readonly ISmsGateway _smsGateway;
+        private readonly IUploadedMediaStore _uploadedMediaStore;
 
-        public ConversationsController(IConfiguration configuration, IWebHostEnvironment hostingEnvironment, ApplicationDbContext context)
+        public ConversationsController(
+            IConfiguration configuration,
+            IWebHostEnvironment hostingEnvironment,
+            ApplicationDbContext context,
+            ISmsGateway smsGateway,
+            IUploadedMediaStore uploadedMediaStore)
         {
             _configuration = configuration;
             _hostingEnvironment = hostingEnvironment;
             filePath = Path.Combine(_hostingEnvironment.ContentRootPath, "data.txt");
             _context = context;
+            _smsGateway = smsGateway;
+            _uploadedMediaStore = uploadedMediaStore;
         }
 
         public IActionResult SMS(string num = "")
         {
             ViewBag.ToNumber = GetFormattedNumber(num);
-            ViewBag.FromNumber = GetTwilioNumber();
+            ViewBag.FromNumber = _smsGateway.FromNumber.Length > 0
+                ? _smsGateway.FromNumber
+                : GetTwilioNumber();
             return View();
         }
 
@@ -165,105 +175,60 @@ namespace SendSmsCallAlerts.Controllers
             return View(conversation);
         }
 
-        private List<string> StoreImageAndGetAddress(List<IFormFile> files)
-        {
-            var uploads = Path.Combine(_hostingEnvironment.WebRootPath, "uploads");
-            if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
-
-            var fileNames = new List<string>();
-            foreach (var file in files)
-            {
-                if (file != null)
-                {
-                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                    var fp = Path.Combine(uploads, fileName);
-                    using (var fs = new FileStream(fp, FileMode.Create))
-                        file.CopyTo(fs);
-                    fileNames.Add(fileName);
-                }
-            }
-            return fileNames;
-        }
-
         [HttpPost]
-        [RequestSizeLimit(9223372036854775807)]
-        [RequestFormLimits(MultipartBodyLengthLimit = 9223372036854775807)]
+        [RequestSizeLimit(52 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 52 * 1024 * 1024)]
         public async Task<IActionResult> SendSms(Conversation conversation, List<IFormFile> file)
         {
             try
             {
-                conversation.toNum = "+1" + GetFormattedNumber(conversation.toNum);
+                conversation.toNum = _smsGateway.NormalizePhone(conversation.toNum);
+                if (conversation.toNum.Length == 0)
+                    throw new InvalidDataException("Enter a valid recipient phone number.");
 
-                string accountSid = _configuration["AppSettings:AccountSid"];
-                string authToken  = _configuration["AppSettings:AuthToken"];
-                string WebAddress = _configuration["AppSettings:WebAddress"];
+                var media = await _uploadedMediaStore.SaveAsync(file);
+                var fallbackFrom = _smsGateway.NormalizePhone(GetTwilioNumber());
+                var send = await _smsGateway.SendAsync(
+                    conversation.toNum,
+                    conversation.smsBody ?? "",
+                    media.Select(item => item.Location),
+                    fallbackFrom);
 
-                List<string> mmsImg = null;
-                if (file != null && file.Count > 0)
-                    mmsImg = StoreImageAndGetAddress(file);
+                if (!send.Success)
+                    throw new InvalidOperationException(send.Error ?? "The message could not be sent.");
 
-                conversation.fromNum = "+1" + GetFormattedNumber(GetTwilioNumber());
-                TwilioClient.Init(accountSid, authToken);
-
-                if (mmsImg != null)
+                conversation.fromNum = send.From;
+                var smsDetail = new SmsDetail
                 {
-                    var mediaUrl  = mmsImg.Select(r => new Uri("https://" + WebAddress + "/uploads/" + r)).ToList();
-                    var mediaName = mmsImg.ToList();
+                    fromNum = send.From,
+                    toNum = conversation.toNum,
+                    imgPath = "",
+                    smsDirection = send.Simulated ? "OutgoingTest" : "Outgoing",
+                    smsBody = conversation.smsBody ?? "",
+                    createdOn = DateTime.UtcNow
+                };
+                _context.SmsDetails.Add(smsDetail);
+                await _context.SaveChangesAsync();
 
-                    MessageResource.Create(
-                        body:     conversation.smsBody,
-                        from:     new Twilio.Types.PhoneNumber(conversation.fromNum),
-                        to:       new Twilio.Types.PhoneNumber(conversation.toNum),
-                        mediaUrl: mediaUrl);
-
-                    var smsDetail = new SmsDetail
-                    {
-                        fromNum      = conversation.fromNum,
-                        toNum        = conversation.toNum,
-                        imgPath      = "",
-                        smsDirection = "Outgoing",
-                        smsBody      = conversation.smsBody,
-                        createdOn    = DateTime.UtcNow
-                    };
-                    _context.Add(smsDetail);
-                    _context.SaveChanges();
-
-                    var imgUrlList = mediaUrl.Select((u, i) => new MmsLinks
-                    {
-                        SmsId    = smsDetail.Id,
-                        FileName = mediaName[i],
-                        Location = u.ToString()
-                    }).ToList();
-
-                    _context.AddRange(imgUrlList);
-                    _context.SaveChanges();
-                }
-                else
+                if (media.Count > 0)
                 {
-                    MessageResource.Create(
-                        body: conversation.smsBody,
-                        from: new Twilio.Types.PhoneNumber(conversation.fromNum),
-                        to:   new Twilio.Types.PhoneNumber(conversation.toNum));
-
-                    var smsDetail = new SmsDetail
+                    _context.MmsLinkss.AddRange(media.Select(item => new MmsLinks
                     {
-                        fromNum      = conversation.fromNum,
-                        toNum        = conversation.toNum,
-                        imgPath      = "",
-                        smsDirection = "Outgoing",
-                        smsBody      = conversation.smsBody,
-                        createdOn    = DateTime.UtcNow
-                    };
-                    _context.Add(smsDetail);
-                    _context.SaveChanges();
+                        SmsId = smsDetail.Id,
+                        FileName = item.FileName,
+                        Location = item.Location.ToString()
+                    }));
+                    await _context.SaveChangesAsync();
                 }
 
-                TempData["StMsg"] = "SMS Sent Successfully!";
+                TempData["StMsg"] = send.Simulated
+                    ? $"Development simulation completed; no message was sent. Images: {media.Count}."
+                    : "SMS Sent Successfully!";
                 return RedirectToAction(nameof(SMS), new { num = conversation.toNum });
             }
             catch (Exception e)
             {
-                TempData["ErMsg"] = "Error: " + e.ToString();
+                TempData["ErMsg"] = "Error: " + e.Message;
                 return RedirectToAction(nameof(SMS), new { num = conversation.toNum });
             }
         }

@@ -141,7 +141,7 @@ namespace SendSmsCallAlerts.Services
                         fromNum = send.From,
                         toNum = item.Phone,
                         smsBody = item.Body,
-                        smsDirection = "Outgoing",
+                        smsDirection = send.Simulated ? "OutgoingTest" : "Outgoing",
                         IsReadYesOrNo = "",
                         imgPath = "",
                         createdOn = DateTime.UtcNow,

@@ -22,6 +22,7 @@ namespace SendSmsCallAlerts.Controllers
     public class RunNowVm
     {
         public string SettingName { get; set; } = "";
+        public string PreviewDescription { get; set; } = "";
         public List<AutomatedSmsItem> Items { get; set; } = new();
     }
 
@@ -141,7 +142,19 @@ namespace SendSmsCallAlerts.Controllers
             if (s == null) return NotFound();
             var key = "TEST-" + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff");
             var items = await svc.RunAsync(s, key, true, svc.BusinessNow());
-            return View("RunResult", new RunNowVm { SettingName = s.Name, Items = items });
+            var previewDescription = s.NotificationType switch
+            {
+                NotificationTypes.TechnicianAvailabilityRequest => "Technician weekly availability request",
+                NotificationTypes.TechnicianDailyJobSummary => "Technician daily job summary for the next day",
+                NotificationTypes.CustomerJobReminder => "Customer next-day job reminder",
+                _ => "Configured notification"
+            };
+            return View("RunResult", new RunNowVm
+            {
+                SettingName = s.Name,
+                PreviewDescription = previewDescription,
+                Items = items
+            });
         }
 
         private async Task ValidateAsync(AutomatedSmsSetting m, int currentId)

@@ -13,9 +13,9 @@ namespace SendSmsCallAlerts.Services
     ///   SmsMode            "Test" (default) = nothing is sent to Twilio, the send is simulated and logged.
     ///                      "Live"           = real Twilio send. Needs AccountSid, AuthToken, TwilioNumber.
     ///   AccountSid / AuthToken / TwilioNumber   real Twilio values (existing keys)
-    ///   DefaultCountryCode "+1" (default) used when a number has no country code.
+    ///   DefaultCountryCode is required and used when a number has no country code.
     ///
-    /// Going live = fill the real values and set SmsMode to "Live". No code change.
+    /// Only Production can send live; all other environments are simulated.
     /// </summary>
     public interface ISmsGateway
     {
@@ -23,7 +23,12 @@ namespace SendSmsCallAlerts.Services
         string Mode { get; }
         string FromNumber { get; }
         string NormalizePhone(string? raw);
-        Task<SmsSendResult> SendAsync(string to, string body, IEnumerable<Uri>? mediaUrls = null, string? fallbackFrom = null);
+        Task<SmsSendResult> SendAsync(
+            string to,
+            string body,
+            IEnumerable<Uri>? mediaUrls = null,
+            string? fallbackFrom = null,
+            string? senderOverride = null);
     }
 
     public class SmsGateway : ISmsGateway
@@ -36,39 +41,54 @@ namespace SendSmsCallAlerts.Services
         public string Mode { get; }
         public string FromNumber { get; }
 
-        public SmsGateway(IConfiguration config, ILogger<SmsGateway> logger)
+        public SmsGateway(IConfiguration config, IHostEnvironment environment, ILogger<SmsGateway> logger)
         {
             _logger = logger;
 
-            Mode = (config["AppSettings:SmsMode"] ?? "Test").Trim();
-            IsLive = string.Equals(Mode, "Live", StringComparison.OrdinalIgnoreCase);
+            var configuredMode = (config["AppSettings:SmsMode"] ?? "Test").Trim();
+            if (!string.Equals(configuredMode, "Test", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(configuredMode, "Live", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("AppSettings:SmsMode must be either Test or Live.");
+
+            IsLive = environment.IsProduction()
+                && string.Equals(configuredMode, "Live", StringComparison.OrdinalIgnoreCase);
+            Mode = IsLive ? "Live" : "Test";
 
             var accountSid = config["AppSettings:AccountSid"] ?? "";
             var authToken = config["AppSettings:AuthToken"] ?? "";
             _hasCredentials = accountSid.Length > 0 && authToken.Length > 0;
 
-            var cc = Digits(config["AppSettings:DefaultCountryCode"] ?? "+1");
-            _countryCode = "+" + (cc.Length > 0 ? cc : "1");
+            var cc = Digits(config["AppSettings:DefaultCountryCode"]);
+            if (cc.Length == 0)
+                throw new InvalidOperationException("AppSettings:DefaultCountryCode must be configured.");
+            _countryCode = "+" + cc;
 
             FromNumber = NormalizePhone(config["AppSettings:TwilioNumber"]);
 
             if (IsLive && _hasCredentials) TwilioClient.Init(accountSid, authToken);
 
-            _logger.LogInformation("SMS gateway started in {Mode} mode (credentials present: {HasCreds}).", Mode, _hasCredentials);
+            _logger.LogInformation("SMS gateway started in {Mode} mode.", Mode);
         }
 
-        public async Task<SmsSendResult> SendAsync(string to, string body, IEnumerable<Uri>? mediaUrls = null, string? fallbackFrom = null)
+        public async Task<SmsSendResult> SendAsync(
+            string to,
+            string body,
+            IEnumerable<Uri>? mediaUrls = null,
+            string? fallbackFrom = null,
+            string? senderOverride = null)
         {
             var toNumber = NormalizePhone(to);
             if (toNumber.Length == 0)
                 return new SmsSendResult(false, false, "", null, "Invalid recipient phone number.");
 
-            // Sender: configured Twilio number first, otherwise the number the customer texted.
-            var from = FromNumber.Length > 0 ? FromNumber : NormalizePhone(fallbackFrom);
+            var from = !string.IsNullOrWhiteSpace(senderOverride)
+                ? NormalizePhone(senderOverride)
+                : FromNumber.Length > 0 ? FromNumber : NormalizePhone(fallbackFrom);
 
             if (!IsLive)
             {
-                _logger.LogInformation("[SMS TEST MODE] to {To}: {Body}", toNumber, body);
+                var mediaCount = mediaUrls?.Count() ?? 0;
+                _logger.LogInformation("[SMS TEST MODE] Simulated a message with {MediaCount} media attachment(s).", mediaCount);
                 return new SmsSendResult(true, true, from.Length > 0 ? from : "TEST", null, null);
             }
 

@@ -150,7 +150,13 @@ namespace SendSmsCallAlerts.Jobs
 
             if (send.Success)
             {
-                int smsId = await SaveSmsLogAsync(contact.PhoneNumber ?? "", send.From, body, "Outgoing", contact.Id, plan.Id);
+                int smsId = await SaveSmsLogAsync(
+                    contact.PhoneNumber ?? "",
+                    send.From,
+                    body,
+                    send.Simulated ? "OutgoingTest" : "Outgoing",
+                    contact.Id,
+                    plan.Id);
                 foreach (var img in images)
                 {
                     _db.MmsLinkss.Add(new MmsLinks

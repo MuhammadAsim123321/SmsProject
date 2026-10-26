@@ -125,7 +125,7 @@ namespace SendSmsCallAlerts.Services
             if (zip.Length > 0 && !ZipRegex.IsMatch(zip)) errors["contactZip"] = "Enter a valid ZIP code (12345 or 12345-6789).";
 
             // ---- 2) what was submitted -------------------------------------------
-            bool isOutgoing = string.Equals(req.SmsDirection, "Outgoing", StringComparison.OrdinalIgnoreCase);
+            bool isOutgoing = (req.SmsDirection ?? "").StartsWith("Outgoing", StringComparison.OrdinalIgnoreCase);
             var j = isOutgoing ? null : req.Job;
             var sc = isOutgoing ? null : req.Scheduler;
             int schedulerId = sc?.SchedulerId ?? 0;

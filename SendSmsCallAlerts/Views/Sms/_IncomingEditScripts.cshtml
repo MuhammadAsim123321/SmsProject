@@ -59,7 +59,7 @@
             var data = RpmDatatable.row(this).data();
             if (!data) return;
 
-            var isOutgoing = data.smsDirection === 'Outgoing';
+            var isOutgoing = (data.smsDirection || '').indexOf('Outgoing') === 0;
             var phone = customerNumber(data);
 
             resetModal();
@@ -240,7 +240,7 @@
         });
 
         function buildPayload() {
-            var isOutgoing = $('#mSmsDirection').val() === 'Outgoing';
+            var isOutgoing = ($('#mSmsDirection').val() || '').indexOf('Outgoing') === 0;
             var days = parseInt($('#mCustomDays').val(), 10) || 0;
             var hrs = parseInt($('#mCustomHoursVal').val(), 10) || 0;
             var total = days * 24 + hrs;

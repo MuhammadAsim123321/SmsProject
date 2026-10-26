@@ -7,22 +7,22 @@
 
 <div class="sg-content-stack sg-results-page">
     <h1>Test run: @Model.SettingName</h1>
-    <p class="text-muted">Preview only. Nothing was sent. These are the messages that would go out for tomorrow.</p>
+    <p class="text-muted">Preview only: @Model.PreviewDescription. Nothing was sent. Recipients and message fields are built from the selected notification type and the matching database records.</p>
 
     @if (!Model.Items.Any())
     {
-        <div class="alert alert-warning">No recipients right now (for example, no jobs scheduled tomorrow).</div>
+        <div class="alert alert-warning">No matching recipients or records were found for this notification type and preview period.</div>
     }
     else
     {
         <table class="table table-bordered table-striped">
             <thead style="background: #70b3db; color: white;">
-                <tr><th>Recipient</th><th>Phone</th><th>Message</th><th>Result</th></tr>
+                <tr><th>Recipient type</th><th>Recipient</th><th>Phone</th><th>Message preview</th><th>Result</th></tr>
             </thead>
             <tbody>
                 @foreach (var i in Model.Items)
                 {
-                    <tr><td>@i.RecipientName</td><td>@i.Phone</td><td style="white-space:pre-wrap">@i.Body</td><td>@i.Status</td></tr>
+                    <tr><td>@i.RecipientType</td><td>@i.RecipientName</td><td>@i.Phone</td><td style="white-space:pre-wrap">@i.Body</td><td>@i.Status</td></tr>
                 }
             </tbody>
         </table>

@@ -33,19 +33,19 @@
                         @* @attachment.FileName.Substring(10)*@
                         @if (IsImage(attachment.FileName))
                         {
-                            <img src="@attachment.Location" alt="Image" style="max-width: 300px; max-height: 300px;" />
+                            <img src="@AttachmentUrl(attachment)" alt="Image preview" style="max-width: 300px; max-height: 300px;" />
                         }
                         else if (IsAudio(attachment.FileName))
                         {
                             <audio controls>
-                                <source src="@attachment.Location" type="audio/mpeg">
+                                <source src="@AttachmentUrl(attachment)" type="audio/mpeg">
                                 Your browser does not support the audio tag.
                             </audio>
                         }
                         else if (IsVideo(attachment.FileName))
                         {
                             <video width="320" height="240" controls>
-                                <source src="@attachment.Location" type="video/mp4">
+                                <source src="@AttachmentUrl(attachment)" type="video/mp4">
                                 Your browser does not support the video tag.
                             </video>
                         }
@@ -55,7 +55,13 @@
                         }
                     </td>
                     <td>
-                        <button class="btn btn-primary btn-sm" onclick="downloadAttachment('@attachment.FileName')"><i class="fa fa-download" aria-hidden="true"></i> Download</button>
+                        @if (IsImage(attachment.FileName))
+                        {
+                            <button class="btn btn-outline-primary btn-sm" type="button" data-view-image="@AttachmentUrl(attachment)" data-image-name="@attachment.FileName">
+                                <i class="fa fa-eye" aria-hidden="true"></i> View image
+                            </button>
+                        }
+                        <button class="btn btn-primary btn-sm" type="button" onclick="downloadAttachment('@attachment.FileName')"><i class="fa fa-download" aria-hidden="true"></i> Download</button>
                     </td>
                 </tr>
             }
@@ -66,27 +72,70 @@
 
 </div>
 
+<dialog id="imageViewer" aria-label="Image viewer" style="border: 0; border-radius: 12px; max-width: 95vw; max-height: 95vh; padding: 1rem;">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: .5rem;">
+        <button class="btn btn-outline-secondary btn-sm" type="button" id="closeImageViewer">Close</button>
+    </div>
+    <img id="imageViewerContent" alt="Attachment image" style="display: block; max-width: 88vw; max-height: 82vh; object-fit: contain;" />
+</dialog>
+
 <script>
 @functions {
-        bool IsImage(string fileName)
+        string AttachmentUrl(MmsLinks attachment)
+        {
+                var path = (attachment.FileName ?? string.Empty).Replace('\\', '/').TrimStart('/');
+                var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                if (segments.Length == 0 || segments.Any(segment => segment == "." || segment == ".."))
+                {
+                        throw new InvalidOperationException("The attachment file path is invalid.");
+                }
+
+                if (!string.Equals(segments[0], "uploads", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(segments[0], "downloads", StringComparison.OrdinalIgnoreCase))
+                {
+                        path = "uploads/" + path;
+                }
+
+                var encodedPath = string.Join("/", path.Split('/').Select(Uri.EscapeDataString));
+                return Url.Content("~/" + encodedPath);
+        }
+
+        bool IsImage(string? fileName)
         {
                 string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp" };
-                return imageExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+                return fileName != null && imageExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
         }
 
-        bool IsAudio(string fileName)
+        bool IsAudio(string? fileName)
         {
                 string[] audioExtensions = { ".mp3", ".wav", ".ogg", ".flac", ".aac" };
-                return audioExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+                return fileName != null && audioExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
         }
 
-        bool IsVideo(string fileName)
+        bool IsVideo(string? fileName)
         {
                 string[] videoExtensions = { ".mp4", ".avi", ".mkv", ".mov", ".wmv", ".flv" };
-                return videoExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
+                return fileName != null && videoExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
         }
 }
 
+
+const imageViewer = document.getElementById("imageViewer");
+const imageViewerContent = document.getElementById("imageViewerContent");
+
+document.addEventListener("click", function (event) {
+    if (!(event.target instanceof Element)) return;
+    const button = event.target.closest("[data-view-image]");
+    if (!button) return;
+
+    imageViewerContent.src = button.dataset.viewImage;
+    imageViewerContent.alt = button.dataset.imageName || "Attachment image";
+    imageViewer.showModal();
+});
+
+document.getElementById("closeImageViewer").addEventListener("click", function () {
+    imageViewer.close();
+});
 
 function downloadAttachment(id) {
     // Assuming you have a DownloadAttachment action in your controller
@@ -94,5 +143,3 @@ function downloadAttachment(id) {
     window.location.href = '@Url.Action("DownloadMMSFileDirect", "Sms")' + '?fileName=' + id;
 }
 </script>
-
-

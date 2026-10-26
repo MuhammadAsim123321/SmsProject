@@ -38,56 +38,6 @@ namespace SendSmsCallAlerts.Migrations
                 name: "IX_AllScheduledJobs_TechnicianId",
                 table: "AllScheduledJobs");
 
-            migrationBuilder.DropColumn(
-                name: "CityState",
-                table: "SmsDetails");
-
-            migrationBuilder.DropColumn(
-                name: "StreetAddress",
-                table: "SmsDetails");
-
-            migrationBuilder.DropColumn(
-                name: "ZipCode",
-                table: "SmsDetails");
-
-            migrationBuilder.DropColumn(
-                name: "AssignedTechnicianId",
-                table: "ContactDetail");
-
-            migrationBuilder.DropColumn(
-                name: "CategoryId",
-                table: "ContactDetail");
-
-            migrationBuilder.DropColumn(
-                name: "DistanceMiles",
-                table: "AllScheduledJobs");
-
-            migrationBuilder.DropColumn(
-                name: "JobBookDate",
-                table: "AllScheduledJobs");
-
-            migrationBuilder.DropColumn(
-                name: "JobCompletedDate",
-                table: "AllScheduledJobs");
-
-            migrationBuilder.DropColumn(
-                name: "TechnicianId",
-                table: "AllScheduledJobs");
-
-            migrationBuilder.RenameColumn(
-                name: "ContactDetailId",
-                table: "AllScheduledJobs",
-                newName: "JobId");
-            migrationBuilder.AlterColumn<int>(
-                name: "JobId",
-                table: "AllScheduledJobs",
-                type: "int",
-                nullable: false,
-                defaultValue: 0,
-                oldClrType: typeof(int),
-                oldType: "int",
-                oldNullable: true);
-
             migrationBuilder.AlterColumn<string>(
                 name: "toNum",
                 table: "Schedulers",
@@ -159,6 +109,104 @@ namespace SendSmsCallAlerts.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                 });
+
+            migrationBuilder.Sql(
+                """
+                BEGIN TRY
+                    SET IDENTITY_INSERT dbo.Jobs ON;
+
+                    INSERT INTO dbo.Jobs
+                        (Id, ContactDetailId, CategoryId, TechnicianId, StartAt, EndAt,
+                         DistanceMiles, Status, SourceSmsId, CreatedOn, UpdatedOn)
+                    SELECT
+                        j.Id,
+                        j.ContactDetailId,
+                        CASE
+                            WHEN EXISTS (SELECT 1 FROM dbo.IvrOption i WHERE i.Id = c.CategoryId)
+                                THEN c.CategoryId
+                            WHEN EXISTS (SELECT 1 FROM dbo.IvrOption i WHERE i.Id = s.templateOrAudioId)
+                                THEN s.templateOrAudioId
+                            ELSE NULL
+                        END,
+                        CASE
+                            WHEN EXISTS (SELECT 1 FROM dbo.Technicians t WHERE t.Id = j.TechnicianId)
+                                THEN j.TechnicianId
+                            WHEN EXISTS (SELECT 1 FROM dbo.Technicians t WHERE t.Id = c.AssignedTechnicianId)
+                                THEN c.AssignedTechnicianId
+                            ELSE NULL
+                        END,
+                        COALESCE(j.JobBookDate, j.AssignedDate),
+                        COALESCE(j.JobCompletedDate, j.JobBookDate, j.AssignedDate),
+                        j.DistanceMiles,
+                        N'Scheduled',
+                        NULL,
+                        j.AssignedDate,
+                        NULL
+                    FROM dbo.AllScheduledJobs j
+                    INNER JOIN dbo.ContactDetail c ON c.Id = j.ContactDetailId
+                    LEFT JOIN dbo.Schedulers s ON s.Id = j.SchedulerId;
+
+                    SET IDENTITY_INSERT dbo.Jobs OFF;
+
+                    UPDATE dbo.AllScheduledJobs
+                    SET ContactDetailId = Id;
+                END TRY
+                BEGIN CATCH
+                    SET IDENTITY_INSERT dbo.Jobs OFF;
+                    THROW;
+                END CATCH;
+                """);
+
+            migrationBuilder.RenameColumn(
+                name: "ContactDetailId",
+                table: "AllScheduledJobs",
+                newName: "JobId");
+
+            migrationBuilder.AlterColumn<int>(
+                name: "JobId",
+                table: "AllScheduledJobs",
+                type: "int",
+                nullable: false,
+                defaultValue: 0,
+                oldClrType: typeof(int),
+                oldType: "int",
+                oldNullable: true);
+
+            migrationBuilder.DropColumn(
+                name: "CityState",
+                table: "SmsDetails");
+
+            migrationBuilder.DropColumn(
+                name: "StreetAddress",
+                table: "SmsDetails");
+
+            migrationBuilder.DropColumn(
+                name: "ZipCode",
+                table: "SmsDetails");
+
+            migrationBuilder.DropColumn(
+                name: "AssignedTechnicianId",
+                table: "ContactDetail");
+
+            migrationBuilder.DropColumn(
+                name: "CategoryId",
+                table: "ContactDetail");
+
+            migrationBuilder.DropColumn(
+                name: "DistanceMiles",
+                table: "AllScheduledJobs");
+
+            migrationBuilder.DropColumn(
+                name: "JobBookDate",
+                table: "AllScheduledJobs");
+
+            migrationBuilder.DropColumn(
+                name: "JobCompletedDate",
+                table: "AllScheduledJobs");
+
+            migrationBuilder.DropColumn(
+                name: "TechnicianId",
+                table: "AllScheduledJobs");
 
             migrationBuilder.UpdateData(
                 table: "RunFrom",

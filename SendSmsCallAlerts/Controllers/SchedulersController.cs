@@ -9,6 +9,7 @@ using Microsoft.Extensions.Hosting.Internal;
 using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Migrations;
 using SendSmsCallAlerts.Models;
+using SendSmsCallAlerts.Services;
 using Twilio.TwiML.Voice;
 
 namespace SendSmsCallAlerts.Controllers
@@ -18,13 +19,16 @@ namespace SendSmsCallAlerts.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
         private string TmZn = "";
-        private readonly IWebHostEnvironment _hostingEnvironment;
+        private readonly IUploadedMediaStore _uploadedMediaStore;
 
-        public SchedulersController(ApplicationDbContext context, IConfiguration configuration, IWebHostEnvironment hostingEnvironment)
+        public SchedulersController(
+            ApplicationDbContext context,
+            IConfiguration configuration,
+            IUploadedMediaStore uploadedMediaStore)
         {
             _context = context;
             _configuration = configuration;
-            _hostingEnvironment = hostingEnvironment;
+            _uploadedMediaStore = uploadedMediaStore;
 
             TmZn = _configuration["AppSettings:TmZn"];
         }
@@ -145,142 +149,47 @@ namespace SendSmsCallAlerts.Controllers
             _context.Add(scheduler);
             await _context.SaveChangesAsync();
 
-            List<string> mmsImg = null;
-            if (file != null && file.Count() > 0)
+            var media = await _uploadedMediaStore.SaveAsync(file);
+            if (media.Count > 0)
             {
-                mmsImg = StoreImageAndGetAddress(file);
-                await SaveImagUrls(scheduler.Id, mmsImg);
+                await SaveImagUrls(scheduler.Id, media);
             }
 
             return RedirectToAction(nameof(Index));
         }
 
 
-        private async Task<bool> SaveImagUrls(int schId, List<string> mmsImg = null)
+        private async Task<bool> SaveImagUrls(int schId, List<StoredMedia> media)
         {
-
-            if (mmsImg != null)
+            if (media.Count > 0)
             {
-                var mediaUrl = new List<Uri>();
-                var mediaName = new List<string>();
-                string WebAddress = _configuration["AppSettings:WebAddress"];
-
-                foreach (var rec in mmsImg)
+                _context.MmsLinkss.AddRange(media.Select(item => new MmsLinks
                 {
-                    mediaUrl.Add(new Uri("https://" + WebAddress + "/uploads/" + rec));
-                    mediaName.Add(rec);
-                }
-
-                List<MmsLinks> imgUrlList = new List<MmsLinks>();
-                for (int i = 0; i < mediaUrl.Count(); i++)
-                {
-                    MmsLinks mmsLnk = new MmsLinks();
-                    mmsLnk.FileName = mediaName[i];
-                    mmsLnk.Location = mediaUrl[i].ToString();
-                    mmsLnk.SchedulerId = schId;
-                    mmsLnk.SmsId = 0;
-                    imgUrlList.Add(mmsLnk);
-                }
-
-                if (imgUrlList != null && imgUrlList.Count() > 0)
-                {
-                    //_context.AddRange(imgUrlList);
-                    //_context.SaveChanges();
-
-                    _context.AddRangeAsync(imgUrlList);
-                    await _context.SaveChangesAsync();
-
-                }
-
-            }
-
-            return true;
-        }
-
-        private async Task<bool> DeleteAndSaveImagUrls(int schId, List<string> mmsImg = null)
-        {
-            //Delete existing Scheduler Resc
-
-            var mmsLinksRange = _context.MmsLinkss.Where(r => r.SchedulerId == schId).ToList();
-
-            if (mmsLinksRange != null && mmsLinksRange.Count() > 0)
-            {
-                _context.MmsLinkss.RemoveRange(mmsLinksRange);
+                    FileName = item.FileName,
+                    Location = item.Location.ToString(),
+                    SchedulerId = schId,
+                    SmsId = 0
+                }));
                 await _context.SaveChangesAsync();
             }
 
-            if (mmsImg != null)
-            {
-                var mediaUrl = new List<Uri>();
-                var mediaName = new List<string>();
-                string WebAddress = _configuration["AppSettings:WebAddress"];
-
-                foreach (var rec in mmsImg)
-                {
-                    mediaUrl.Add(new Uri("https://" + WebAddress + "/uploads/" + rec));
-                    mediaName.Add(rec);
-                }
-
-                List<MmsLinks> imgUrlList = new List<MmsLinks>();
-                for (int i = 0; i < mediaUrl.Count(); i++)
-                {
-                    MmsLinks mmsLnk = new MmsLinks();
-                    mmsLnk.FileName = mediaName[i];
-                    mmsLnk.Location = mediaUrl[i].ToString();
-                    mmsLnk.SchedulerId = schId;
-                    mmsLnk.SmsId = 0;
-                    imgUrlList.Add(mmsLnk);
-                }
-
-                if (imgUrlList != null && imgUrlList.Count() > 0)
-                {
-                    //_context.AddRange(imgUrlList);
-                    //_context.SaveChanges();
-
-                    _context.AddRangeAsync(imgUrlList);
-                    await _context.SaveChangesAsync();
-
-                }
-
-            }
-
             return true;
         }
 
-        private List<string> StoreImageAndGetAddress(List<IFormFile> files)
+        private async Task<bool> DeleteAndSaveImagUrls(int schId, List<StoredMedia> media)
         {
-            var uploads = Path.Combine(_hostingEnvironment.WebRootPath, "uploads");
-
-            // Ensure the directory exists
-            if (!Directory.Exists(uploads))
+            var oldLinks = await _context.MmsLinkss.Where(r => r.SchedulerId == schId && r.SmsId == 0).ToListAsync();
+            _context.MmsLinkss.RemoveRange(oldLinks);
+            _context.MmsLinkss.AddRange(media.Select(item => new MmsLinks
             {
-                Directory.CreateDirectory(uploads);
-            }
+                FileName = item.FileName,
+                Location = item.Location.ToString(),
+                SchedulerId = schId,
+                SmsId = 0
+            }));
+            await _context.SaveChangesAsync();
 
-            List<string> fileNames = new List<string>();
-            foreach (var file in files)
-            {
-                // Check for null (no file selected for this iteration)
-                if (file != null)
-                {
-                    // Create a unique file name
-                    var fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                    var filePath = Path.Combine(uploads, fileName);
-
-                    // Save the file to the server
-                    using (var fileStream = new FileStream(filePath, FileMode.Create))
-                    {
-                        file.CopyTo(fileStream);
-                    }
-
-                    fileNames.Add(fileName);
-                    //var relativePath = Path.GetRelativePath(_hostingEnvironment.ContentRootPath, filePath);
-
-                }
-            }
-
-
-            return fileNames;
+            return true;
         }
 
 
@@ -338,15 +247,11 @@ namespace SendSmsCallAlerts.Controllers
                 //existingScheduler.fromNum = scheduler.fromNum;
                 //existingScheduler.toNum = scheduler.toNum;
                 existingScheduler.smsBody = scheduler.smsBody;
-                existingScheduler.onceOrRepeat = scheduler.onceOrRepeat;
+                if (!string.IsNullOrWhiteSpace(scheduler.onceOrRepeat))
+                    existingScheduler.onceOrRepeat = scheduler.onceOrRepeat;
                 existingScheduler.status = scheduler.status;
                 existingScheduler.TimeToRunId = scheduler.TimeToRunId;
                 existingScheduler.RunFromId = scheduler.RunFromId;
-
-                // KEPT: These are nulled/zeroed because fields were removed from form
-                existingScheduler.schedulerFor = null;
-                existingScheduler.templateOrAudioId = 0;
-                existingScheduler.JobBookDate = null;
 
                 // FIX: purane records jinki createdOn / execution date-time kabhi save hi nahi hui
                 // (un me DateTime ka default 0001-01-01 para hai) unhe Edit par repair kar dete hain,
@@ -358,11 +263,12 @@ namespace SendSmsCallAlerts.Controllers
                 _context.Update(existingScheduler);
                 await _context.SaveChangesAsync();
 
-                // KEPT: Image handling logic unchanged
-                if (file != null && file.Count > 0)
+                // No new upload means existing scheduler image links remain unchanged.
+                if (file != null && file.Any(upload => upload != null && upload.Length > 0))
                 {
-                    List<string> mmsImg = StoreImageAndGetAddress(file);
-                    await DeleteAndSaveImagUrls(existingScheduler.Id, mmsImg);
+                    var media = await _uploadedMediaStore.SaveAsync(file);
+                    if (media.Count > 0)
+                        await DeleteAndSaveImagUrls(existingScheduler.Id, media);
                 }
             }
             catch (Exception ex)

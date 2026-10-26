@@ -7,6 +7,37 @@ using SendSmsCallAlerts.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+if (builder.Environment.IsProduction())
+{
+    var missingSettings = new List<string>();
+
+    void RequireSetting(string key)
+    {
+        if (string.IsNullOrWhiteSpace(builder.Configuration[key]))
+            missingSettings.Add(key);
+    }
+
+    RequireSetting("ConnectionStrings:DefaultConnection");
+    RequireSetting("AppSettings:AccountSid");
+    RequireSetting("AppSettings:AuthToken");
+    RequireSetting("AppSettings:TwilioNumber");
+    RequireSetting("AppSettings:DefaultCountryCode");
+    RequireSetting("AppSettings:TmZn");
+
+    if (!string.Equals(builder.Configuration["AppSettings:SmsMode"], "Live", StringComparison.OrdinalIgnoreCase))
+        missingSettings.Add("AppSettings:SmsMode must be Live in Production");
+
+    var mediaBaseUrl = builder.Configuration["AppSettings:WebAddress"];
+    if (!Uri.TryCreate(mediaBaseUrl, UriKind.Absolute, out var mediaUri)
+        || mediaUri.Scheme != Uri.UriSchemeHttps
+        || mediaUri.IsLoopback)
+        missingSettings.Add("AppSettings:WebAddress must be a public HTTPS base URL in Production");
+
+    if (missingSettings.Count > 0)
+        throw new InvalidOperationException(
+            "Production configuration is incomplete or unsafe: " + string.Join(", ", missingSettings));
+}
+
 // Add services to the container.
 
 
@@ -30,6 +61,8 @@ builder.Services.AddScoped<AutomatedSmsJob>();
 
 builder.Services.AddSingleton<IAppClock, AppClock>();
 builder.Services.AddSingleton<ISmsGateway, SmsGateway>();
+builder.Services.AddSingleton<IMediaUrlFactory, MediaUrlFactory>();
+builder.Services.AddScoped<IUploadedMediaStore, UploadedMediaStore>();
 builder.Services.AddScoped<JobService>();
 
 builder.Services.Configure<FormOptions>(options =>

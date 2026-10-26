@@ -13,7 +13,6 @@ using System.Configuration;
 using System.Diagnostics;
 using Twilio.AspNet.Common;
 using Twilio.AspNet.Core;
-using Twilio.Rest.Api.V2010.Account;
 using Twilio.TwiML;
 //using Twilio.TwiML.Voice;
 using SendSmsCallAlerts.Services;
@@ -28,14 +27,21 @@ namespace SendSmsCallAlerts.Controllers
         private readonly IWebHostEnvironment _hostingEnvironment;
         private readonly IConfiguration _configuration;
         private readonly JobService _jobService;
+        private readonly ISmsGateway _smsGateway;
+        private readonly ILogger<IncomingController> _logger;
+        private readonly IMediaUrlFactory _mediaUrlFactory;
 
         public IncomingController(ApplicationDbContext context, IWebHostEnvironment hostingEnvironment,
-     IConfiguration configuration, JobService jobService)
+     IConfiguration configuration, JobService jobService, ISmsGateway smsGateway, ILogger<IncomingController> logger,
+     IMediaUrlFactory mediaUrlFactory)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
             _configuration = configuration;
             _jobService = jobService;
+            _smsGateway = smsGateway;
+            _logger = logger;
+            _mediaUrlFactory = mediaUrlFactory;
         }
         private string ForwardingNumber => (_configuration["AppSettings:ForwardingNumber"] ?? "").Trim();
 
@@ -59,11 +65,8 @@ namespace SendSmsCallAlerts.Controllers
                         string filePath = GetMediaFileName(flName);
                         await DownloadUrlToFileAsync(mediaUrl, filePath);
 
-                        string WebAddress = _configuration["AppSettings:WebAddress"];
-                        string imgUrl = "https://" + WebAddress + "/" + flName;
-
                         mmsLnk.FileName = flName;
-                        mmsLnk.Location = imgUrl;
+                        mmsLnk.Location = _mediaUrlFactory.CreateUrl(flName).ToString();
                         imgUrlList.Add(mmsLnk);
                     }
                 }
@@ -297,25 +300,18 @@ namespace SendSmsCallAlerts.Controllers
                     intro = intro + " " + rec.Num + "- " + rec.keyword + ";\n";
                 }
 
-                //var message = MessageResource.Create(
-                //                   body: intro,
-                //                   from: new Twilio.Types.PhoneNumber(from),
-                //                   to: new Twilio.Types.PhoneNumber(to)
-                //                    );
                 if (from != to)
                 {
-                    var message = await Task.Run(() => MessageResource.Create(
-                                 body: intro,
-                                 from: new Twilio.Types.PhoneNumber(from),
-                                 //from: new Twilio.Types.PhoneNumber("+18557233022"),
-                                 to: new Twilio.Types.PhoneNumber(to)
-                             ));
+                    var result = await _smsGateway.SendAsync(to, intro, fallbackFrom: from);
+                    if (!result.Success)
+                        throw new InvalidOperationException(result.Error ?? "The welcome message could not be sent.");
                 }
 
                 return true;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Welcome SMS processing failed.");
                 return false;
             }
         }
@@ -347,20 +343,11 @@ namespace SendSmsCallAlerts.Controllers
                     intro = intro + " (" + rec.InstructionOrder + ") " + rec.Instruction + ";\n";
                 }
 
-                //var message = MessageResource.Create(
-                //                   body: intro,
-                //                   from: new Twilio.Types.PhoneNumber(from),
-                //                   to: new Twilio.Types.PhoneNumber(to)
-                //                    );
-
                 if (from != to)
                 {
-                    var message = await Task.Run(() => MessageResource.Create(
-                                    body: intro,
-                                    from: new Twilio.Types.PhoneNumber(from),
-                                    // from: new Twilio.Types.PhoneNumber("+18557233022"),
-                                    to: new Twilio.Types.PhoneNumber(to)
-                                    ));
+                    var result = await _smsGateway.SendAsync(to, intro, fallbackFrom: from);
+                    if (!result.Success)
+                        throw new InvalidOperationException(result.Error ?? "The selected-option message could not be sent.");
                 }
 
 
@@ -368,6 +355,7 @@ namespace SendSmsCallAlerts.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Selected-option SMS processing failed.");
                 return false;
             }
         }
@@ -405,58 +393,30 @@ namespace SendSmsCallAlerts.Controllers
         {
             try
             {
-                if (tempImgPath != null && tempImgPath.Count() > 0)
+                if (smsDetail.toNum == num)
+                    return true;
+
+                var mediaUrl = tempImgPath?.Select(image => new Uri(image.Location)).ToList();
+                var fromDigits = new string((smsDetail.fromNum ?? "").Where(char.IsDigit).ToArray());
+                var sourceNumber = fromDigits.Length > 10
+                    ? fromDigits.Substring(fromDigits.Length - 10)
+                    : fromDigits;
+                var body = (sourceNumber.Length > 0 ? sourceNumber + " " : "") + (smsDetail.smsBody ?? "");
+                var result = await _smsGateway.SendAsync(
+                    num,
+                    body,
+                    mediaUrl,
+                    senderOverride: ForwardingNumber);
+                if (!result.Success)
                 {
-                    var mediaUrl = new List<Uri>();
-                    foreach (var rec in tempImgPath)
-                    {
-                        mediaUrl.Add(new Uri(rec.Location));
-                    }
-                    //var mediaUrl = new[] {
-                    //            new Uri(tempImgPath)
-                    //        }.ToList();
-
-                    //var message = MessageResource.Create(
-                    //              body: smsDetail.fromNum.Substring(2, 10) + " " +smsDetail.smsBody,
-                    //              from: new Twilio.Types.PhoneNumber(smsDetail.toNum),
-                    //              to: new Twilio.Types.PhoneNumber(num),
-                    //              mediaUrl: mediaUrl
-                    //              );
-                    if (smsDetail.toNum != num)
-                    {
-                        var message = await Task.Run(() => MessageResource.Create(
-                                    body: smsDetail.fromNum.Substring(2, 10) + " " + smsDetail.smsBody,
-                                    //from: new Twilio.Types.PhoneNumber(smsDetail.toNum),
-                                    from: new Twilio.Types.PhoneNumber(ForwardingNumber),
-                                    to: new Twilio.Types.PhoneNumber(num),
-                                    mediaUrl: mediaUrl
-                                ));
-                    }
-
+                    _logger.LogWarning("Forwarded SMS/MMS send failed: {Error}", result.Error);
+                    return false;
                 }
-                else
-                {
-                    //var message = MessageResource.Create(
-                    //               body: smsDetail.fromNum.Substring(2, 10) + " " + smsDetail.smsBody,
-                    //               from: new Twilio.Types.PhoneNumber(smsDetail.toNum),
-                    //               to: new Twilio.Types.PhoneNumber(num)
-                    //                );
-                    if (smsDetail.toNum != num)
-                    {
-                        var message = await Task.Run(() => MessageResource.Create(
-                                    body: smsDetail.fromNum.Substring(2, 10) + " " + smsDetail.smsBody,
-                                    //  from: new Twilio.Types.PhoneNumber(smsDetail.toNum),
-                                    from: new Twilio.Types.PhoneNumber(ForwardingNumber),
-                                    to: new Twilio.Types.PhoneNumber(num)
-                                ));
-                    }
-
-                }
-
             }
             catch (Exception ex)
             {
-
+                _logger.LogError(ex, "Forwarded SMS/MMS processing failed.");
+                return false;
             }
             return true;
         }

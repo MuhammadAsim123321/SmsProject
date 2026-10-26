@@ -184,7 +184,7 @@
 
             var html = '';
             $.each(res.messages, function (i, msg) {
-                var isOut = msg.direction === 'Outgoing';
+                var isOut = msg.direction !== 'Incoming';
                 var rowClass   = isOut ? 'outgoing' : 'incoming';
                 var dirLabel   = isOut ? 'You' : (displayName !== 'Customer' ? displayName : 'Customer');
                 var attachHtml = msg.attachments > 0
