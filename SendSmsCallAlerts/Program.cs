@@ -22,6 +22,22 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     EnvironmentName = configuredEnvironment
 });
 
+var environmentSettingsPrefix = $"EnvironmentSettings:{configuredEnvironment}:";
+var environmentSettings = builder.Configuration
+    .GetSection($"EnvironmentSettings:{configuredEnvironment}")
+    .AsEnumerable()
+    .Where(setting => setting.Value is not null)
+    .Select(setting => new KeyValuePair<string, string?>(
+        setting.Key[environmentSettingsPrefix.Length..],
+        setting.Value))
+    .ToArray();
+
+builder.Configuration.AddInMemoryCollection(environmentSettings);
+if (builder.Environment.IsDevelopment())
+    builder.Configuration.AddUserSecrets<Program>(optional: true);
+builder.Configuration.AddEnvironmentVariables();
+builder.Configuration.AddCommandLine(args);
+
 if (builder.Environment.IsProduction())
 {
     var missingSettings = new List<string>();
