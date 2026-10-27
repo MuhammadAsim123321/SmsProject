@@ -39,12 +39,20 @@ namespace SendSmsCallAlerts.Controllers
 
         }
 
-        public IActionResult SMS(string num = "")
+        public async Task<IActionResult> SMS(string num = "")
         {
             ViewBag.ToNumber = GetFormattedNumber(num);
             ViewBag.FromNumber = _smsGateway.FromNumber.Length > 0
                 ? _smsGateway.FromNumber
                 : GetTwilioNumber();
+
+            var isReply = !string.IsNullOrWhiteSpace(num);
+            ViewBag.IsReply = isReply;
+            ViewBag.ContactDetail = isReply
+                ? await _context.ContactDetail.FirstOrDefaultAsync(
+                    contact => contact.PhoneNumber == NormaliseToE164(num))
+                : null;
+
             return View();
         }
 

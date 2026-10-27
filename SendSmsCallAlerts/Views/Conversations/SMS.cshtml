@@ -13,8 +13,9 @@
     /* ── Send form card ── */
     .send-card { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
     .send-card h4 { margin-bottom: 16px; font-weight: 600; color: #333; }
-    .twilio-label { font-size: .85rem; color: #555; margin-bottom: 12px; }
-    .twilio-label span { font-weight: 600; color: #0d6efd; }
+    .contact-summary { margin-bottom: 16px; padding: 14px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; }
+    .contact-summary .contact-name { font-size: 1.05rem; font-weight: 700; color: #333; }
+    .contact-summary .contact-detail { color: #495057; overflow-wrap: anywhere; }
 
     /* ── Conversation panel ── */
     .conv-panel { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; }
@@ -55,6 +56,10 @@
 </style>
 
 <div class="sms-page-wrapper">
+    @{
+        var isReply = ViewBag.IsReply is bool reply && reply;
+        var contact = ViewBag.ContactDetail as ContactDetail;
+    }
 
     @* ── Alerts ── *@
     @if (TempData["StMsg"] != null)
@@ -83,18 +88,48 @@
     <div class="send-card">
         <h4><i class="fa fa-paper-plane me-2 text-primary"></i>Send SMS</h4>
 
-        <div class="twilio-label">
-            Sending from: <span id="lblTwilioNum">@ViewBag.FromNumber</span>
-        </div>
+        @if (isReply)
+        {
+            <div class="contact-summary">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <div class="contact-name">Name</div>
+                        <div class="contact-detail">@(!string.IsNullOrWhiteSpace(contact?.Name) ? contact.Name : "Not available")</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="contact-name">Street Address</div>
+                        <div class="contact-detail">@(!string.IsNullOrWhiteSpace(contact?.StreetAddress) ? contact.StreetAddress : "Not available")</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="contact-name">City / State</div>
+                        <div class="contact-detail">@(!string.IsNullOrWhiteSpace(contact?.CityState) ? contact.CityState : "Not available")</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="contact-name">Zip Code</div>
+                        <div class="contact-detail">@(!string.IsNullOrWhiteSpace(contact?.ZipCode) ? contact.ZipCode : "Not available")</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="contact-name">Email</div>
+                        <div class="contact-detail">@(!string.IsNullOrWhiteSpace(contact?.Email) ? contact.Email : "Not available")</div>
+                    </div>
+                </div>
+            </div>
+        }
 
         @using (Html.BeginForm("SendSms", "Conversations", FormMethod.Post,
             new { enctype = "multipart/form-data", id = "sendForm" }))
         {
-            <div class="row g-3">
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">From Number</label>
+                    <input type="text" id="fromNum" value="@ViewBag.FromNumber"
+                           class="form-control" readonly />
+                </div>
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">To Number</label>
                     <input type="text" name="toNum" id="toNum" value="@ViewBag.ToNumber"
-                           class="form-control" placeholder="e.g. 2125551234" required />
+                           class="form-control" placeholder="e.g. 2125551234" required
+                           readonly="@(isReply ? "readonly" : null)" />
                 </div>
             </div>
 

@@ -57,7 +57,21 @@
             <div class="form-group">
                 <label for="single-append-text" class="control-label"><b>Choose Image:</b></label>
                 <input type="file" name="file" multiple />
-
+                @{
+                    var existingImageNames = ViewBag.ExistingImageNames as IEnumerable<string> ?? Enumerable.Empty<string>();
+                }
+                @if (existingImageNames.Any())
+                {
+                    <div class="mt-2" aria-label="Currently saved images">
+                        <span class="fw-semibold">Current image(s):</span>
+                        <ul class="mb-0">
+                            @foreach (var imageName in existingImageNames)
+                            {
+                                <li>@imageName</li>
+                            }
+                        </ul>
+                    </div>
+                }
             </div>
 
 
