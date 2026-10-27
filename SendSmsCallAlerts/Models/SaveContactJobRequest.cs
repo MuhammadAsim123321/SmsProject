@@ -65,6 +65,9 @@
         public string StreetAddress { get; set; } = "";
         public string CityState { get; set; } = "";
         public string ZipCode { get; set; } = "";
+        /// <summary>The job whose SourceSmsId matches the message that was clicked. Null when no job is linked yet.</summary>
+        public JobView? LinkedJob { get; set; }
+        /// <summary>All jobs for this customer (newest first). Used by the history popup.</summary>
         public List<JobView> Jobs { get; set; } = new();
     }
 
