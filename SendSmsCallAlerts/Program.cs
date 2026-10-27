@@ -5,7 +5,22 @@ using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Jobs;
 using SendSmsCallAlerts.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var configuredEnvironment = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+    .Build()["Environment"];
+
+if (configuredEnvironment is not ("Development" or "Production"))
+{
+    throw new InvalidOperationException(
+        "Set the Environment value in appsettings.json to either Development or Production.");
+}
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    EnvironmentName = configuredEnvironment
+});
 
 if (builder.Environment.IsProduction())
 {
