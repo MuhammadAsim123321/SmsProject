@@ -7,18 +7,6 @@ using SendSmsCallAlerts.Filters;
 
 namespace SendSmsCallAlerts.Controllers
 {
-    public class AutomatedLogRow
-    {
-        public string SettingName { get; set; } = "";
-        public string RecipientType { get; set; } = "";
-        public int RecipientId { get; set; }
-        public string RecipientName { get; set; } = "";
-        public string? Phone { get; set; }
-        public string Status { get; set; } = "";
-        public string? Error { get; set; }
-        public string When { get; set; } = "";
-    }
-
     public class RunNowVm
     {
         public string SettingName { get; set; } = "";
@@ -39,32 +27,16 @@ namespace SendSmsCallAlerts.Controllers
 
         public async Task<IActionResult> Index()
         {
-            var logs = await db.AutomatedSmsLogs.AsNoTracking().Include(l => l.Setting)
-                .OrderByDescending(l => l.CreatedOn).Take(50).ToListAsync();
-
-            var techIds = logs.Where(l => l.RecipientType == RecipientTypes.Technician).Select(l => l.RecipientId).Distinct().ToList();
-            var custIds = logs.Where(l => l.RecipientType == RecipientTypes.Customer).Select(l => l.RecipientId).Distinct().ToList();
-
-            var techs = await db.Technicians.AsNoTracking().Where(t => techIds.Contains(t.Id)).ToListAsync();
-            var custs = await db.Set<ContactDetail>().AsNoTracking().Where(c => custIds.Contains(c.Id)).ToListAsync();
-
-            var techNames = techs.ToDictionary(t => t.Id, t => AutomatedSmsService.TechFullName(t));
-            var custNames = custs.ToDictionary(c => c.Id, c => AutomatedSmsService.CustomerFullName(c));
-
-            ViewBag.RecentLogs = logs.Select(l => new AutomatedLogRow
-            {
-                SettingName = l.Setting.Name,
-                RecipientType = l.RecipientType,
-                RecipientId = l.RecipientId,
-                RecipientName = (l.RecipientType == RecipientTypes.Technician ? techNames : custNames)
-                                    .TryGetValue(l.RecipientId, out var n) ? n : "",
-                Phone = l.PhoneNumber,
-                Status = l.Status,
-                Error = l.ErrorMessage,
-                When = svc.ToBusiness(l.CreatedOn).ToString("dd-MMM-yy HH:mm:ss")
-            }).ToList();
-
-            return View(await db.AutomatedSmsSettings.AsNoTracking().OrderBy(s => s.Id).ToListAsync());
+            await svc.EnsureNextOccurrencesAsync();
+            var settings = await db.AutomatedSmsSettings.AsNoTracking().OrderBy(s => s.Id).ToListAsync();
+            var next = await db.AutomatedSmsOccurrences.AsNoTracking()
+                .Where(o => o.Status == AutomatedSmsOccurrenceStatus.Pending ||
+                            o.Status == AutomatedSmsOccurrenceStatus.Running)
+                .GroupBy(o => o.SettingId)
+                .Select(g => g.OrderBy(o => o.ScheduledForUtc).First())
+                .ToDictionaryAsync(o => o.SettingId, o => svc.ToBusiness(o.ScheduledForUtc));
+            ViewBag.NextOccurrences = next;
+            return View(settings);
         }
 
         public IActionResult Create() =>
@@ -79,6 +51,7 @@ namespace SendSmsCallAlerts.Controllers
             model.CreatedOn = DateTime.UtcNow;
             db.AutomatedSmsSettings.Add(model);
             await db.SaveChangesAsync();
+            await svc.EnsureNextOccurrenceAsync(model);
             TempData["Success"] = "Setting created.";
             return RedirectToAction(nameof(Index));
         }
@@ -110,6 +83,8 @@ namespace SendSmsCallAlerts.Controllers
             s.IsActive = model.IsActive;
             s.UpdatedOn = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            await svc.CancelPendingOccurrencesAsync(s.Id, "Setting schedule changed");
+            if (s.IsActive) await svc.EnsureNextOccurrenceAsync(s);
             TempData["Success"] = "Setting saved.";
             return RedirectToAction(nameof(Index));
         }
@@ -122,6 +97,8 @@ namespace SendSmsCallAlerts.Controllers
             s.IsActive = !s.IsActive;
             s.UpdatedOn = DateTime.UtcNow;
             await db.SaveChangesAsync();
+            if (s.IsActive) await svc.EnsureNextOccurrenceAsync(s);
+            else await svc.CancelPendingOccurrencesAsync(s.Id, "Setting deactivated");
             return RedirectToAction(nameof(Index));
         }
 
@@ -129,7 +106,12 @@ namespace SendSmsCallAlerts.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var s = await db.AutomatedSmsSettings.FindAsync(id);
-            if (s != null) { db.AutomatedSmsSettings.Remove(s); await db.SaveChangesAsync(); }
+            if (s != null)
+            {
+                await svc.CancelPendingOccurrencesAsync(s.Id, "Setting deactivated");
+                db.AutomatedSmsSettings.Remove(s);
+                await db.SaveChangesAsync();
+            }
             TempData["Success"] = "Setting deleted.";
             return RedirectToAction(nameof(Index));
         }

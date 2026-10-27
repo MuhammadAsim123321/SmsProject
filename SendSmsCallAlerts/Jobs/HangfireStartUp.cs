@@ -1,42 +1,27 @@
 ﻿using Hangfire;
-using SendSmsCallAlerts.Controllers;
-using SendSmsCallAlerts.Data;
+using Microsoft.Extensions.DependencyInjection;
+using SendSmsCallAlerts.Services;
 
 namespace SendSmsCallAlerts.Jobs
 {
     public class HangfireStartUp: IHostedService
     {
-        private readonly IBackgroundJobClient backgroundJobClient;
         private readonly IServiceProvider serviceProvider;
 
-        public HangfireStartUp(
-            IBackgroundJobClient backgroundJobClient,
-            IServiceProvider serviceProvider)
+        public HangfireStartUp(IServiceProvider serviceProvider)
         {
-            this.backgroundJobClient = backgroundJobClient;
             this.serviceProvider = serviceProvider;
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-
-            JobManager jm = new JobManager();
-            jm.DeleteAllJobs();
-
-            backgroundJobClient.Enqueue(() => InvokeControllerAction());
-
-            //InitializeAllJobs();
-
-            return Task.CompletedTask;
-        }
-
-        public void InvokeControllerAction()
-        {
+            RecurringJob.AddOrUpdate<SmsJob>("SmsJob.RegisterAllJobs", j => j.RegisterAllJobs(), Cron.Minutely);
+            RecurringJob.AddOrUpdate<AutomatedSmsJob>("automated-sms-minutely", j => j.RunAsync(), Cron.Minutely);
+            RecurringJob.AddOrUpdate<SmsDispatchJob>("sms-dispatcher", j => j.RunAsync(), Cron.Minutely);
             using (var scope = serviceProvider.CreateScope())
             {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var controller = new HangFireJobsController(dbContext); // Pass the DbContext to the controller
-                controller.EnqueueJob();
+                var service = scope.ServiceProvider.GetRequiredService<AutomatedSmsService>();
+                await service.EnsureNextOccurrencesAsync(cancellationToken);
             }
         }
 

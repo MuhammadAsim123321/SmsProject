@@ -30,14 +30,12 @@ namespace SendSmsCallAlerts.Controllers
             // NEW: same recurring job id as before ("SmsJob.RegisterAllJobs"), resolved through DI.
             RecurringJob.AddOrUpdate<SmsJob>("SmsJob.RegisterAllJobs", j => j.RegisterAllJobs(), Cron.Minutely);
             RecurringJob.AddOrUpdate<AutomatedSmsJob>("automated-sms-minutely", j => j.RunAsync(), Cron.Minutely);
+            RecurringJob.AddOrUpdate<SmsDispatchJob>("sms-dispatcher", j => j.RunAsync(), Cron.Minutely);
 
         }
 
         public IActionResult Index()
         {
-            JobManager jm = new JobManager();
-            jm.DeleteAllJobs();
-
             return View();
         }
 

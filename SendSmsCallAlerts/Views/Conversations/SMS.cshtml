@@ -151,16 +151,17 @@
     // The customer number pre-filled from the query string (ViewBag.ToNumber)
     var prefilledNum = '@ViewBag.ToNumber';
 
-    function loadConversation() {
+    function loadConversation(silent) {
         var num = $('#toNum').val().trim() || prefilledNum;
         if (!num) {
             $('#convBody').html('<div class="conv-empty">Enter a phone number above to see the conversation.</div>');
             $('#convMsgCount').text('0 messages');
             return;
         }
-
-        $('#convBody').html('<div id="convSpinner"><i class="fa fa-spinner fa-spin fa-2x"></i><br/>Loading…</div>');
-        $('#convMsgCount').text('Loading…');
+        if (!silent) {
+            $('#convBody').html('<div id="convSpinner"><i class="fa fa-spinner fa-spin fa-2x"></i><br/>Loading…</div>');
+            $('#convMsgCount').text('Loading…');
+        }
 
         $.get('/Conversations/GetConversationJson', { num: num }, function (res) {
             if (!res.success) {
@@ -198,8 +199,8 @@
                     '    <div class="bubble">' +
                     '      <div>' + escapeHtml(msg.body) + '</div>' +
                     '      ' + attachHtml +
-                    '      <div class="bubble-meta"><i class="fa fa-clock"></i> ' + escapeHtml(msg.dateTimeFull) + '</div>' +
-                    '    </div>' +
+                    '      <div class="bubble-meta"><i class="fa fa-clock"></i> ' + escapeHtml(msg.dateTimeFull) +
+                    (isOut ? ' ' + statusHtml(msg) : '') + '</div>' +
                     '  </div>' +
                     '</div>';
             });
@@ -223,6 +224,14 @@
             .replace(/>/g,  '&gt;')
             .replace(/"/g,  '&quot;');
     }
+    function statusHtml(m) {
+        var s = '';
+        if (m.isAutomated) s += '<span class="nova-status nova-status--automated mr-1">Automated</span>';
+        if (m.status === 'Pending') s += '<span class="nova-status nova-status--pending">Pending</span>';
+        else if (m.status === 'SMS Failed') s += '<span class="nova-status nova-status--failed" title="' + escapeHtml(m.failureReason || '') + '">SMS Failed</span>';
+        else if (m.isAutomated && m.status === 'Message Sent') s += '<span class="nova-status nova-status--sent">Sent</span>';
+        return s;
+    }
 
     // Reload conversation when the user types a different number
     var debounceTimer;
@@ -237,4 +246,5 @@
     $(document).ready(function () {
         loadConversation();
     });
+    setInterval(function () { loadConversation(true); }, 15000);
 </script>

@@ -1,0 +1,70 @@
+﻿@model SendSmsCallAlerts.Controllers.OccurrenceMessagesVm
+@using SendSmsCallAlerts.Models
+@{
+    ViewData["Title"] = "Occurrence messages";
+    string Chip(string status) => status switch
+    {
+        SmsLogStatus.Pending => "nova-status--pending",
+        SmsLogStatus.MessageSent => "nova-status--sent",
+        SmsLogStatus.SmsFailed => "nova-status--failed",
+        SmsLogStatus.Skipped => "nova-status--skipped",
+        _ => "nova-status--muted"
+    };
+}
+
+<partial name="~/Views/AutomatedNotifications/_AutoSmsHead.cshtml" />
+
+<div class="sg-content-stack">
+    <section class="nova-page-head">
+        <div class="nova-heading-group">
+            <span class="nova-heading-icon"><i class="fa fa-envelope-o"></i></span>
+            <div class="nova-heading-copy">
+                <span class="nova-eyebrow">AUTOMATION</span>
+                <h1>Occurrence messages</h1>
+                <p>@Model.SettingName · @Model.OccurrenceKey</p>
+            </div>
+        </div>
+        <div class="nova-page-actions">
+            <a asp-action="Index" asp-route-tab="Runs" class="btn btn-outline-primary">Back to Runs</a>
+        </div>
+    </section>
+
+    <section class="nova-list-card">
+        <div class="nova-list-toolbar">
+            <div class="nova-list-heading">
+                <span class="nova-list-heading-icon"><i class="fa fa-list-ul"></i></span>
+                <div><h2>Full message details</h2><p>Messages created by this scheduled occurrence</p></div>
+            </div>
+        </div>
+        @if (!Model.Rows.Any())
+        {
+            <div class="p-4 text-muted">No messages were created for this occurrence.</div>
+        }
+        else
+        {
+            <div class="nova-table-viewport">
+                <table class="table table-bordered table-striped">
+                    <thead style="background:#70b3db;color:white;">
+                        <tr><th>Created</th><th>Recipient</th><th>Number</th><th>Full message</th><th>Status</th><th>Queued</th><th>Sent at</th><th>Attempts</th><th>Reason</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td>@row.When</td>
+                            <td>@(string.IsNullOrWhiteSpace(row.RecipientName) ? "—" : row.RecipientName)<small class="d-block text-muted">@(string.IsNullOrWhiteSpace(row.RecipientType) ? "—" : row.RecipientType)</small></td>
+                            <td>@(string.IsNullOrWhiteSpace(row.Number) ? "—" : row.Number)</td>
+                            <td style="white-space:pre-wrap;min-width:360px">@row.Message</td>
+                            <td><span class="nova-status @Chip(row.Status)">@row.Status</span>@if (row.Simulated) { <span class="nova-status nova-status--test">Test</span> }</td>
+                            <td>@row.QueuedAt</td>
+                            <td>@(row.SentAt ?? "—")</td>
+                            <td>@row.Attempts</td>
+                            <td class="sms-log-error-cell">@if (string.IsNullOrWhiteSpace(row.Reason)) { <span class="sms-log-error-empty">—</span> } else { <span class="sms-log-error-text" title="@row.Reason">@row.Reason</span> }</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>

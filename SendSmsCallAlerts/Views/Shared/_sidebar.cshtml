@@ -20,6 +20,7 @@
                 <li class="menu-title">OPERATIONS</li>
                 <li><a class="@(controller == "Technicians" ? "active" : "")" asp-controller="Technicians" asp-action="Index"><i class="fa fa-wrench" aria-hidden="true"></i><span>Technicians</span></a></li>
                 <li><a class="@(controller == "AutomatedNotifications" ? "active" : "")" asp-controller="AutomatedNotifications" asp-action="Index"><i class="fa fa-bell-o" aria-hidden="true"></i><span>Automated SMS</span></a></li>
+                <li><a class="@(controller == "SmsLogs" ? "active" : "")" asp-controller="SmsLogs" asp-action="Index"><i class="fa fa-list-alt" aria-hidden="true"></i><span>SMS Logs</span></a></li>
                 @if (isAdmin)
                 {
                     <li class="menu-title">ADMINISTRATION</li>

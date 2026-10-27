@@ -15,11 +15,12 @@ namespace SendSmsCallAlerts.Services
         public int? ContactDetailId { get; set; }
         public string? SkipReason { get; set; }
         public string Status { get; set; } = "";
+        public int? JobId { get; set; }
     }
 
     public class AutomatedSmsService
     {
-        private const int GraceHours = 3;
+        private readonly int graceHours;
 
         private readonly ApplicationDbContext db;
         private readonly IConfiguration config;
@@ -39,119 +40,227 @@ namespace SendSmsCallAlerts.Services
             this.gateway = gateway;
             companyName = config["AutomatedSms:CompanyName"] ?? "Our Team";
             maxJobsChars = config.GetValue<int?>("AutomatedSms:MaxJobsListCharacters") ?? 1400;
+            graceHours = config.GetValue<int?>("AutomatedSms:GraceHours") ?? 3;
         }
 
         // ---------- time helpers (kept public: other code may call them) ----------
         public DateTime BusinessNow() => clock.BusinessNow;
         public DateTime ToBusiness(DateTime utc) => clock.ToBusiness(utc);
 
-        private bool IsDue(AutomatedSmsSetting s, DateTime nowLocal)
+        public async Task EnsureNextOccurrenceAsync(AutomatedSmsSetting setting, CancellationToken ct = default)
         {
-            var scheduled = nowLocal.Date + s.SendTime;
-            if (nowLocal < scheduled || nowLocal >= scheduled.AddHours(GraceHours)) return false;
-            if (s.Frequency == SmsFrequencies.Weekly && s.DayOfWeek != (int)nowLocal.DayOfWeek) return false;
-            if (s.LastRunAt.HasValue && ToBusiness(s.LastRunAt.Value) >= scheduled) return false;
-            return true;
+            if (!setting.IsActive) return;
+            var staleRunningBefore = DateTime.UtcNow.AddMinutes(-10);
+            await db.AutomatedSmsOccurrences
+                .Where(o => o.SettingId == setting.Id &&
+                            o.Status == AutomatedSmsOccurrenceStatus.Running &&
+                            (o.StartedAt == null || o.StartedAt < staleRunningBefore))
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(o => o.Status, AutomatedSmsOccurrenceStatus.Pending)
+                    .SetProperty(o => o.StartedAt, (DateTime?)null)
+                    .SetProperty(o => o.Note, "Recovered after an interrupted run."), ct);
+            var pending = await db.AutomatedSmsOccurrences.AnyAsync(o =>
+                o.SettingId == setting.Id &&
+                (o.Status == AutomatedSmsOccurrenceStatus.Pending || o.Status == AutomatedSmsOccurrenceStatus.Running), ct);
+            if (pending) return;
+
+            var localNow = BusinessNow();
+            var scheduled = NextScheduledLocal(setting, localNow);
+            var occurrence = new AutomatedSmsOccurrence
+            {
+                SettingId = setting.Id,
+                ScheduledForLocal = scheduled,
+                ScheduledForUtc = clock.ToUtc(scheduled),
+                OccurrenceKey = BuildOccurrenceKey(setting, scheduled),
+                Status = AutomatedSmsOccurrenceStatus.Pending,
+                CreatedOn = DateTime.UtcNow
+            };
+            db.AutomatedSmsOccurrences.Add(occurrence);
+            try
+            {
+                await db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateException)
+            {
+                db.Entry(occurrence).State = EntityState.Detached;
+            }
         }
 
-        // ---------- called by Hangfire every minute ----------
+        public async Task EnsureNextOccurrencesAsync(CancellationToken ct = default)
+        {
+            foreach (var setting in await db.AutomatedSmsSettings.Where(s => s.IsActive).ToListAsync(ct))
+                await EnsureNextOccurrenceAsync(setting, ct);
+        }
+
+        public async Task CancelPendingOccurrencesAsync(int settingId, string note, CancellationToken ct = default)
+        {
+            var pending = await db.AutomatedSmsOccurrences
+                .Where(o => o.SettingId == settingId && o.Status == AutomatedSmsOccurrenceStatus.Pending)
+                .ToListAsync(ct);
+            foreach (var occurrence in pending)
+            {
+                occurrence.Status = AutomatedSmsOccurrenceStatus.Cancelled;
+                occurrence.Note = note;
+                occurrence.CompletedAt = DateTime.UtcNow;
+            }
+            await db.SaveChangesAsync(ct);
+        }
+
+        public async Task<List<AutomatedSmsItem>> PreviewAsync(AutomatedSmsSetting setting, CancellationToken ct = default) =>
+            await BuildItemsAsync(setting, BusinessNow(), ct);
+
+        private DateTime NextScheduledLocal(AutomatedSmsSetting setting, DateTime nowLocal)
+        {
+            if (setting.Frequency == SmsFrequencies.Daily)
+            {
+                var today = nowLocal.Date + setting.SendTime;
+                return today > nowLocal ? today : today.AddDays(1);
+            }
+
+            var day = setting.DayOfWeek ?? (int)nowLocal.DayOfWeek;
+            var daysAhead = (day - (int)nowLocal.DayOfWeek + 7) % 7;
+            var candidate = nowLocal.Date.AddDays(daysAhead) + setting.SendTime;
+            return candidate > nowLocal ? candidate : candidate.AddDays(7);
+        }
+
+        private static string BuildOccurrenceKey(AutomatedSmsSetting setting, DateTime scheduled)
+        {
+            if (setting.Frequency == SmsFrequencies.Daily)
+                return $"{setting.Id}-{scheduled:yyyyMMdd}";
+            var isoWeek = System.Globalization.ISOWeek.GetWeekOfYear(scheduled);
+            return $"{setting.Id}-{System.Globalization.ISOWeek.GetYear(scheduled)}-W{isoWeek:00}";
+        }
+
         public async Task ProcessDueAsync(CancellationToken ct = default)
         {
-            var nowLocal = BusinessNow();
-            var settings = await db.AutomatedSmsSettings.Where(s => s.IsActive).ToListAsync(ct);
+            await EnsureNextOccurrencesAsync(ct);
+            var resetBefore = DateTime.UtcNow.AddMinutes(-10);
+            await db.AutomatedSmsOccurrences
+                .Where(o => o.Status == AutomatedSmsOccurrenceStatus.Running &&
+                            o.StartedAt < resetBefore)
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(o => o.Status, AutomatedSmsOccurrenceStatus.Pending)
+                    .SetProperty(o => o.StartedAt, (DateTime?)null), ct);
 
-            foreach (var s in settings)
+            var now = DateTime.UtcNow;
+            var dueIds = await db.AutomatedSmsOccurrences.AsNoTracking()
+                .Where(o => o.Status == AutomatedSmsOccurrenceStatus.Pending && o.ScheduledForUtc <= now)
+                .OrderBy(o => o.ScheduledForUtc).Select(o => o.Id).Take(100).ToListAsync(ct);
+
+            foreach (var id in dueIds)
             {
-                if (!IsDue(s, nowLocal)) continue;
+                var claimed = await db.AutomatedSmsOccurrences
+                    .Where(o => o.Id == id && o.Status == AutomatedSmsOccurrenceStatus.Pending)
+                    .ExecuteUpdateAsync(u => u.SetProperty(o => o.Status, AutomatedSmsOccurrenceStatus.Running)
+                        .SetProperty(o => o.StartedAt, now), ct);
+                if (claimed == 0) continue;
+
                 try
                 {
-                    await RunAsync(s, nowLocal.ToString("yyyy-MM-dd"), false, nowLocal, ct);
-                    s.LastRunAt = DateTime.UtcNow;
+                    var occurrence = await db.AutomatedSmsOccurrences
+                        .Include(o => o.Setting).SingleAsync(o => o.Id == id, ct);
+                    var setting = occurrence.Setting;
+                    if (now > occurrence.ScheduledForUtc.AddHours(graceHours))
+                    {
+                        occurrence.Status = AutomatedSmsOccurrenceStatus.Missed;
+                        occurrence.Note = "Not run within grace period (app was down?)";
+                    }
+                    else
+                    {
+                        var items = await RunAsync(setting, occurrence.OccurrenceKey, false, BusinessNow(), ct);
+                        occurrence.TotalRecipients = items.Count;
+                        occurrence.QueuedCount = items.Count(i => i.SkipReason == null);
+                        occurrence.SkippedCount = items.Count(i => i.SkipReason != null);
+                        occurrence.Status = items.Count == 0
+                            ? AutomatedSmsOccurrenceStatus.NothingToSend
+                            : AutomatedSmsOccurrenceStatus.Completed;
+                        occurrence.Note = items.Count == 0 ? "No recipients matched the notification." : null;
+                        setting.LastRunAt = now;
+                    }
+                    occurrence.CompletedAt = DateTime.UtcNow;
                     await db.SaveChangesAsync(ct);
+                    await EnsureNextOccurrenceAsync(setting, ct);
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Automated SMS setting {Id} failed", s.Id);
+                    var failed = await db.AutomatedSmsOccurrences.AsNoTracking()
+                        .Include(o => o.Setting).FirstOrDefaultAsync(o => o.Id == id, ct);
+                    if (failed != null)
+                    {
+                        await db.AutomatedSmsOccurrences.Where(o => o.Id == id).ExecuteUpdateAsync(u => u
+                            .SetProperty(o => o.Status, AutomatedSmsOccurrenceStatus.Error)
+                            .SetProperty(o => o.CompletedAt, DateTime.UtcNow)
+                            .SetProperty(o => o.Note, Truncate(ex.Message, 500)), ct);
+                        await EnsureNextOccurrenceAsync(failed.Setting, ct);
+                        logger.LogError(ex, "Automated SMS occurrence {OccurrenceId}, setting {SettingId} ({Name}) failed",
+                            id, failed.SettingId, failed.Setting.Name);
+                    }
+                    db.ChangeTracker.Clear();
                 }
             }
         }
 
         // ---------- one run of one setting (real or dry-run) ----------
         public async Task<List<AutomatedSmsItem>> RunAsync(
-            AutomatedSmsSetting s, string occurrenceKey, bool dryRun, DateTime nowLocal, CancellationToken ct = default)
+    AutomatedSmsSetting s, string occurrenceKey, bool dryRun, DateTime nowLocal, CancellationToken ct = default)
         {
             var items = await BuildItemsAsync(s, nowLocal, ct);
 
             foreach (var item in items)
             {
-                var log = new AutomatedSmsLog
+                // guard row: the unique index makes sure one occurrence is queued only once
+                var guard = new AutomatedSmsLog
                 {
                     SettingId = s.Id,
                     OccurrenceKey = occurrenceKey,
                     RecipientType = item.RecipientType,
                     RecipientId = item.RecipientId,
                     PhoneNumber = item.Phone,
-                    Status = AutomatedSmsStatus.Sending
+                    Status = dryRun ? AutomatedSmsStatus.Test
+                           : item.SkipReason != null ? AutomatedSmsStatus.Skipped
+                           : AutomatedSmsStatus.Queued,
+                    ErrorMessage = item.SkipReason
                 };
-                db.AutomatedSmsLogs.Add(log);
-                try { await db.SaveChangesAsync(ct); }
-                catch (DbUpdateException)
-                {
-                    db.Entry(log).State = EntityState.Detached;
-                    item.Status = "Already handled";
-                    continue;
-                }
+                db.AutomatedSmsLogs.Add(guard);
 
-                if (item.SkipReason != null)
+                SmsLog? sms = null;
+                if (!dryRun)   // dry run ("Run Now") never writes delivery rows
                 {
-                    log.Status = AutomatedSmsStatus.Skipped;
-                    log.ErrorMessage = item.SkipReason;
-                    item.Status = "Skipped: " + item.SkipReason;
-                    await db.SaveChangesAsync(ct);
-                    continue;
-                }
-
-                if (dryRun)
-                {
-                    log.Status = AutomatedSmsStatus.Test;
-                    item.Status = "Test (not sent)";
-                    await db.SaveChangesAsync(ct);
-                    continue;
-                }
-
-                // The selected environment determines whether the gateway sends or simulates.
-                var send = await gateway.SendAsync(item.Phone, item.Body);
-                bool delivered = send.Success;
-                if (send.Success)
-                {
-                    log.Status = send.Simulated ? AutomatedSmsStatus.NoTwilio : AutomatedSmsStatus.Sent;
-                    log.SentAt = DateTime.UtcNow;
-                }
-                else
-                {
-                    log.Status = AutomatedSmsStatus.Failed;
-                    log.ErrorMessage = Truncate(send.Error ?? "Send failed", 1000);
-                }
-                item.Status = log.Status;
-
-                if (delivered)
-                {
-                    var sms = new SmsDetail
+                    sms = new SmsLog
                     {
-                        fromNum = send.From,
-                        toNum = item.Phone,
-                        smsBody = item.Body,
-                        smsDirection = send.Simulated ? "OutgoingTest" : "Outgoing",
-                        IsReadYesOrNo = "",
-                        imgPath = "",
-                        createdOn = DateTime.UtcNow,
-                        ContactDetailId = item.ContactDetailId
+                        Source = SmsLogSources.Automated,
+                        SettingName = s.Name,
+                        NotificationType = s.NotificationType,
+                        RecipientType = item.RecipientType,
+                        RecipientId = item.RecipientId,
+                        RecipientName = item.RecipientName,
+                        RecipientNumber = item.Phone ?? "",
+                        MessageContent = item.Body,
+                        JobId = item.JobId,
+                        AutomatedLog = guard,
+                        Status = item.SkipReason != null ? SmsLogStatus.Skipped : SmsLogStatus.Pending,
+                        FailureReason = item.SkipReason,
+                        QueuedAt = DateTime.UtcNow
                     };
-                    db.SmsDetails.Add(sms);
-                    await db.SaveChangesAsync(ct);
-                    log.SmsDetailId = sms.Id;
+                    db.SmsLogs.Add(sms);
                 }
-                await db.SaveChangesAsync(ct);
+
+                try { await db.SaveChangesAsync(ct); }     // guard + SmsLogs row in ONE transaction
+                catch (DbUpdateException ex)
+                {
+                    if (sms != null) db.Entry(sms).State = EntityState.Detached;
+                    db.Entry(guard).State = EntityState.Detached;
+                    var already = await db.AutomatedSmsLogs.AnyAsync(g => g.SettingId == s.Id &&
+                        g.OccurrenceKey == occurrenceKey && g.RecipientType == item.RecipientType &&
+                        g.RecipientId == item.RecipientId, ct);
+                    if (!already) logger.LogError(ex, "Could not queue SMS for {Type} {Id}", item.RecipientType, item.RecipientId);
+                    item.Status = already ? "Already handled" : "Error: could not queue";
+                    continue;
+                }
+
+                item.Status = item.SkipReason != null ? "Skipped: " + item.SkipReason
+                            : dryRun ? "Test (not sent)"
+                            : SmsLogStatus.Pending;
             }
             return items;
         }
@@ -254,6 +363,8 @@ namespace SendSmsCallAlerts.Services
                 };
                 var item = MakeItem(RecipientTypes.Customer, contact.Id, CustomerFullName(contact),
                                     contact.PhoneNumber, Render(s.TemplateBody, vars), contact.Id);
+
+                item.JobId = list.First().Id;
 
                 if (item.SkipReason == null && optOut.Contains(Last10(contact.PhoneNumber)))
                     item.SkipReason = "Customer opted out";

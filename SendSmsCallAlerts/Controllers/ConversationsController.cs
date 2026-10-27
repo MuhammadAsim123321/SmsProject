@@ -19,13 +19,15 @@ namespace SendSmsCallAlerts.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ISmsGateway _smsGateway;
         private readonly IUploadedMediaStore _uploadedMediaStore;
+        private readonly SmsLogService _smsLog;
 
         public ConversationsController(
             IConfiguration configuration,
             IWebHostEnvironment hostingEnvironment,
             ApplicationDbContext context,
             ISmsGateway smsGateway,
-            IUploadedMediaStore uploadedMediaStore)
+            IUploadedMediaStore uploadedMediaStore,
+            SmsLogService smsLog)
         {
             _configuration = configuration;
             _hostingEnvironment = hostingEnvironment;
@@ -33,6 +35,8 @@ namespace SendSmsCallAlerts.Controllers
             _context = context;
             _smsGateway = smsGateway;
             _uploadedMediaStore = uploadedMediaStore;
+            _smsLog = smsLog;
+
         }
 
         public IActionResult SMS(string num = "")
@@ -121,19 +125,52 @@ namespace SendSmsCallAlerts.Controllers
                 .Select(g => new { SmsId = g.Key, Count = g.Count() })
                 .ToListAsync();
 
-            var result = messages.Select(m => new
-            {
-                id           = m.Id,
-                body         = m.smsBody ?? "",
-                direction    = m.smsDirection,          // "Incoming" | "Outgoing"
-                date         = m.createdOn.ToString("MM-dd-yyyy"),
-                time         = m.createdOn.ToString("hh:mm tt"),
-                dateTimeFull = m.createdOn.ToString("MM-dd-yyyy hh:mm tt"),
-                fromNum      = m.fromNum,
-                toNum        = m.toNum,
-                attachments  = mmsCounts.FirstOrDefault(x => x.SmsId == m.Id)?.Count ?? 0
-            }).ToList();
+            var numbers = new[] { e164, _smsGateway.NormalizePhone(num) }
+    .Where(x => !string.IsNullOrEmpty(x)).Distinct().ToList();
 
+            // Automated messages are NOT stored in SmsDetails; they come from SmsLogs.
+            var autoLogs = await _context.SmsLogs.AsNoTracking()
+                .Where(l => l.Source == SmsLogSources.Automated && l.SmsDetailId == null
+                            && l.Status != SmsLogStatus.Skipped && numbers.Contains(l.RecipientNumber))
+                .ToListAsync();
+
+            var chat = messages.Select(m => new ConvMsg
+            {
+                Id = m.Id,
+                Body = m.smsBody ?? "",
+                Direction = m.smsDirection,
+                Date = m.createdOn.ToString("MM-dd-yyyy"),
+                Time = m.createdOn.ToString("hh:mm tt"),
+                DateTimeFull = m.createdOn.ToString("MM-dd-yyyy hh:mm tt"),
+                FromNum = m.fromNum,
+                ToNum = m.toNum,
+                Attachments = mmsCounts.FirstOrDefault(x => x.SmsId == m.Id)?.Count ?? 0,
+                Status = m.smsDirection != null && m.smsDirection.StartsWith("Outgoing") ? SmsLogStatus.MessageSent : "",
+                Sort = m.createdOn
+            });
+
+            var auto = autoLogs.Select(l =>
+            {
+                var at = l.SentDate ?? l.QueuedAt;
+                return new ConvMsg
+                {
+                    Id = -(int)l.Id,                       // negative: never collides with SmsDetails ids
+                    Body = l.MessageContent,
+                    Direction = l.IsSimulated ? "OutgoingTest" : "Outgoing",
+                    Date = at.ToString("MM-dd-yyyy"),
+                    Time = at.ToString("hh:mm tt"),
+                    DateTimeFull = at.ToString("MM-dd-yyyy hh:mm tt"),
+                    FromNum = twilioE164,
+                    ToNum = l.RecipientNumber,
+                    Status = l.Status,
+                    FailureReason = l.Status == SmsLogStatus.SmsFailed ? l.FailureReason : null,
+                    Source = l.Source,
+                    IsAutomated = true,
+                    Sort = at
+                };
+            });
+
+            var result = chat.Concat(auto).OrderBy(x => x.Sort).ToList();
             return Json(new
             {
                 success      = true,
@@ -221,6 +258,8 @@ namespace SendSmsCallAlerts.Controllers
                     await _context.SaveChangesAsync();
                 }
 
+              
+
                 TempData["StMsg"] = send.Simulated
                     ? $"Development simulation completed; no message was sent. Images: {media.Count}."
                     : "SMS Sent Successfully!";
@@ -232,5 +271,23 @@ namespace SendSmsCallAlerts.Controllers
                 return RedirectToAction(nameof(SMS), new { num = conversation.toNum });
             }
         }
+    }
+    public class ConvMsg
+    {
+        public int Id { get; set; }
+        public string Body { get; set; } = "";
+        public string Direction { get; set; } = "";
+        public string Date { get; set; } = "";
+        public string Time { get; set; } = "";
+        public string DateTimeFull { get; set; } = "";
+        public string FromNum { get; set; } = "";
+        public string ToNum { get; set; } = "";
+        public int Attachments { get; set; }
+        public string Status { get; set; } = "";          // "", "Pending", "Message Sent", "SMS Failed"
+        public string? FailureReason { get; set; }
+        public string Source { get; set; } = "";          // "" = normal chat, "Automated"
+        public bool IsAutomated { get; set; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        public DateTime Sort { get; set; }
     }
 }

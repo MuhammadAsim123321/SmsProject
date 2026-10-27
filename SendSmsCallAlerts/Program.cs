@@ -86,6 +86,9 @@ builder.Services.AddScoped<TechnicianAvailabilityService>();
 
 builder.Services.AddScoped<AutomatedSmsService>();
 builder.Services.AddScoped<AutomatedSmsJob>();
+builder.Services.AddScoped<SmsLogService>();
+builder.Services.AddScoped<SmsDispatchService>();
+builder.Services.AddScoped<SmsDispatchJob>();
 
 builder.Services.AddSingleton<IAppClock, AppClock>();
 builder.Services.AddSingleton<ISmsGateway, SmsGateway>();

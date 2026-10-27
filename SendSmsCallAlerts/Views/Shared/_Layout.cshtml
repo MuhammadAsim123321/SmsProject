@@ -122,6 +122,39 @@
     <script src="~/assets/js/jquery.slimscroll.js"></script>
     <script src="~/assets/js/app.js"></script>
     <script>
+        (function () {
+            var storageKey = 'signal-sidebar-scroll-top';
+            function sidebarScrollElement() {
+                return document.querySelector('.signal-sidebar-scroll');
+            }
+            function restoreSidebarScroll() {
+                var sidebar = sidebarScrollElement();
+                if (!sidebar) return;
+                var saved = window.sessionStorage.getItem(storageKey);
+                if (saved !== null) {
+                    var top = parseInt(saved, 10);
+                    if (!isNaN(top)) {
+                        sidebar.scrollTop = top;
+                        window.setTimeout(function () { sidebar.scrollTop = top; }, 100);
+                    }
+                }
+            }
+            document.addEventListener('DOMContentLoaded', function () {
+                var sidebar = sidebarScrollElement();
+                if (!sidebar) return;
+                restoreSidebarScroll();
+                sidebar.addEventListener('scroll', function () {
+                    window.sessionStorage.setItem(storageKey, String(sidebar.scrollTop));
+                });
+                document.querySelectorAll('#sidebar-menu a[href]').forEach(function (link) {
+                    link.addEventListener('click', function () {
+                        window.sessionStorage.setItem(storageKey, String(sidebar.scrollTop));
+                    });
+                });
+            });
+        })();
+    </script>
+    <script>
         $(document).ajaxError(function (e, xhr, opts) {
             if (xhr.status === 403 && typeof xhr.responseText === 'string' && xhr.responseText.indexOf('LogOut') !== -1) {
                 var currentPageUrl = window.location.href;

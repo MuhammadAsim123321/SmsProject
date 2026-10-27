@@ -41,6 +41,10 @@ namespace SendSmsCallAlerts.Data
         public DbSet<TechnicianAvailability> TechnicianAvailabilities { get; set; }
         public DbSet<AutomatedSmsSetting> AutomatedSmsSettings { get; set; }
         public DbSet<AutomatedSmsLog> AutomatedSmsLogs { get; set; }
+        public DbSet<AutomatedSmsOccurrence> AutomatedSmsOccurrences { get; set; }
+
+        // Tasks 7-9: delivery record of every SMS (sent / pending / failed)
+        public DbSet<SmsLog> SmsLogs { get; set; }
 
         // REMOVED: DbSet<JobSchedule> JobSchedule (legacy table, 0 rows)
 
@@ -159,6 +163,34 @@ namespace SendSmsCallAlerts.Data
 
                 e.HasOne(l => l.Setting).WithMany(s => s.Logs)
                  .HasForeignKey(l => l.SettingId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AutomatedSmsOccurrence>(e =>
+            {
+                e.HasIndex(o => new { o.SettingId, o.ScheduledForLocal })
+                    .IsUnique().HasDatabaseName("UQ_AutomatedSmsOccurrences_Setting_Local");
+                e.HasIndex(o => new { o.Status, o.ScheduledForUtc })
+                    .HasDatabaseName("IX_AutomatedSmsOccurrences_Status_Utc");
+                e.HasOne(o => o.Setting).WithMany(s => s.Occurrences)
+                    .HasForeignKey(o => o.SettingId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // ---------------- SMS delivery log (Tasks 7-9) ----------------
+            modelBuilder.Entity<SmsLog>(e =>
+            {
+                // keep the history when a job or an occurrence row is deleted
+                e.HasOne<Job>().WithMany()
+                 .HasForeignKey(l => l.JobId).OnDelete(DeleteBehavior.SetNull);
+
+                e.HasOne(l => l.AutomatedLog).WithMany()
+                 .HasForeignKey(l => l.AutomatedSmsLogId).OnDelete(DeleteBehavior.SetNull);
+
+                // the dispatcher's query: Status = Pending and NextAttemptAt due
+                e.HasIndex(l => new { l.Status, l.NextAttemptAt }).HasDatabaseName("IX_SmsLogs_Status_NextAttempt");
+                e.HasIndex(l => l.RecipientNumber).HasDatabaseName("IX_SmsLogs_RecipientNumber");
+                e.HasIndex(l => l.JobId).HasDatabaseName("IX_SmsLogs_JobId");
+                e.HasIndex(l => l.CreatedOn).HasDatabaseName("IX_SmsLogs_CreatedOn");
+                e.HasIndex(l => l.SmsDetailId).HasDatabaseName("IX_SmsLogs_SmsDetailId");
             });
 
             // ---------------- lookup seeds ----------------

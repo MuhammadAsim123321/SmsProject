@@ -52,6 +52,84 @@ body.signal-app .signal-view-surface .nova-list-card table.table tbody tr {
 body.signal-app .signal-view-surface .nova-list-card table.table tbody tr:last-child td {
   border-bottom: 0 !important;
 }
+
+body.signal-app .signal-view-surface .nova-status--pending,
+body.signal-app .signal-view-surface .nova-status--sent,
+body.signal-app .signal-view-surface .nova-status--failed,
+body.signal-app .signal-view-surface .nova-status--skipped,
+body.signal-app .signal-view-surface .nova-status--test {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+body.signal-app .signal-view-surface .nova-status--pending { background: #ffe08a; color: #5b4300; }
+body.signal-app .signal-view-surface .nova-status--sent { background: #b8e6c1; color: #155724; }
+body.signal-app .signal-view-surface .nova-status--failed { background: #f5b5bb; color: #721c24; }
+body.signal-app .signal-view-surface .nova-status--skipped { background: #d8dce2; color: #3f4650; }
+body.signal-app .signal-view-surface .nova-status--test { background: #b9dff2; color: #16445d; margin-left: 4px; }
+body.signal-app .signal-view-surface .nova-status--automated { background: #e2d7f5; color: #4b2d73; }
+
+body.signal-app .signal-view-surface .nova-stat-card {
+  min-height: 92px;
+  padding: 18px 20px;
+  border: 1px solid #e8e8f3;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(49, 55, 92, .06);
+  color: #444b65;
+}
+body.signal-app .signal-view-surface .nova-stat-card:hover { border-color: #70b3db; }
+body.signal-app .signal-view-surface .nova-stat-card .nova-stat-label {
+  display: block;
+  color: #747b98;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+body.signal-app .signal-view-surface .nova-stat-card strong {
+  display: block;
+  margin-top: 7px;
+  color: #343a56;
+  font-size: 25px;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table tbody td.sms-log-error-cell {
+  min-width: 220px;
+  max-width: 360px;
+  color: #842029 !important;
+  background-color: #fff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table tbody td.sms-log-error-cell .sms-log-error-text {
+  display: block;
+  color: #842029 !important;
+  font-weight: 500;
+  line-height: 1.4;
+  max-height: 4.2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+body.signal-app .signal-view-surface .nova-list-card table.table tbody td.sms-log-error-cell .sms-log-error-empty {
+  color: #8791a3 !important;
+  font-weight: 400;
+}
+@media (prefers-color-scheme: dark) {
+  body.signal-app .signal-view-surface .nova-list-card table.table tbody td.sms-log-error-cell {
+    color: #ffb4ab !important;
+    background-color: #252936 !important;
+  }
+  body.signal-app .signal-view-surface .nova-list-card table.table tbody td.sms-log-error-cell .sms-log-error-text {
+    color: #ffb4ab !important;
+  }
+}
 body.signal-app .signal-view-surface .nova-list-card table.table tbody td .btn,
 body.signal-app .signal-view-surface .nova-list-card table.table tbody td .sg-table-link {
   width: auto !important;

@@ -117,6 +117,35 @@ namespace SendSmsCallAlerts.Migrations
                     b.ToTable("AutomatedSmsLogs");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsOccurrence", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedOn").HasColumnType("datetime2");
+                    b.Property<DateTime?>("CompletedAt").HasColumnType("datetime2");
+                    b.Property<string>("Note").HasMaxLength(500).HasColumnType("nvarchar(500)");
+                    b.Property<string>("OccurrenceKey").IsRequired().HasMaxLength(60).HasColumnType("nvarchar(60)");
+                    b.Property<int>("QueuedCount").HasColumnType("int");
+                    b.Property<int>("SettingId").HasColumnType("int");
+                    b.Property<DateTime>("ScheduledForLocal").HasColumnType("datetime2");
+                    b.Property<DateTime>("ScheduledForUtc").HasColumnType("datetime2");
+                    b.Property<int>("SkippedCount").HasColumnType("int");
+                    b.Property<DateTime?>("StartedAt").HasColumnType("datetime2");
+                    b.Property<string>("Status").IsRequired().HasMaxLength(20).HasColumnType("nvarchar(20)");
+                    b.Property<int>("TotalRecipients").HasColumnType("int");
+
+                    b.HasKey("Id");
+                    b.HasIndex("SettingId", "ScheduledForLocal").IsUnique()
+                        .HasDatabaseName("UQ_AutomatedSmsOccurrences_Setting_Local");
+                    b.HasIndex("Status", "ScheduledForUtc")
+                        .HasDatabaseName("IX_AutomatedSmsOccurrences_Status_Utc");
+                    b.ToTable("AutomatedSmsOccurrences");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsSetting", b =>
                 {
                     b.Property<int>("Id")
@@ -696,6 +725,111 @@ namespace SendSmsCallAlerts.Migrations
                     b.ToTable("SmsDetails");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.SmsLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("AutomatedSmsLogId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsSimulated")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("JobId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("LastAttemptAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("MessageContent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("NextAttemptAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NotificationType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("QueuedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("RecipientId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RecipientName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("RecipientNumber")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("RecipientType")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("SentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SettingName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int?>("SmsDetailId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutomatedSmsLogId");
+
+                    b.HasIndex("CreatedOn")
+                        .HasDatabaseName("IX_SmsLogs_CreatedOn");
+
+                    b.HasIndex("JobId")
+                        .HasDatabaseName("IX_SmsLogs_JobId");
+
+                    b.HasIndex("RecipientNumber")
+                        .HasDatabaseName("IX_SmsLogs_RecipientNumber");
+
+                    b.HasIndex("SmsDetailId")
+                        .HasDatabaseName("IX_SmsLogs_SmsDetailId");
+
+                    b.HasIndex("Status", "NextAttemptAt")
+                        .HasDatabaseName("IX_SmsLogs_Status_NextAttempt");
+
+                    b.ToTable("SmsLogs");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.SmsTemplate", b =>
                 {
                     b.Property<int>("Id")
@@ -956,6 +1090,16 @@ namespace SendSmsCallAlerts.Migrations
                     b.Navigation("Setting");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsOccurrence", b =>
+                {
+                    b.HasOne("SendSmsCallAlerts.Models.AutomatedSmsSetting", "Setting")
+                        .WithMany("Occurrences")
+                        .HasForeignKey("SettingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                    b.Navigation("Setting");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.Job", b =>
                 {
                     b.HasOne("SendSmsCallAlerts.Models.IvrOptions", "Category")
@@ -1021,6 +1165,21 @@ namespace SendSmsCallAlerts.Migrations
                     b.Navigation("ContactDetail");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.SmsLog", b =>
+                {
+                    b.HasOne("SendSmsCallAlerts.Models.AutomatedSmsLog", "AutomatedLog")
+                        .WithMany()
+                        .HasForeignKey("AutomatedSmsLogId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("SendSmsCallAlerts.Models.Job", null)
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AutomatedLog");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.TechnicianAvailability", b =>
                 {
                     b.HasOne("SendSmsCallAlerts.Models.Technician", "Technician")
@@ -1035,6 +1194,7 @@ namespace SendSmsCallAlerts.Migrations
             modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsSetting", b =>
                 {
                     b.Navigation("Logs");
+                    b.Navigation("Occurrences");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.ContactDetail", b =>

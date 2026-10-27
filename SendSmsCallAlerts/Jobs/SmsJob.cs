@@ -21,13 +21,16 @@ namespace SendSmsCallAlerts.Jobs
         private readonly IAppClock _clock;
         private readonly ISmsGateway _gateway;
         private readonly ILogger<SmsJob> _logger;
+        private readonly SmsLogService _smsLog;
 
-        public SmsJob(ApplicationDbContext db, IAppClock clock, ISmsGateway gateway, ILogger<SmsJob> logger)
+        public SmsJob(ApplicationDbContext db, IAppClock clock, ISmsGateway gateway,
+            ILogger<SmsJob> logger, SmsLogService smsLog)
         {
             _db = db;
             _clock = clock;
             _gateway = gateway;
             _logger = logger;
+            _smsLog = smsLog;
         }
 
         public async Task RegisterAllJobs()

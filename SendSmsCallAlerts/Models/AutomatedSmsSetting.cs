@@ -21,14 +21,19 @@ namespace SendSmsCallAlerts.Models
         public const string Weekly = "Weekly";
     }
 
+    /// <summary>
+    /// Status of the "occurrence guard" row (AutomatedSmsLogs). The detailed delivery status
+    /// that users see lives in SmsLogs (see SmsLogStatus).
+    /// </summary>
     public static class AutomatedSmsStatus
     {
-        public const string Sending = "Sending";   // claimed, not finished yet
+        public const string Queued = "Queued";     // NEW: handed to the dispatcher (SmsLogs row is Pending)
+        public const string Sending = "Sending";   // legacy: claimed, not finished yet
         public const string Sent = "Sent";
         public const string Failed = "Failed";
         public const string Skipped = "Skipped";   // e.g. opted out / no phone
-        public const string Test = "Test";         // "Run Now" test send
-        public const string NoTwilio = "NoTwilio"; // Twilio not configured, logged only
+        public const string Test = "Test";         // legacy "Run Now" test rows
+        public const string NoTwilio = "NoTwilio"; // Test mode: simulated send
     }
 
     /// <summary>
@@ -69,5 +74,6 @@ namespace SendSmsCallAlerts.Models
         public DateTime? UpdatedOn { get; set; }
 
         public virtual ICollection<AutomatedSmsLog> Logs { get; set; } = new List<AutomatedSmsLog>();
+        public virtual ICollection<AutomatedSmsOccurrence> Occurrences { get; set; } = new List<AutomatedSmsOccurrence>();
     }
 }

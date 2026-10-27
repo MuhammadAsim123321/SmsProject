@@ -1,0 +1,180 @@
+﻿@model SendSmsCallAlerts.Controllers.SmsLogsVm
+@using SendSmsCallAlerts.Models
+@{
+    ViewData["Title"] = "Automated SMS logs";
+    int C(string key) => Model.Counts.TryGetValue(key, out var value) ? value : 0;
+    string Chip(string status) => status switch
+    {
+        SmsLogStatus.Pending => "nova-status--pending",
+        SmsLogStatus.MessageSent => "nova-status--sent",
+        SmsLogStatus.SmsFailed => "nova-status--failed",
+        SmsLogStatus.Skipped => "nova-status--skipped",
+        AutomatedSmsOccurrenceStatus.Running => "nova-status--running",
+        AutomatedSmsOccurrenceStatus.Completed => "nova-status--sent",
+        AutomatedSmsOccurrenceStatus.NothingToSend => "nova-status--muted",
+        AutomatedSmsOccurrenceStatus.Missed => "nova-status--failed",
+        AutomatedSmsOccurrenceStatus.Error => "nova-status--failed",
+        AutomatedSmsOccurrenceStatus.Cancelled => "nova-status--skipped",
+        _ => "nova-status--muted"
+    };
+    string Relative(DateTime utc)
+    {
+        var minutes = (int)Math.Round((utc - DateTime.UtcNow).TotalMinutes);
+        if (minutes < 0) return "due";
+        var days = minutes / (24 * 60);
+        var hours = (minutes % (24 * 60)) / 60;
+        var remainingMinutes = minutes % 60;
+        var parts = new List<string>();
+        if (days > 0) parts.Add($"{days} day" + (days == 1 ? "" : "s"));
+        if (hours > 0) parts.Add($"{hours} h");
+        if (remainingMinutes > 0 || parts.Count == 0) parts.Add($"{remainingMinutes} min");
+        return "in " + string.Join(" ", parts);
+    }
+    string Link(string tab, string? status = null, int? page = null, string? occurrenceKey = null) =>
+        Url.Action("Index", "SmsLogs", new {
+            tab, status, settingName = Model.SettingName, recipientType = Model.RecipientType,
+            q = Model.Q, from = Model.From?.ToString("yyyy-MM-dd"), to = Model.To?.ToString("yyyy-MM-dd"),
+            occurrenceKey, page
+        }) ?? "#";
+    bool HasFilters = !string.IsNullOrWhiteSpace(Model.Status) || !string.IsNullOrWhiteSpace(Model.SettingName)
+        || !string.IsNullOrWhiteSpace(Model.RecipientType) || !string.IsNullOrWhiteSpace(Model.Q)
+        || Model.From.HasValue || Model.To.HasValue;
+}
+
+<partial name="~/Views/AutomatedNotifications/_AutoSmsHead.cshtml" />
+
+<div class="sg-content-stack">
+    <section class="nova-page-head" aria-label="Page heading">
+        <div class="nova-heading-group">
+            <span class="nova-heading-icon"><i class="fa fa-envelope-o"></i></span>
+            <div class="nova-heading-copy">
+                <span class="nova-eyebrow">AUTOMATION</span>
+                <h1>Automated SMS logs</h1>
+                <p>Every planned run, queued message, and delivery result</p>
+            </div>
+        </div>
+        <div class="nova-page-actions"><a asp-controller="AutomatedNotifications" asp-action="Index" class="btn btn-outline-primary">Back to Automated SMS</a></div>
+    </section>
+
+    <section class="row" id="summary">
+        <div class="col-md mb-3"><a class="nova-stat-card d-block text-decoration-none" href="@Link("Scheduled")"><span class="nova-stat-label">Scheduled</span><strong id="c-scheduled">@Model.ScheduledCount</strong></a></div>
+        <div class="col-md mb-3"><a class="nova-stat-card d-block text-decoration-none" href="@Link("Queue")"><span class="nova-stat-label">Queue</span><strong id="c-queue">@Model.QueueCount</strong></a></div>
+        <div class="col-md mb-3"><a class="nova-stat-card d-block text-decoration-none" href="@Link("History", "Message Sent")"><span class="nova-stat-label">Message Sent today</span><strong id="c-sent">@Model.SentTodayCount</strong></a></div>
+        <div class="col-md mb-3"><a class="nova-stat-card d-block text-decoration-none" href="@Link("History", "SMS Failed")"><span class="nova-stat-label">SMS Failed</span><strong id="c-failed">@Model.FailedCount</strong></a></div>
+        <div class="col-md mb-3"><a class="nova-stat-card d-block text-decoration-none" href="@Link("History", "Skipped")"><span class="nova-stat-label">Skipped</span><strong id="c-skipped">@Model.SkippedCount</strong></a></div>
+    </section>
+
+    <section class="nova-list-card">
+        <ul class="nav nav-tabs px-3 pt-3">
+            @foreach (var tab in new[] { "Scheduled", "Queue", "History", "Runs", "Test runs" })
+            {
+                <li class="nav-item"><a class="nav-link @(Model.Tab == tab ? "active" : "")" href="@Link(tab)">@tab</a></li>
+            }
+        </ul>
+
+        @if (Model.Tab == "Queue" || Model.Tab == "History" || Model.Tab == "Runs")
+        {
+            <form method="get" class="p-3 border-bottom" id="logFilters">
+                <input type="hidden" name="tab" value="@Model.Tab" />
+                <div class="mb-2"><input id="logSearch" name="q" class="form-control" placeholder="Search number, name or message" value="@Model.Q" /></div>
+                <div class="d-flex flex-wrap align-items-center">
+                    <select name="status" class="form-control mr-2 mb-2 filter-submit" style="width:auto">
+                        <option value="">All statuses</option>
+                        @foreach (var status in SmsLogStatus.All) { <option value="@status" selected="@(Model.Status == status ? "selected" : null)">@status</option> }
+                    </select>
+                    <select name="settingName" class="form-control mr-2 mb-2 filter-submit" style="width:auto">
+                        <option value="">All settings</option>
+                        @foreach (var name in Model.SettingNames) { <option value="@name" selected="@(Model.SettingName == name ? "selected" : null)">@name</option> }
+                    </select>
+                    <select name="recipientType" class="form-control mr-2 mb-2 filter-submit" style="width:auto">
+                        <option value="">All recipient types</option>
+                        <option value="Customer" selected="@(Model.RecipientType == "Customer" ? "selected" : null)">Customer</option>
+                        <option value="Technician" selected="@(Model.RecipientType == "Technician" ? "selected" : null)">Technician</option>
+                    </select>
+                    <input type="date" name="from" class="form-control mr-2 mb-2 filter-submit" style="width:auto" value="@Model.From?.ToString("yyyy-MM-dd")" />
+                    <input type="date" name="to" class="form-control mr-2 mb-2 filter-submit" style="width:auto" value="@Model.To?.ToString("yyyy-MM-dd")" />
+                    @if (HasFilters) { <a class="btn btn-link mb-2" href="@Link(Model.Tab)">Clear</a> }
+                </div>
+            </form>
+        }
+
+        @if (Model.Tab == "Scheduled")
+        {
+            <div class="nova-table-viewport"><table class="table table-bordered table-striped">
+                <thead style="background:#70b3db;color:white;"><tr><th>Setting</th><th>Recipient type</th><th>Frequency</th><th>Scheduled for</th><th>Expected recipients</th><th>Status</th></tr></thead>
+                <tbody>
+                @foreach (var row in Model.Scheduled)
+                {
+                    var occurrence = row.Occurrence;
+                    <tr class="@(!row.Setting.IsActive ? "text-muted" : "")">
+                        <td><button class="btn btn-link p-0" type="button" data-toggle="collapse" data-target="#preview-@row.Setting.Id">@row.Setting.Name</button></td>
+                        <td>@row.Setting.RecipientType</td><td>@row.Setting.Frequency</td>
+                        <td>@(occurrence == null ? "Inactive" : $"{occurrence.ScheduledForLocal:dd-MMM-yyyy HH:mm} ({Relative(occurrence.ScheduledForUtc)})")</td>
+                        <td>@row.Preview.Count</td>
+                        <td>@if (occurrence != null) { <span class="nova-status @Chip(occurrence.Status)">@occurrence.Status</span> } else { <span class="text-muted">Inactive</span> }</td>
+                    </tr>
+                    <tr id="preview-@row.Setting.Id" class="collapse"><td colspan="6"><div class="small text-muted mb-2">Preview - final text is built at run time</div>
+                        @if (!row.Preview.Any()) { <span class="text-muted">No matching recipients.</span> }
+                        else { <table class="table table-sm mb-0"><thead><tr><th>Recipient</th><th>Phone</th><th>Rendered text</th></tr></thead><tbody>
+                            @foreach (var item in row.Preview) { <tr><td>@item.RecipientName (@item.RecipientType)</td><td>@item.Phone</td><td style="white-space:pre-wrap">@item.Body@if (item.SkipReason != null) { <small class="text-danger d-block">@item.SkipReason</small> }</td></tr> }
+                        </tbody></table> }
+                    </td></tr>
+                }
+                </tbody>
+            </table></div>
+        }
+        else if (Model.Tab == "Runs")
+        {
+            <div class="nova-table-viewport"><table class="table table-bordered table-striped"><thead style="background:#70b3db;color:white;"><tr><th>Scheduled for</th><th>Setting</th><th>Outcome</th><th>Recipients</th><th>Queued</th><th>Skipped</th><th>Note</th><th></th></tr></thead><tbody>
+            @foreach (var run in Model.Runs)
+            {
+                <tr><td>@run.Occurrence.ScheduledForLocal.ToString("dd-MMM-yyyy HH:mm")</td><td>@run.SettingName</td><td><span class="nova-status @Chip(run.Occurrence.Status)">@run.Occurrence.Status</span></td><td>@run.Occurrence.TotalRecipients</td><td>@run.Occurrence.QueuedCount</td><td>@run.Occurrence.SkippedCount</td><td>@(run.Occurrence.Note ?? "—")</td><td>@if (run.MessageCount > 0) { <a href="@Url.Action("OccurrenceMessages", "SmsLogs", new { occurrenceKey = run.Occurrence.OccurrenceKey })">View @run.MessageCount message(s)</a> } else { <span class="text-muted">No messages</span> }</td></tr>
+            }
+            </tbody></table></div>
+        }
+        else if (Model.Tab == "Test runs")
+        {
+            <div class="p-3 text-right"><form asp-action="ClearTestRuns" method="post" onsubmit="return confirm('Clear all test runs?');"><button class="btn btn-outline-danger">Clear test runs</button></form></div>
+            <div class="nova-table-viewport"><table class="table table-bordered table-striped"><thead style="background:#70b3db;color:white;"><tr><th>When</th><th>Setting</th><th>Recipients</th><th></th></tr></thead><tbody>
+            @foreach (var test in Model.TestRuns)
+            {
+                <tr><td>@test.When</td><td>@test.SettingName</td><td>@test.Rows.Count</td><td><button class="btn btn-sm btn-outline-primary" type="button" data-toggle="collapse" data-target="#test-@test.OccurrenceKey.Replace("-", "")">Recipients</button></td></tr>
+                <tr id="test-@test.OccurrenceKey.Replace("-", "")" class="collapse"><td colspan="4"><table class="table table-sm mb-0"><thead><tr><th>Type</th><th>Recipient</th><th>Phone</th><th>Status</th></tr></thead><tbody>@foreach (var item in test.Rows) { <tr><td>@item.RecipientType</td><td>@item.RecipientId</td><td>@item.PhoneNumber</td><td><span class="nova-status nova-status--test">Test</span></td></tr> }</tbody></table></td></tr>
+            }
+            </tbody></table></div>
+        }
+        else
+        {
+            <div class="nova-table-viewport"><table class="table table-bordered table-striped"><thead style="background:#70b3db;color:white;"><tr><th>Created</th><th>Setting</th><th>Recipient</th><th>Number</th><th>Message</th><th>Queued at</th><th>Attempts</th><th>Next try</th><th>Sent at</th><th>Last error</th><th>Status</th><th></th></tr></thead><tbody>
+            @foreach (var row in Model.Rows)
+            {
+                <tr><td>@row.When</td><td>@(row.Type ?? "—")</td><td>@(string.IsNullOrWhiteSpace(row.RecipientName) ? "—" : row.RecipientName) <small class="d-block text-muted">@(string.IsNullOrWhiteSpace(row.RecipientType) ? "—" : row.RecipientType)</small></td><td>@(string.IsNullOrWhiteSpace(row.Number) ? "—" : row.Number)</td><td title="@row.Message"><span class="text-truncate d-block" style="max-width:260px">@(string.IsNullOrWhiteSpace(row.Message) ? "—" : row.Message)</span></td><td>@(row.QueuedAt ?? "—")</td><td>@row.Attempts</td><td>@(row.NextAttempt ?? "—")</td><td>@(row.SentAt ?? "—")</td><td class="sms-log-error-cell">@if (string.IsNullOrWhiteSpace(row.Reason)) { <span class="sms-log-error-empty">—</span> } else { <span class="sms-log-error-text" title="@row.Reason">@row.Reason</span> }</td><td><span class="nova-status @Chip(row.Status)">@row.Status</span>@if (row.Simulated) { <span class="nova-status nova-status--test">Test</span> }</td><td>@if (row.Status == SmsLogStatus.SmsFailed) { <form asp-action="Retry" asp-route-id="@row.Id" method="post"><button class="btn btn-sm btn-outline-primary">Retry</button></form> }</td></tr>
+            }
+            @if (!Model.Rows.Any()) { <tr><td colspan="12" class="text-center text-muted py-4">No automated messages yet</td></tr> }
+            </tbody></table></div>
+            <div class="nova-list-footer d-flex justify-content-between"><span>@Model.Total message(s). Page @Model.Page of @Model.Pages.</span><span>@if (Model.Page > 1) { <a class="btn btn-sm btn-outline-secondary" href="@Link(Model.Tab, page: Model.Page - 1)">Previous</a> } @if (Model.Page < Model.Pages) { <a class="btn btn-sm btn-outline-secondary ml-1" href="@Link(Model.Tab, page: Model.Page + 1)">Next</a> }</span></div>
+        }
+    </section>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    $('.filter-submit').on('change', function () { $('#logFilters').submit(); });
+    var timer;
+    $('#logSearch').on('input', function () { clearTimeout(timer); timer = setTimeout(function () { $('#logFilters').submit(); }, 400); });
+    $('#logSearch').on('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('#logFilters').submit(); } });
+    var last = null;
+    async function poll() {
+        try {
+            var r = await fetch('@Url.Action("Summary", "SmsLogs")', { cache: 'no-store' });
+            var d = await r.json();
+            $('#c-scheduled').text(d.scheduled); $('#c-queue').text(d.queue); $('#c-sent').text(d.sentToday);
+            $('#c-failed').text(d.failed); $('#c-skipped').text(d.skipped);
+            var key = JSON.stringify(d); if (last !== null && last !== key) { location.reload(); return; } last = key;
+        } catch (e) { console.warn('Could not refresh automated SMS counts.', e); }
+    }
+    poll(); setInterval(poll, 15000);
+})();
+</script>
+}
