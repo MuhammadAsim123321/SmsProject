@@ -9,13 +9,9 @@ namespace SendSmsCallAlerts.Services
     /// <summary>
     /// Every outgoing SMS from background jobs goes through here.
     ///
-    /// appsettings.json (AppSettings section):
-    ///   SmsMode            "Test" (default) = nothing is sent to Twilio, the send is simulated and logged.
-    ///                      "Live"           = real Twilio send. Needs AccountSid, AuthToken, TwilioNumber.
+    /// The selected host environment determines whether messages are simulated or sent through Twilio.
     ///   AccountSid / AuthToken / TwilioNumber   real Twilio values (existing keys)
     ///   DefaultCountryCode is required and used when a number has no country code.
-    ///
-    /// Only Production can send live; all other environments are simulated.
     /// </summary>
     public interface ISmsGateway
     {
@@ -45,14 +41,8 @@ namespace SendSmsCallAlerts.Services
         {
             _logger = logger;
 
-            var configuredMode = (config["AppSettings:SmsMode"] ?? "Test").Trim();
-            if (!string.Equals(configuredMode, "Test", StringComparison.OrdinalIgnoreCase)
-                && !string.Equals(configuredMode, "Live", StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("AppSettings:SmsMode must be either Test or Live.");
-
-            IsLive = environment.IsProduction()
-                && string.Equals(configuredMode, "Live", StringComparison.OrdinalIgnoreCase);
-            Mode = IsLive ? "Live" : "Test";
+            IsLive = environment.IsProduction();
+            Mode = IsLive ? "Production" : "Development";
 
             var accountSid = config["AppSettings:AccountSid"] ?? "";
             var authToken = config["AppSettings:AuthToken"] ?? "";
@@ -88,12 +78,12 @@ namespace SendSmsCallAlerts.Services
             if (!IsLive)
             {
                 var mediaCount = mediaUrls?.Count() ?? 0;
-                _logger.LogInformation("[SMS TEST MODE] Simulated a message with {MediaCount} media attachment(s).", mediaCount);
+                _logger.LogInformation("[DEVELOPMENT SIMULATION] Simulated a message with {MediaCount} media attachment(s).", mediaCount);
                 return new SmsSendResult(true, true, from.Length > 0 ? from : "TEST", null, null);
             }
 
             if (!_hasCredentials)
-                return new SmsSendResult(false, false, from, null, "SmsMode is Live but AppSettings:AccountSid / AuthToken are missing.");
+                return new SmsSendResult(false, false, from, null, "Production SMS sending requires AppSettings:AccountSid and AppSettings:AuthToken.");
             if (from.Length == 0)
                 return new SmsSendResult(false, false, "", null, "No sender number. Set AppSettings:TwilioNumber.");
 

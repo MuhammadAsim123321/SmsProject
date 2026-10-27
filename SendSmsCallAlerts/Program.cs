@@ -55,9 +55,6 @@ if (builder.Environment.IsProduction())
     RequireSetting("AppSettings:DefaultCountryCode");
     RequireSetting("AppSettings:TmZn");
 
-    if (!string.Equals(builder.Configuration["AppSettings:SmsMode"], "Live", StringComparison.OrdinalIgnoreCase))
-        missingSettings.Add("AppSettings:SmsMode must be Live in Production");
-
     var mediaBaseUrl = builder.Configuration["AppSettings:WebAddress"];
     if (!Uri.TryCreate(mediaBaseUrl, UriKind.Absolute, out var mediaUri)
         || mediaUri.Scheme != Uri.UriSchemeHttps

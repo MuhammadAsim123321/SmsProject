@@ -119,7 +119,7 @@ namespace SendSmsCallAlerts.Services
                     continue;
                 }
 
-                // Real or simulated send is decided by AppSettings:SmsMode inside the gateway.
+                // The selected environment determines whether the gateway sends or simulates.
                 var send = await gateway.SendAsync(item.Phone, item.Body);
                 bool delivered = send.Success;
                 if (send.Success)
