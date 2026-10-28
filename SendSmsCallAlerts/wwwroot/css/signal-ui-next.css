@@ -947,7 +947,7 @@ body.signal-app, body.signal-login-body { overflow-x: clip; }
 
 /* ===== signal-ui-v3.css ===== */
 /*
-  SMS Hub — unified interface refinement (V3)
+  Carpet Repair & Cleaning — unified interface refinement (V3)
   Added after existing stylesheets and page-local styles.
   Presentational only: no IDs, handlers, form field names, routes, or request behavior change.
 */
@@ -1442,7 +1442,7 @@ body.signal-app { background: var(--sg-base); color: var(--sg-ink); }
 
 /* ===== NOVA list-led redesign ===== */
 /*
- * SMS Hub / NOVA UI — October 2026
+ * Carpet Repair & Cleaning / NOVA UI — October 2026
  * Inspired by the supplied list-page reference: calm indigo, compact toolbars,
  * quiet data cards, clear hierarchy, and predictable primary actions.
  * Loaded after legacy in-page styles. Does not require new JS dependencies.
@@ -1758,4 +1758,47 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
     letter-spacing: .01em;
     background: #fff;
   }
+}
+
+
+/* ===== Carpet Repair & Cleaning Logo Optimization ===== */
+/* Custom adjustments for longer company name to fit nicely in header */
+.signal-app .signal-brand-text {
+    font-size: 17px !important;
+    font-weight: 750 !important;
+    letter-spacing: -0.5px !important;
+    line-height: 1.15 !important;
+}
+
+.signal-app .signal-brand-sub {
+    padding-top: 4px !important;
+    font-size: 7px !important;
+    letter-spacing: 1.5px !important;
+}
+
+.signal-app .signal-brand-link {
+    gap: 9px !important;
+}
+
+.signal-app .signal-brand-icon {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 17px !important;
+}
+
+/* Ensure proper wrapping and spacing on smaller screens */
+@media (max-width: 991.98px) {
+    .signal-app .signal-header .header-left.signal-brand {
+        flex: 0 0 240px !important;
+        width: 240px !important;
+    }
+    .signal-app .signal-brand-text {
+        font-size: 16px !important;
+    }
+}
+
+/* For NOVA design system compatibility */
+.nova-shell .signal-app .signal-brand-text {
+    font-size: 17px !important;
+    letter-spacing: -0.4px !important;
 }

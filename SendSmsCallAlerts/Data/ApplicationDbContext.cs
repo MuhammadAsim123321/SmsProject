@@ -216,13 +216,13 @@ namespace SendSmsCallAlerts.Data
                 new RunFrom { Id = 4, RunFromName = "Job End Date" }   // was "Job Created Date" (code always used the end date)
             );
 
-            modelBuilder.Entity<IvrOptions>().HasData(
-                new IvrOptions { Id = 1, Num = 1, keyword = "HVAC Services", UserId = 0, TwilioNum = "" },
-                new IvrOptions { Id = 2, Num = 2, keyword = "Plumbing Repair", UserId = 0, TwilioNum = "" },
-                new IvrOptions { Id = 3, Num = 3, keyword = "Electrical Work", UserId = 0, TwilioNum = "" },
-                new IvrOptions { Id = 4, Num = 4, keyword = "Appliance Repair", UserId = 0, TwilioNum = "" },
-                new IvrOptions { Id = 5, Num = 5, keyword = "General Maintenance", UserId = 0, TwilioNum = "" }
-            );
+            //modelBuilder.Entity<IvrOptions>().HasData(
+            //    new IvrOptions { Id = 1, Num = 1, keyword = "HVAC Services", UserId = 0, TwilioNum = "" },
+            //    new IvrOptions { Id = 2, Num = 2, keyword = "Plumbing Repair", UserId = 0, TwilioNum = "" },
+            //    new IvrOptions { Id = 3, Num = 3, keyword = "Electrical Work", UserId = 0, TwilioNum = "" },
+            //    new IvrOptions { Id = 4, Num = 4, keyword = "Appliance Repair", UserId = 0, TwilioNum = "" },
+            //    new IvrOptions { Id = 5, Num = 5, keyword = "General Maintenance", UserId = 0, TwilioNum = "" }
+            //);
         }
     }
 }
