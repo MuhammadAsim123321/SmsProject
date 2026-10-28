@@ -208,7 +208,23 @@ namespace SendSmsCallAlerts.Controllers
                 return NotFound();
             }
 
+            ViewBag.ExistingImageNames = await GetExistingImageNames(scheduler.Id);
             return View(scheduler);
+        }
+
+        private async Task<List<string>> GetExistingImageNames(int schedulerId)
+        {
+            var images = await _context.MmsLinkss
+                .Where(image => image.SchedulerId == schedulerId && image.SmsId == 0)
+                .Select(image => new { image.FileName, image.Location })
+                .ToListAsync();
+
+            return images
+                .Select(image => !string.IsNullOrWhiteSpace(image.FileName)
+                    ? image.FileName
+                    : Path.GetFileName(image.Location))
+                .Where(fileName => !string.IsNullOrWhiteSpace(fileName))
+                .ToList();
         }
 
 
@@ -276,6 +292,7 @@ namespace SendSmsCallAlerts.Controllers
                 ViewBag.ErMsg = "Could not save the scheduler: " + ex.Message;
                 ViewBag.TimeToRunList = await _context.TimeToRun.ToListAsync();
                 ViewBag.RunFromList = await _context.RunFrom.ToListAsync();
+                ViewBag.ExistingImageNames = await GetExistingImageNames(id);
                 return View(scheduler);
             }
 

@@ -40,6 +40,73 @@ namespace SendSmsCallAlerts.Services
         // =====================================================================
         // READ: contact + its jobs (modal)
         // =====================================================================
+
+        /// <summary>
+        /// Load the contact view keyed by an incoming SMS id.
+        /// - LinkedJob  : the single job whose SourceSmsId == smsId (null if none).
+        /// - AllJobs    : every job for the contact, newest-first (used by the history popup).
+        /// </summary>
+        public async Task<ContactView> GetContactViewBySmsAsync(int smsId)
+        {
+            // resolve the message and its sender's phone number
+            var sms = await _db.SmsDetails.AsNoTracking().FirstOrDefaultAsync(s => s.Id == smsId);
+            if (sms == null) return new ContactView { Found = false };
+
+            var phone = sms.fromNum ?? "";
+            var contact = await _db.ContactDetail.AsNoTracking().FirstOrDefaultAsync(c => c.PhoneNumber == phone);
+            if (contact == null) return new ContactView { Found = false };
+
+            // all jobs for the customer, newest first
+            var allJobs = await _db.Jobs.AsNoTracking()
+                .Include(j => j.Category)
+                .Include(j => j.Technician)
+                .Include(j => j.ScheduledJobs).ThenInclude(p => p.Scheduler)
+                .Where(j => j.ContactDetailId == contact.Id)
+                .OrderByDescending(j => j.StartAt)
+                .ToListAsync();
+
+            var now = _clock.BusinessNow;
+
+            JobView? MapJob(Job j) => new JobView
+            {
+                Id = j.Id,
+                CategoryId = j.CategoryId,
+                CategoryName = j.Category?.keyword ?? "",
+                TechnicianId = j.TechnicianId,
+                TechnicianName = j.Technician?.FullName ?? "",
+                StartAt = j.StartAt.ToString("yyyy-MM-dd'T'HH:mm"),
+                EndAt = j.EndAt.ToString("yyyy-MM-dd'T'HH:mm"),
+                DistanceMiles = j.DistanceMiles,
+                Status = j.Status,
+                EffectiveStatus = j.GetEffectiveStatus(now),
+                Plans = j.ScheduledJobs.OrderBy(p => p.Id).Select(p => new PlanView
+                {
+                    Id = p.Id,
+                    SchedulerId = p.SchedulerId,
+                    SchedulerName = p.Scheduler?.name ?? "",
+                    CustomDate = p.CustomDate?.ToString("yyyy-MM-dd"),
+                    CustomHours = p.CustomHours,
+                    IsPaused = p.IsPaused,
+                    LastExecutedAt = p.LastExecutedAt
+                }).ToList()
+            };
+
+            // the job directly linked to this message (may be null)
+            var linkedJobEntity = allJobs.FirstOrDefault(j => j.SourceSmsId == smsId);
+
+            return new ContactView
+            {
+                Found = true,
+                Name = contact.Name ?? "",
+                Email = contact.Email ?? "",
+                StreetAddress = contact.StreetAddress ?? "",
+                CityState = contact.CityState ?? "",
+                ZipCode = contact.ZipCode ?? "",
+                LinkedJob = linkedJobEntity != null ? MapJob(linkedJobEntity) : null,
+                Jobs = allJobs.Select(MapJob).ToList()!
+            };
+        }
+
         public async Task<ContactView> GetContactViewAsync(string phone)
         {
             phone = (phone ?? "").Trim();

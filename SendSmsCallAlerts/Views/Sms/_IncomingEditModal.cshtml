@@ -1,17 +1,40 @@
 ﻿@* ===========================================================================
    Update modal: 1 Contact | 2 Job | 3 Scheduler, ONE Update button.
-   Drop-in replacement for the old <div class="modal fade" id="editModal"> block.
-   Uses the sg-inbox-* layout classes from your latest IncomingLogs page.
+   One job per message: job section shows the message-linked job (or blank for
+   a new job). "New Job" is disabled once a job exists for this message.
+   History button opens a separate popup listing all jobs for the customer.
    =========================================================================== *@
 <style>
     #editModal .section-card { border: 1px solid #dbe7f1; border-radius: 8px; margin-bottom: 14px; }
-    #editModal .section-card > .section-head { background: #eef6fb; padding: 8px 14px; font-weight: 600; color: #2c5b7a; border-bottom: 1px solid #dbe7f1; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
+    #editModal .section-card > .section-head { background: #eef6fb; padding: 8px 14px; font-weight: 600; color: #2c5b7a; border-bottom: 1px solid #dbe7f1; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     #editModal .section-card > .section-body { padding: 14px; }
     #editModal .section-body label { font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; }
-    .job-chip { border: 1px solid #b9d3e6; background: #fff; border-radius: 20px; padding: 4px 12px; font-size: 0.8rem; cursor: pointer; }
-    .job-chip:hover { background: #e8f4fc; }
-    .job-chip.active { background: #70b3db; color: #fff; border-color: #5a9fc7; }
-    .job-chip.cancelled { text-decoration: line-through; opacity: .7; }
+
+    /* Job status badge */
+    #jobStatusBadge { font-size: 0.78rem; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+    #jobStatusBadge.badge-scheduled  { background: #dbeafe; color: #1e40af; }
+    #jobStatusBadge.badge-confirmed  { background: #dcfce7; color: #166534; }
+    #jobStatusBadge.badge-cancelled  { background: #fee2e2; color: #991b1b; }
+    #jobStatusBadge.badge-completed  { background: #f3f4f6; color: #374151; }
+
+    /* New Job button disabled state */
+    #btnNewJob:disabled, #btnNewJob.btn-blurred {
+        opacity: 0.4;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    /* History popup table */
+    #jobHistoryModal .modal-dialog { max-width: 760px; }
+    #tblJobHistory { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    #tblJobHistory thead th { background: #70b3db; color: #fff; padding: 7px 10px; white-space: nowrap; }
+    #tblJobHistory tbody td { padding: 6px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; }
+    #tblJobHistory tbody tr:hover { background: #f0f9ff; }
+    .hist-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+    .hist-scheduled { background:#dbeafe; color:#1e40af; }
+    .hist-confirmed  { background:#dcfce7; color:#166534; }
+    .hist-cancelled  { background:#fee2e2; color:#991b1b; }
+    .hist-completed  { background:#f3f4f6; color:#374151; }
 </style>
 
 <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
@@ -59,11 +82,21 @@
                     @* ---------- 2. JOB ---------- *@
                     <div class="section-card" id="jobCard">
                         <div class="section-head">
-                            <span><i class="fa fa-screwdriver-wrench me-2"></i>2. Job</span>
-                            <button type="button" id="btnNewJob" class="btn btn-sm btn-outline-primary"><i class="fa fa-plus me-1"></i>New job</button>
+                            <span>
+                                <i class="fa fa-screwdriver-wrench me-2"></i>2. Job
+                                <span id="jobStatusBadge" class="ms-2" style="display:none;"></span>
+                            </span>
+                            <div class="d-flex gap-2 align-items-center">
+                                @* History button: shown only when the customer has any jobs *@
+                                <button type="button" id="btnJobHistory" class="btn btn-sm btn-outline-secondary" style="display:none;" title="View all jobs for this customer">
+                                    <i class="fa fa-clock-rotate-left me-1"></i>History
+                                </button>
+                                <button type="button" id="btnNewJob" class="btn btn-sm btn-outline-primary" title="Add a new job for this message">
+                                    <i class="fa fa-plus me-1"></i>New Job
+                                </button>
+                            </div>
                         </div>
                         <div class="section-body">
-                            <div id="jobChips" class="d-flex flex-wrap gap-2 mb-2"></div>
                             <div id="jobMode" class="small text-muted mb-3"></div>
                             <div class="row g-3">
                                 <div class="col-md-6">
@@ -148,6 +181,43 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 <button type="button" id="btnUpdate" class="btn btn-primary" disabled>Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ====================================================================
+   Job History Popup — shows all jobs for the customer, newest first
+   ==================================================================== *@
+<div class="modal fade" id="jobHistoryModal" tabindex="-1" aria-hidden="true" style="z-index:1060;">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:760px;">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#eef6fb;">
+                <h6 class="modal-title"><i class="fa fa-clock-rotate-left me-2"></i>Job History — <span id="histCustomerName"></span></h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="histSpinner" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>
+                <div id="histContent" style="display:none;">
+                    <table id="tblJobHistory" class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Category</th>
+                                <th>Technician</th>
+                                <th>Start</th>
+                                <th>End</th>
+                                <th>Status</th>
+                                <th>Scheduler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="histTbody"></tbody>
+                    </table>
+                </div>
+                <div id="histEmpty" class="text-center text-muted py-4" style="display:none;">No jobs on record for this customer.</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>

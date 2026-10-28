@@ -763,16 +763,40 @@ namespace SendSmsCallAlerts.Controllers
         // MODAL: LOAD + SAVE (all rules live in JobService)
         // =====================================================================
         [HttpGet]
-        public async Task<IActionResult> GetContactDetailsByPhone(string phoneNumber)
+        public async Task<IActionResult> GetContactDetailsByPhone(string phoneNumber, int? smsId = null)
         {
             try
             {
-                var view = await _jobService.GetContactViewAsync(phoneNumber);
-                return Json(view);
+                // If an incoming smsId is given, use the message-centric lookup
+                // (returns the job linked via SourceSmsId + all jobs for history).
+                if (smsId.HasValue && smsId.Value > 0)
+                {
+                    var view = await _jobService.GetContactViewBySmsAsync(smsId.Value);
+                    return Json(view);
+                }
+
+                // Fallback: outgoing rows (no smsId) load by phone number
+                var viewByPhone = await _jobService.GetContactViewAsync(phoneNumber);
+                return Json(viewByPhone);
             }
             catch (Exception ex)
             {
                 return Json(new { found = false, error = ex.Message });
+            }
+        }
+
+        /// <summary>Returns all jobs for a customer (by phone), newest first — drives the history popup.</summary>
+        [HttpGet]
+        public async Task<IActionResult> GetJobHistory(string phoneNumber)
+        {
+            try
+            {
+                var view = await _jobService.GetContactViewAsync(phoneNumber);
+                return Json(new { success = true, jobs = view.Jobs });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
             }
         }
 

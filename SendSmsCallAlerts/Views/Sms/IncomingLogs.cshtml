@@ -389,165 +389,11 @@
     });
 
     $('#tblRPM tbody').on('click', 'tr', function () {
-        var data = RpmDatatable.row(this).data();
-        if (!data) return;
-        currentRowData = data;
-
-        var isOutgoing = (data.smsDirection || "").indexOf("Outgoing") === 0;
-        $('#mSmsDirection').val(data.smsDirection);
-        $('#mFromNum').val(data.fromNum);
-        $('#mOriginalFromNum').val(data.fromNum);
-        $('#mOriginalToNum').val(data.toNum);
-        $('#mSchedulerId').val(data.schedulerId || 0);
-
-        $('#customDateFieldContainer').hide();
-        $('#customDaysHoursContainer').hide();
-        $('#mCustomDate').val('');
-        $('#mCustomDays').val('');
-        $('#mCustomHoursVal').val('');
-        $('#mTechnician').val('');
-        $('#mJobBookDate').val('');
-        $('#mJobCompletedDate').val('');
-        $('#technicianAvailabilityInfo').text('');
-        window.assignedTechnicianId = null;
-        window.currentCategoryId = null;
-
-        if (isOutgoing) { 
-            $('#jobScheduleSection').hide(); 
-            $('#outgoingAlert').show(); 
-            $('#technicianSection').hide();
-        }
-        else { 
-            $('#jobScheduleSection').show(); 
-            $('#outgoingAlert').hide();
-            $('#technicianSection').show();
-        }
-
-        $.get("/Sms/GetContactDetailsByPhone", { phoneNumber: data.fromNum }, function (res) {
-            $('#activeJobsContainer').empty();
-            if (res.success && res.found) {
-                $('#mName').val(res.name || "");
-                $('#mEmail').val(res.email || "");
-                $('#mStreetAddress').val(res.streetAddress || "");
-                $('#mCityState').val(res.cityState || "");
-                $('#mZipCode').val(res.zipCode || "");
-                
-                // Store values
-                window.currentCustomerZip = res.zipCode || "";
-                window.assignedTechnicianId = res.assignedTechnicianId || null;
-                window.currentCategoryId = res.categoryId || null;
-                
-                console.log('Contact loaded:', {
-                    technicianId: window.assignedTechnicianId,
-                    categoryId: window.currentCategoryId,
-                    zip: window.currentCustomerZip
-                });
-                
-                // PRE-SELECT CATEGORY if it exists
-                if (res.categoryId) {
-                    $('#mCategory').val(res.categoryId);
-                }
-                
-                // Show assigned technician indicator
-                if (res.assignedTechnicianId && res.assignedTechnicianName) {
-                    $('#currentTechnicianInfo').html(
-                        '<i class="fa fa-check-circle text-success"></i> <strong style="color: #28a745;">Currently assigned to: ' + 
-                        res.assignedTechnicianName + '</strong>'
-                    );
-                } else {
-                    $('#currentTechnicianInfo').html('');
-                }
-                
-                if (!isOutgoing && res.activeJobs && res.activeJobs.length > 0) {
-                    res.activeJobs.forEach(function (job) {
-                        $('#activeJobsContainer').append(
-                            '<div class="active-job-tag">' + job.schedulerName +
-                            '<i class="fa-solid fa-times-circle" onclick="removeActiveJob(' + job.jobId + ', this)"></i></div>'
-                        );
-                    });
-                }
-            } else {
-                $('#mName').val(data.name === "N/A" ? "" : data.name);
-                $('#mEmail').val(data.email === "N/A" ? "" : data.email);
-                $('#mStreetAddress').val("");
-                $('#mCityState').val("");
-                $('#mZipCode').val("");
-                window.currentCustomerZip = "";
-                window.assignedTechnicianId = null;
-                window.currentCategoryId = null;
-            }
-            
-            $('#btnUpdate').prop('disabled', true);
-            $('#editModal').modal('show');
-            
-            // Trigger category change to load technicians immediately after modal shows
-            setTimeout(function() {
-                var categoryId = $('#mCategory').val();
-                if (categoryId) {
-                    console.log('Calling handleCategoryChange with category:', categoryId);
-                    handleCategoryChange();
-                }
-            }, 300);
-        });
+        // Handled by _IncomingEditScripts.cshtml
     });
 
-    $('.m-input').on('input change', function () { $('#btnUpdate').prop('disabled', false); });
-
-    $('#btnUpdate').click(function () {
-        var days        = parseInt($('#mCustomDays').val())     || 0;
-        var hrs         = parseInt($('#mCustomHoursVal').val()) || 0;
-        var customHours = (days * 24) + hrs;
-
-        var model = {
-            fromNum:          $('#mOriginalFromNum').val(),
-            smsDirection:     $('#mSmsDirection').val(),
-            name:             $('#mName').val(),
-            email:            $('#mEmail').val(),
-            streetAddress:    $('#mStreetAddress').val(),
-            cityState:        $('#mCityState').val(),
-            zipCode:          $('#mZipCode').val(),
-            category:         $('#mCategory').val(),
-            schedulerId:      $('#mSchedularTemplate').val(),
-            jobBookDate:      $('#mJobBookDate').val(),
-            jobCompletedDate: $('#mJobCompletedDate').val(),
-            customDate:       $('#mCustomDate').val(),
-            customHours:      customHours > 0 ? customHours : null,
-            technicianId:     $('#mTechnician').val()
-        };
-        var $btn = $(this);
-        $btn.prop('disabled', true);
-        $.post("/SMS/UpdateSmsDetails", model, function (res) {
-            $btn.prop('disabled', false);
-            if (res.success) {
-                $('#editModal').modal('hide');
-                showResult("Success", res.isOutgoing ? (res.message || "Contact updated.") : "Details updated successfully.", "text-success");
-                RpmDatatable.ajax.reload(null, false);
-            } else {
-                showResult("Update Failed", res.message || "Unknown error.", "text-danger");
-            }
-        });
-    });
-
-    function handleTemplateChange() {
-        var selectedOption = $('#mSchedularTemplate option:selected');
-        var runFromId  = parseInt(selectedOption.attr('data-runfromid'),  10);
-        var hourCount  = parseInt(selectedOption.attr('data-hourcount'),  10);
-
-        if (runFromId === 2) { $('#customDateFieldContainer').show(); }
-        else { $('#customDateFieldContainer').hide(); $('#mCustomDate').val(''); }
-
-        if (hourCount === -1) { $('#customDaysHoursContainer').show(); }
-        else { $('#customDaysHoursContainer').hide(); $('#mCustomDays').val(''); $('#mCustomHoursVal').val(''); }
-    }
-
-    function removeActiveJob(jobId, element) {
-        if (confirm("Remove this scheduler?")) {
-            $.post("/Sms/DeleteScheduledJob", { jobId: jobId }, function (res) {
-                if (res.success) { $(element).parent().fadeOut(); RpmDatatable.ajax.reload(null, false); }
-                else { alert("Error removing job."); }
-            });
-        }
-    }
+    // Handlers for modal inputs, btnUpdate, schedulerTemplate, technician, etc.
+    // are all in _IncomingEditScripts.cshtml — do not duplicate them here.
 
     $('#btnShowConfirm').click(function () {
         if (!$('#dFromDate').val() || !$('#dToDate').val()) {
@@ -576,87 +422,19 @@
     }
 
     function handleCategoryChange() {
-        var previousTech = $('#mTechnician').val();
-        var categoryId = $('#mCategory').val();
-        var customerZip = ($('#mZipCode').val() || '').trim();
-        var jobDate = $('#mJobBookDate').val();   // "2026-10-23T10:00" or ""
-        window.currentCategoryId = categoryId;
-
-        if (!categoryId) { $('#mTechnician').html('<option value="">-- Select Category First --</option>'); showTechnicianHint(); return; }
-        if (!customerZip) { $('#mTechnician').html('<option value="">-- Enter customer ZIP first --</option>'); showTechnicianHint(); return; }
-
-        $('#mTechnician').html('<option value="">Loading technicians...</option>');
-
-        var query = { customerZip: customerZip, categoryId: categoryId };
-        if (jobDate) query.jobDateTime = jobDate;
-
-        $.get('/Technicians/GetFilteredTechnicians', query, function (technicians) {
-            var $ddl = $('#mTechnician').empty();
-            if (!Array.isArray(technicians)) { $ddl.append('<option value="">Error loading technicians</option>'); return; }
-            if (technicians.length === 0) { $ddl.append('<option value="">No technicians for this category</option>'); return; }
-
-            $ddl.append('<option value="">-- Select a Technician --</option>');
-            technicians.forEach(function (t) {
-                var text = t.label + (t.isAvailable ? '' : ' - NOT available at selected time');
-                $('<option></option>').val(t.id).text(text)
-                    .attr('data-summary', t.availabilitySummary || '')
-                    .attr('data-available', t.isAvailable ? '1' : '0')
-                    .attr('data-message', t.availabilityMessage || '')
-                    .appendTo($ddl);
-            });
-
-            var keep = previousTech || window.assignedTechnicianId;
-            if (keep) $ddl.val(keep);
-            showTechnicianHint();
-        });
+        // Handled by _IncomingEditScripts.cshtml
     }
     function showTechnicianHint() {
-        var $opt = $('#mTechnician option:selected');
-        var $info = $('#technicianAvailabilityInfo');
-        if (!$opt.val()) { $info.text('').removeClass('text-danger text-muted'); return; }
-
-        var text = 'Working hours: ' + ($opt.attr('data-summary') || 'Not configured');
-        if ($opt.attr('data-available') === '0') {
-            text += ' | ' + ($opt.attr('data-message') || 'Not available at the selected time.');
-            $info.text(text).removeClass('text-muted').addClass('text-danger');
-        } else {
-            $info.text(text).removeClass('text-danger').addClass('text-muted');
-        }
+        // Handled by _IncomingEditScripts.cshtml
     }
 
-    $('#mTechnician').on('change', showTechnicianHint);
-    $('#mJobBookDate').on('change', handleCategoryChange);  // re-check availability for the new date/time
-    $('#mZipCode').on('change', handleCategoryChange);      // reload when ZIP is edited
+    $('#mTechnician').on('change', function() {});
+    $('#mJobBookDate').on('change', function() {});
+    $('#mZipCode').on('change', function() {});
 
     // NEW: Assign technician button handler
     $('#btnAssignTechnician').click(function() {
-        var technicianId = $('#mTechnician').val();
-        var phoneNumber = $('#mFromNum').val();
-        
-        if (!technicianId) {
-            alert('Please select a technician first.');
-            return;
-        }
-        
-        var $btn = $(this);
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Assigning...');
-        
-        $.post('/Sms/AssignTechnician', { 
-            phoneNumber: phoneNumber, 
-            technicianId: technicianId 
-        }, function(res) {
-            $btn.prop('disabled', false).html('<i class="fa fa-user-check"></i> Assign');
-            
-            if (res.success) {
-                $('#currentTechnicianInfo').html(
-                    '<i class="fa fa-check-circle text-success"></i> Currently assigned to: <strong>' + 
-                    res.technicianName + '</strong>'
-                );
-                showResult("Success", res.message, "text-success");
-            } else {
-                alert('Error: ' + res.message);
-            }
-        });
+        // Handled by _IncomingEditScripts.cshtml
     });
 
     function openAttachments(id) { window.open("@Url.Action("OpenAttachments", "Sms")?id=" + id, '_blank'); }
