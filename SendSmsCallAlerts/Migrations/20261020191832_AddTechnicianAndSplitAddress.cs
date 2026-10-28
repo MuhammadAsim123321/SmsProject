@@ -72,17 +72,7 @@ namespace SendSmsCallAlerts.Migrations
                     table.PrimaryKey("PK_Technicians", x => x.Id);
                 });
 
-            migrationBuilder.InsertData(
-                table: "IvrOption",
-                columns: new[] { "Id", "Num", "TwilioNum", "UserId", "keyword" },
-                values: new object[,]
-                {
-                    { 1, 1, "", 0, "HVAC Services" },
-                    { 2, 2, "", 0, "Plumbing Repair" },
-                    { 3, 3, "", 0, "Electrical Work" },
-                    { 4, 4, "", 0, "Appliance Repair" },
-                    { 5, 5, "", 0, "General Maintenance" }
-                });
+            
 
             migrationBuilder.CreateIndex(
                 name: "IX_ContactDetail_AssignedTechnicianId",
@@ -111,30 +101,7 @@ namespace SendSmsCallAlerts.Migrations
                 name: "IX_ContactDetail_AssignedTechnicianId",
                 table: "ContactDetail");
 
-            migrationBuilder.DeleteData(
-                table: "IvrOption",
-                keyColumn: "Id",
-                keyValue: 1);
-
-            migrationBuilder.DeleteData(
-                table: "IvrOption",
-                keyColumn: "Id",
-                keyValue: 2);
-
-            migrationBuilder.DeleteData(
-                table: "IvrOption",
-                keyColumn: "Id",
-                keyValue: 3);
-
-            migrationBuilder.DeleteData(
-                table: "IvrOption",
-                keyColumn: "Id",
-                keyValue: 4);
-
-            migrationBuilder.DeleteData(
-                table: "IvrOption",
-                keyColumn: "Id",
-                keyValue: 5);
+            
 
             migrationBuilder.DropColumn(
                 name: "CityState",
