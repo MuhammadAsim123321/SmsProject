@@ -261,6 +261,18 @@ namespace SendSmsCallAlerts.Migrations
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
 
+            // Remove invalid job references, not SMS records.
+            migrationBuilder.Sql(
+                """
+                UPDATE s
+                SET s.ScheduledJobId = NULL
+                FROM dbo.SmsDetails AS s
+                LEFT JOIN dbo.AllScheduledJobs AS j
+                    ON j.Id = s.ScheduledJobId
+                WHERE s.ScheduledJobId IS NOT NULL
+                  AND j.Id IS NULL;
+                """);
+
             migrationBuilder.AddForeignKey(
                 name: "FK_SmsDetails_AllScheduledJobs_ScheduledJobId",
                 table: "SmsDetails",
@@ -444,6 +456,8 @@ namespace SendSmsCallAlerts.Migrations
                 name: "IX_JobSchedule_ContactDetailId",
                 table: "JobSchedule",
                 column: "ContactDetailId");
+
+
 
             migrationBuilder.AddForeignKey(
                 name: "FK_AllScheduledJobs_ContactDetail_ContactDetailId",
