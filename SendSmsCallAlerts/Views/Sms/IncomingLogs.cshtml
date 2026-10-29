@@ -56,17 +56,17 @@
         padding: 4px 8px;
     }
 
-    .dataTables_scrollBody {
-        overflow-x: auto !important;
+    .dataTables_wrapper {
+        width: 100%;
     }
 
-    .dataTables_wrapper {
+    .sg-table-x {
+        overflow-x: auto;
         width: 100%;
     }
 
     #tblRPM_wrapper {
         width: 100%;
-        overflow-x: hidden;
     }
 
     .action-btns { white-space: nowrap; }
@@ -231,33 +231,13 @@
     }
 
     var RpmDatatable = $('#tblRPM').DataTable({
-        "autoWidth": false,
-        "scrollX": true,
         "sAjaxSource": "/SMS/GetData",
         "sServerMethod": "POST",
         "bServerSide": false,
         "bProcessing": true,
         "order": [],
         "columnDefs": [
-            { "width": "110px", "targets": 0 },   // From
-            { "width": "200px", "targets": 1 },   // Body
-            { "width": "50px",  "targets": 2 },   // Media
-            { "width": "70px",  "targets": 3 },   // Direction
-            { "width": "80px",  "targets": 4 },   // Name
-            { "width": "80px",  "targets": 5 },   // Street Address
-            { "width": "100px", "targets": 6 },   // City/State
-            { "width": "80px",  "targets": 7 },   // ZIP Code
-            { "width": "120px", "targets": 8 },   // Email
-            { "width": "60px",  "targets": 9 },   // Category
-            { "width": "70px",  "targets": 10 },  // Scheduler
-            { "width": "90px",  "targets": 11 },  // Job Booked Date
-            { "width": "100px", "targets": 12 },  // Job Booked Time
-            { "width": "100px", "targets": 13 },  // Incoming Date
-            { "width": "100px", "targets": 14 },  // Incoming Time
-            { "width": "100px", "targets": 15 },  // Responded Date
-            { "width": "100px", "targets": 16 },  // Responded Time
-            { "width": "90px",  "targets": 17 },  // Waiting Time
-            { "width": "195px", "targets": 18, "orderable": false }  // Actions
+            { "orderable": false, "targets": 18 }  // Actions
         ],
         "language": {
             "emptyTable": "No record found.",
@@ -274,6 +254,7 @@
             }
         },
         "initComplete": function () {
+            $('#tblRPM').wrap('<div class="sg-table-x"></div>');
             $.get("/SMS/GetIvrOptions", function (data) {
                 var ddl = $("#mCategory");
                 ddl.find('option:not(:first)').remove();
