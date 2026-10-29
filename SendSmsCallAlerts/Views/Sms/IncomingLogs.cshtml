@@ -278,7 +278,9 @@
                 var ddl = $("#mCategory");
                 ddl.find('option:not(:first)').remove();
                 $.each(data, function (i, item) {
-                    ddl.append($("<option></option>").val(item.id).html(item.keyword));
+                    ddl.append($("<option></option>").val(item.id)
+                        .attr('data-asks-donor', item.asksDonorCarpet ? '1' : '0')
+                        .html(item.keyword));
                 });
             });
             $.get("/Sms/GetSchedulers", function (data) {

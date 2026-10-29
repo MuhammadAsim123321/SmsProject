@@ -386,13 +386,15 @@ namespace SendSmsCallAlerts.Controllers
         [HttpGet]
         public IActionResult GetIvrOptions()
         {
-            var options = _context.IvrOption
+            var options = _context.IvrOption.AsNoTracking()
+                .Select(i => new { i.Id, i.keyword })
+                .ToList()
                 .Select(i => new
                 {
                     i.Id,
-                    i.keyword
-                })
-                .ToList();
+                    i.keyword,
+                    asksDonorCarpet = JobService.IsDonorCarpetCategory(i.keyword)
+                });
 
             return Json(options);
         }

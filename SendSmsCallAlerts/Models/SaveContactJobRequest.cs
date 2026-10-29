@@ -34,6 +34,10 @@
         public DateTime? EndAt { get; set; }
         /// <summary>Scheduled / Confirmed / Cancelled</summary>
         public string? Status { get; set; }
+        /// <summary>Quoted amount in USD (max 2 decimals). Null = not quoted.</summary>
+        public decimal? QuotedAmount { get; set; }
+        /// <summary>Donor-carpet answer. Only used when the category asks the question.</summary>
+        public bool? HasDonorCarpet { get; set; }
     }
 
     public class SchedulerSection
@@ -82,6 +86,8 @@
         public string StartAt { get; set; } = "";
         public string EndAt { get; set; } = "";
         public double? DistanceMiles { get; set; }
+        public decimal? QuotedAmount { get; set; }
+        public bool? HasDonorCarpet { get; set; }
         /// <summary>Stored value: Scheduled / Confirmed / Cancelled</summary>
         public string Status { get; set; } = "";
         /// <summary>Includes the calculated "Completed"</summary>

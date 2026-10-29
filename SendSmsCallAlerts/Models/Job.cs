@@ -44,6 +44,11 @@ namespace SendSmsCallAlerts.Models
 
         /// <summary>Driving miles customer ZIP to technician ZIP, calculated on the server.</summary>
         public double? DistanceMiles { get; set; }
+        /// <summary>Amount quoted to the customer (USD). Optional.</summary>
+        [Column(TypeName = "decimal(10,2)")]
+        public decimal? QuotedAmount { get; set; }
+        /// <summary>Only asked for the "Carpet Repair" category. true = Yes, false = No, null = not applicable.</summary>
+        public bool? HasDonorCarpet { get; set; }
 
         [Required, StringLength(20)]
         public string Status { get; set; } = JobStatus.Scheduled;
