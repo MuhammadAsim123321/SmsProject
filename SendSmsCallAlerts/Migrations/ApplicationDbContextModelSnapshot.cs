@@ -248,7 +248,7 @@ namespace SendSmsCallAlerts.Migrations
                             NotificationType = "TechnicianAvailabilityRequest",
                             RecipientType = "Technician",
                             SendTime = new TimeSpan(0, 17, 0, 0, 0),
-                            TemplateBody = "Hi {technicianFirstName}, please reply with your availability for the week of {weekStart} to {weekEnd}.\n\nExample: MON 9AM-5PM, TUE OFF\n\nThank you, {companyName}"
+                            TemplateBody = "Hi {technicianFirstName}, please reply with your availability for the week of {weekStart} to {weekEnd}.\nExample: MON 9AM-5PM, TUE OFF\nThank you, {companyName}"
                         },
                         new
                         {
@@ -260,7 +260,7 @@ namespace SendSmsCallAlerts.Migrations
                             NotificationType = "TechnicianDailyJobSummary",
                             RecipientType = "Technician",
                             SendTime = new TimeSpan(0, 17, 0, 0, 0),
-                            TemplateBody = "Hi {technicianFirstName}, you have {jobCount} job(s) tomorrow ({jobDate}):\n\n{jobsList}\n\n- {companyName}"
+                            TemplateBody = "Hi {technicianFirstName}, please confirm tomorrow's jobs ({jobDate}):\n{jobsList}\nReply 'C 123' to confirm or call {officePhone}."
                         },
                         new
                         {
@@ -271,8 +271,8 @@ namespace SendSmsCallAlerts.Migrations
                             Name = "Customer Next-Day Job Reminder",
                             NotificationType = "CustomerJobReminder",
                             RecipientType = "Customer",
-                            SendTime = new TimeSpan(0, 17, 0, 0, 0),
-                            TemplateBody = "Hi {customerName}, this is a reminder from {companyName}: your {category} appointment is scheduled for tomorrow, {jobDate}, at {jobTime}. Your technician will be {technicianName}. Reply STOP to opt out."
+                            SendTime = new TimeSpan(0, 19, 0, 0, 0),
+                            TemplateBody = "Hi {customerName}, reminder from {companyName}: your {category} appointment is tomorrow, {jobDate}, at {jobTime}. Technician: {technicianName}. Reply STOP to opt out."
                         });
                 });
 
@@ -929,6 +929,46 @@ namespace SendSmsCallAlerts.Migrations
                     b.ToTable("TechnicianAvailabilities");
                 });
 
+            modelBuilder.Entity("SendSmsCallAlerts.Models.TechnicianJobList", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("JobDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("JobId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("JobStartAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("SentAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TechnicianId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JobDate")
+                        .HasDatabaseName("IX_TechnicianJobLists_JobDate");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("TechnicianId", "Position")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_TechnicianJobLists_Tech_Position");
+
+                    b.ToTable("TechnicianJobLists");
+                });
+
             modelBuilder.Entity("SendSmsCallAlerts.Models.TimeToRun", b =>
                 {
                     b.Property<int>("Id")
@@ -1184,6 +1224,25 @@ namespace SendSmsCallAlerts.Migrations
                         .HasForeignKey("TechnicianId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Technician");
+                });
+
+            modelBuilder.Entity("SendSmsCallAlerts.Models.TechnicianJobList", b =>
+                {
+                    b.HasOne("SendSmsCallAlerts.Models.Job", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SendSmsCallAlerts.Models.Technician", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Job");
 
                     b.Navigation("Technician");
                 });

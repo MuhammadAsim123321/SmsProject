@@ -45,6 +45,7 @@ namespace SendSmsCallAlerts.Data
 
         // Tasks 7-9: delivery record of every SMS (sent / pending / failed)
         public DbSet<SmsLog> SmsLogs { get; set; }
+        public DbSet<TechnicianJobList> TechnicianJobLists { get; set; }
 
         // REMOVED: DbSet<JobSchedule> JobSchedule (legacy table, 0 rows)
 
@@ -126,7 +127,7 @@ namespace SendSmsCallAlerts.Data
                         Frequency = SmsFrequencies.Weekly,
                         DayOfWeek = 0, // Sunday
                         SendTime = new TimeSpan(17, 0, 0),
-                        TemplateBody = "Hi {technicianFirstName}, please reply with your availability for the week of {weekStart} to {weekEnd}.\n\nExample: MON 9AM-5PM, TUE OFF\n\nThank you, {companyName}",
+                        TemplateBody = "Hi {technicianFirstName}, please reply with your availability for the week of {weekStart} to {weekEnd}.\nExample: MON 9AM-5PM, TUE OFF\nThank you, {companyName}",
                         IsActive = true,
                         CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
                     },
@@ -138,7 +139,7 @@ namespace SendSmsCallAlerts.Data
                         RecipientType = RecipientTypes.Technician,
                         Frequency = SmsFrequencies.Daily,
                         SendTime = new TimeSpan(17, 0, 0),
-                        TemplateBody = "Hi {technicianFirstName}, you have {jobCount} job(s) tomorrow ({jobDate}):\n\n{jobsList}\n\n- {companyName}",
+                        TemplateBody = "Hi {technicianFirstName}, please confirm tomorrow's jobs ({jobDate}):\n{jobsList}\nReply 'C 123' to confirm or call {officePhone}.",
                         IsActive = true,
                         CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
                     },
@@ -149,8 +150,8 @@ namespace SendSmsCallAlerts.Data
                         NotificationType = NotificationTypes.CustomerJobReminder,
                         RecipientType = RecipientTypes.Customer,
                         Frequency = SmsFrequencies.Daily,
-                        SendTime = new TimeSpan(17, 0, 0),
-                        TemplateBody = "Hi {customerName}, this is a reminder from {companyName}: your {category} appointment is scheduled for tomorrow, {jobDate}, at {jobTime}. Your technician will be {technicianName}. Reply STOP to opt out.",
+                        SendTime = new TimeSpan(19, 0, 0),
+                        TemplateBody = "Hi {customerName}, reminder from {companyName}: your {category} appointment is tomorrow, {jobDate}, at {jobTime}. Technician: {technicianName}. Reply STOP to opt out.",
                         IsActive = true,
                         CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
                     });
@@ -192,7 +193,16 @@ namespace SendSmsCallAlerts.Data
                 e.HasIndex(l => l.CreatedOn).HasDatabaseName("IX_SmsLogs_CreatedOn");
                 e.HasIndex(l => l.SmsDetailId).HasDatabaseName("IX_SmsLogs_SmsDetailId");
             });
-
+            modelBuilder.Entity<TechnicianJobList>(e =>
+            {
+                e.HasOne(l => l.Technician).WithMany()
+                 .HasForeignKey(l => l.TechnicianId).OnDelete(DeleteBehavior.Cascade);
+                e.HasOne(l => l.Job).WithMany()
+                 .HasForeignKey(l => l.JobId).OnDelete(DeleteBehavior.Cascade);
+                e.HasIndex(l => new { l.TechnicianId, l.Position }).IsUnique()
+                 .HasDatabaseName("UQ_TechnicianJobLists_Tech_Position");
+                e.HasIndex(l => l.JobDate).HasDatabaseName("IX_TechnicianJobLists_JobDate");
+            });
             // ---------------- lookup seeds ----------------
             modelBuilder.Entity<TimeToRun>().HasData(
                 new TimeToRun { Id = 1, Name = "Now", HourCount = 0 },

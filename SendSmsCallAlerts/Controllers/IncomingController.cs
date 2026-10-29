@@ -30,10 +30,11 @@ namespace SendSmsCallAlerts.Controllers
         private readonly ISmsGateway _smsGateway;
         private readonly ILogger<IncomingController> _logger;
         private readonly IMediaUrlFactory _mediaUrlFactory;
+        private readonly TechnicianReplyService _technicianReply;
 
         public IncomingController(ApplicationDbContext context, IWebHostEnvironment hostingEnvironment,
-     IConfiguration configuration, JobService jobService, ISmsGateway smsGateway, ILogger<IncomingController> logger,
-     IMediaUrlFactory mediaUrlFactory)
+    IConfiguration configuration, JobService jobService, ISmsGateway smsGateway, ILogger<IncomingController> logger,
+    IMediaUrlFactory mediaUrlFactory, TechnicianReplyService technicianReply)
         {
             _context = context;
             _hostingEnvironment = hostingEnvironment;
@@ -42,6 +43,7 @@ namespace SendSmsCallAlerts.Controllers
             _smsGateway = smsGateway;
             _logger = logger;
             _mediaUrlFactory = mediaUrlFactory;
+            _technicianReply = technicianReply;
         }
         private string ForwardingNumber => (_configuration["AppSettings:ForwardingNumber"] ?? "").Trim();
 
@@ -101,7 +103,11 @@ namespace SendSmsCallAlerts.Controllers
                 _context.SaveChanges();
             }
 
-            await ProcessSmsBody(smsDetail);
+            bool handledByTechnician = false;
+            try { handledByTechnician = await _technicianReply.TryHandleAsync(smsDetail); }
+            catch (Exception ex) { _logger.LogError(ex, "Technician reply handling failed."); }
+
+            if (!handledByTechnician) await ProcessSmsBody(smsDetail);
 
             try
             {
@@ -117,7 +123,7 @@ namespace SendSmsCallAlerts.Controllers
             }
             catch (Exception ex) { }
 
-            await IvrSms(smsDetail);
+            if (!handledByTechnician) await IvrSms(smsDetail);
 
             return Ok();
         }
