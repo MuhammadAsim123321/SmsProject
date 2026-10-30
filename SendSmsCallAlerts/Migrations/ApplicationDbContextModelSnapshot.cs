@@ -125,24 +125,56 @@ namespace SendSmsCallAlerts.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<DateTime>("CreatedOn").HasColumnType("datetime2");
-                    b.Property<DateTime?>("CompletedAt").HasColumnType("datetime2");
-                    b.Property<string>("Note").HasMaxLength(500).HasColumnType("nvarchar(500)");
-                    b.Property<string>("OccurrenceKey").IsRequired().HasMaxLength(60).HasColumnType("nvarchar(60)");
-                    b.Property<int>("QueuedCount").HasColumnType("int");
-                    b.Property<int>("SettingId").HasColumnType("int");
-                    b.Property<DateTime>("ScheduledForLocal").HasColumnType("datetime2");
-                    b.Property<DateTime>("ScheduledForUtc").HasColumnType("datetime2");
-                    b.Property<int>("SkippedCount").HasColumnType("int");
-                    b.Property<DateTime?>("StartedAt").HasColumnType("datetime2");
-                    b.Property<string>("Status").IsRequired().HasMaxLength(20).HasColumnType("nvarchar(20)");
-                    b.Property<int>("TotalRecipients").HasColumnType("int");
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OccurrenceKey")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<int>("QueuedCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ScheduledForLocal")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ScheduledForUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SettingId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SkippedCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("TotalRecipients")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
-                    b.HasIndex("SettingId", "ScheduledForLocal").IsUnique()
+
+                    b.HasIndex("SettingId", "ScheduledForLocal")
+                        .IsUnique()
                         .HasDatabaseName("UQ_AutomatedSmsOccurrences_Setting_Local");
+
                     b.HasIndex("Status", "ScheduledForUtc")
                         .HasDatabaseName("IX_AutomatedSmsOccurrences_Status_Utc");
+
                     b.ToTable("AutomatedSmsOccurrences");
                 });
 
@@ -392,48 +424,6 @@ namespace SendSmsCallAlerts.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("IvrOption");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Num = 1,
-                            TwilioNum = "",
-                            UserId = 0,
-                            keyword = "HVAC Services"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Num = 2,
-                            TwilioNum = "",
-                            UserId = 0,
-                            keyword = "Plumbing Repair"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Num = 3,
-                            TwilioNum = "",
-                            UserId = 0,
-                            keyword = "Electrical Work"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Num = 4,
-                            TwilioNum = "",
-                            UserId = 0,
-                            keyword = "Appliance Repair"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Num = 5,
-                            TwilioNum = "",
-                            UserId = 0,
-                            keyword = "General Maintenance"
-                        });
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.Job", b =>
@@ -458,6 +448,9 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.Property<DateTime>("EndAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("QuotedAmount")
+                        .HasColumnType("decimal(10,2)");
 
                     b.Property<int?>("SourceSmsId")
                         .HasColumnType("int");
@@ -1097,6 +1090,7 @@ namespace SendSmsCallAlerts.Migrations
                         .HasForeignKey("SettingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
                     b.Navigation("Setting");
                 });
 
@@ -1194,6 +1188,7 @@ namespace SendSmsCallAlerts.Migrations
             modelBuilder.Entity("SendSmsCallAlerts.Models.AutomatedSmsSetting", b =>
                 {
                     b.Navigation("Logs");
+
                     b.Navigation("Occurrences");
                 });
 

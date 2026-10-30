@@ -13,6 +13,7 @@
                 <li><a class="@(controller == "Sms" && action == "IncomingLogs" ? "active" : "")" asp-controller="Sms" asp-action="IncomingLogs"><i class="fa fa-inbox" aria-hidden="true"></i><span>Incoming SMS</span></a></li>
                 <li><a class="@(controller == "Conversations" ? "active" : "")" asp-controller="Conversations" asp-action="SMS"><i class="fa fa-paper-plane-o" aria-hidden="true"></i><span>Send SMS</span></a></li>
                 <li><a class="@(controller == "Sms" && action == "ScheduledJobs" ? "active" : "")" asp-controller="Sms" asp-action="ScheduledJobs"><i class="fa fa-clock-o" aria-hidden="true"></i><span>Scheduled jobs</span></a></li>
+                <li><a class="@(controller == "Sms" && action == "TechnicianJobs" ? "active" : "")" asp-controller="Sms" asp-action="TechnicianJobs"><i class="fa fa-hard-hat" aria-hidden="true"></i><span>Technician jobs</span></a></li>
                 <li class="menu-title">CALL FLOWS</li>
                 <li><a class="@(controller == "IvrOptions" ? "active" : "")" asp-controller="IvrOptions" asp-action="Index"><i class="fa fa-sitemap" aria-hidden="true"></i><span>Main options</span></a></li>
                 <li><a class="@(controller == "OptionInstructions" ? "active" : "")" asp-controller="OptionInstructions" asp-action="Index"><i class="fa fa-list-alt" aria-hidden="true"></i><span>Option instructions</span></a></li>

@@ -77,6 +77,7 @@ namespace SendSmsCallAlerts.Services
                 StartAt = j.StartAt.ToString("yyyy-MM-dd'T'HH:mm"),
                 EndAt = j.EndAt.ToString("yyyy-MM-dd'T'HH:mm"),
                 DistanceMiles = j.DistanceMiles,
+                QuotedAmount = j.QuotedAmount,
                 Status = j.Status,
                 EffectiveStatus = j.GetEffectiveStatus(now),
                 Plans = j.ScheduledJobs.OrderBy(p => p.Id).Select(p => new PlanView
@@ -332,6 +333,7 @@ namespace SendSmsCallAlerts.Services
                     job.StartAt = start!.Value;
                     job.EndAt = end!.Value;
                     job.DistanceMiles = distance;
+                    job.QuotedAmount = jj.QuotedAmount;
                     job.Status = status;
                     job.UpdatedOn = _clock.UtcNow;
                     await _db.SaveChangesAsync();   // job.Id is needed for the plan

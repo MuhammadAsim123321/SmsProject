@@ -34,6 +34,8 @@
         public DateTime? EndAt { get; set; }
         /// <summary>Scheduled / Confirmed / Cancelled</summary>
         public string? Status { get; set; }
+        /// <summary>Price quoted to the customer for this job (optional).</summary>
+        public decimal? QuotedAmount { get; set; }
     }
 
     public class SchedulerSection
@@ -82,6 +84,7 @@
         public string StartAt { get; set; } = "";
         public string EndAt { get; set; } = "";
         public double? DistanceMiles { get; set; }
+        public decimal? QuotedAmount { get; set; }
         /// <summary>Stored value: Scheduled / Confirmed / Cancelled</summary>
         public string Status { get; set; } = "";
         /// <summary>Includes the calculated "Completed"</summary>

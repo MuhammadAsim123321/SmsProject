@@ -34,6 +34,7 @@
             $('#updateForm').find('input[type=text], input[type=email], input[type=datetime-local], input[type=date], input[type=number]').val('');
             $('#updateForm').find('select').each(function () { this.selectedIndex = 0; });
             $('#mJobId, #mSourceSmsId, #mSmsDirection').val('');
+            $('#mQuotedAmount').val('');
             $('#mTechnician').html('<option value="">-- Select category first --</option>');
             $('#jobMode, #statusHint, #technicianAvailabilityInfo').text('');
             $('#customDateFieldContainer, #customDaysHoursContainer, #formError').hide();
@@ -168,6 +169,7 @@
             $('#mCategory').val(j.categoryId || '');
             $('#mStartAt').val(j.startAt);
             $('#mEndAt').val(j.endAt);
+            $('#mQuotedAmount').val(j.quotedAmount != null ? j.quotedAmount : '');
             $('#mStatus').val(j.status).prop('disabled', false);
             $('#statusHint').text(j.effectiveStatus === 'Completed' ? 'Completed automatically (end time has passed).' : '');
             $('#jobMode').text('Job #' + j.id);
@@ -191,6 +193,7 @@
             $('#mCategory').val('');
             $('#mTechnician').html('<option value="">-- Select category first --</option>');
             $('#mStartAt, #mEndAt, #mCustomDate, #mCustomDays, #mCustomHoursVal').val('');
+            $('#mQuotedAmount').val('');
             $('#mSchedularTemplate').val('');
             $('#technicianAvailabilityInfo').text('');
             handleTemplateChange();
@@ -304,7 +307,8 @@
                     technicianId: toInt($('#mTechnician').val()),
                     startAt:      $('#mStartAt').val() || null,
                     endAt:        $('#mEndAt').val()   || null,
-                    status:       $('#mStatus').val()
+                    status:       $('#mStatus').val(),
+                    quotedAmount: $('#mQuotedAmount').val() !== '' ? parseFloat($('#mQuotedAmount').val()) : null
                 },
                 scheduler: isOutgoing ? null : {
                     schedulerId: toInt($('#mSchedularTemplate').val()),

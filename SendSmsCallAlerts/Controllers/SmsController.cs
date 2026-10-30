@@ -490,6 +490,79 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // =====================================================================
+        // TECHNICIAN JOBS PAGE (sorted by technician, with customer + job details)
+        // =====================================================================
+        public IActionResult TechnicianJobs()
+        {
+            return View();
+        }
+
+        /// <summary>
+        /// Returns all jobs grouped by technician, sorted by technician name then job start time.
+        /// Includes customer details, quoted amount, distance and job order number.
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetTechnicianJobsData(string? status, string? dateFrom, string? dateTo)
+        {
+            try
+            {
+                var query = _context.Jobs.AsNoTracking()
+                    .Include(j => j.ContactDetail)
+                    .Include(j => j.Technician)
+                    .Include(j => j.Category)
+                    .AsQueryable();
+
+                // optional date filter
+                if (DateTime.TryParse(dateFrom, out var dFrom))
+                    query = query.Where(j => j.StartAt >= dFrom.Date);
+                if (DateTime.TryParse(dateTo, out var dTo))
+                    query = query.Where(j => j.StartAt < dTo.Date.AddDays(1));
+
+                var jobs = await query
+                    .OrderBy(j => j.Technician != null ? j.Technician.FirstName : "")
+                    .ThenBy(j => j.Technician != null ? j.Technician.LastName : "")
+                    .ThenBy(j => j.StartAt)
+                    .ToListAsync();
+
+                var now = _clock.BusinessNow;
+
+                // apply status filter after effective-status calculation
+                var rows = jobs
+                    .Select(j => new
+                    {
+                        jobId         = j.Id,
+                        technicianId  = j.TechnicianId,
+                        technicianName = j.Technician?.FullName ?? "Unassigned",
+                        customerName  = j.ContactDetail?.Name ?? "N/A",
+                        phoneNumber   = j.ContactDetail?.PhoneNumber ?? "N/A",
+                        address       = j.ContactDetail?.Address ?? "N/A",
+                        distanceMiles = j.DistanceMiles.HasValue
+                                        ? Math.Round(j.DistanceMiles.Value, 1).ToString("F1") + " mi"
+                                        : "N/A",
+                        distanceRaw   = j.DistanceMiles,
+                        quotedAmount  = j.QuotedAmount.HasValue
+                                        ? j.QuotedAmount.Value.ToString("F2")
+                                        : "",
+                        category      = j.Category?.keyword ?? "N/A",
+                        startAt       = j.StartAt.ToString("MM/dd/yyyy hh:mm tt"),
+                        endAt         = j.EndAt.ToString("hh:mm tt"),
+                        startDate     = j.StartAt.ToString("MM/dd/yyyy"),
+                        startTime     = j.StartAt.ToString("hh:mm tt"),
+                        effectiveStatus = j.GetEffectiveStatus(now),
+                        storedStatus  = j.Status
+                    })
+                    .Where(r => string.IsNullOrEmpty(status) || status == "All" || r.effectiveStatus == status)
+                    .ToList();
+
+                return Json(new { aaData = rows });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+        // =====================================================================
         // SCHEDULED JOBS PAGE (jobs with their message plans)
         // =====================================================================
         public IActionResult ScheduledJobs()
