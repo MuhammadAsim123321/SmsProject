@@ -50,10 +50,6 @@ namespace SendSmsCallAlerts.Models
         /// <summary>Only asked for the "Carpet Repair" category. true = Yes, false = No, null = not applicable.</summary>
         public bool? HasDonorCarpet { get; set; }
 
-        /// <summary>Price quoted to the customer for this job.</summary>
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal? QuotedAmount { get; set; }
-
         [Required, StringLength(20)]
         public string Status { get; set; } = JobStatus.Scheduled;
 
