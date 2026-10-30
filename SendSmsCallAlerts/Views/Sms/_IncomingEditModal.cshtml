@@ -10,6 +10,17 @@
     #editModal .section-card > .section-body { padding: 14px; }
     #editModal .section-body label { font-size: 0.85rem; font-weight: 600; margin-bottom: 3px; }
 
+    /* Currency input styling */
+    #editModal .sg-currency-input input[type="number"]:focus {
+        outline: none;
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    #editModal .sg-currency-input input[type="number"]::placeholder {
+        color: #adb5bd;
+    }
+
     /* Job status badge */
     #jobStatusBadge { font-size: 0.78rem; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
     #jobStatusBadge.badge-scheduled  { background: #dbeafe; color: #1e40af; }
@@ -136,13 +147,21 @@
                                     <small class="text-muted d-block mt-1" id="statusHint"></small>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="mQuotedAmount">Quoted Amount ($)</label>
-                                    <div class="input-group">
-                                        <span class="input-group-text">$</span>
+                                    <label for="mQuotedAmount">Quoted Amt</label>
+                                    <div class="sg-currency-input" style="position: relative; display: flex; align-items: center;">
+                                        <span style="position: absolute; left: 12px; font-weight: 500; color: #495057; pointer-events: none; z-index: 1;">$</span>
                                         <input type="number" id="mQuotedAmount" class="form-control" data-field="jobQuotedAmount"
-                                               min="0" step="0.01" placeholder="0.00" />
+                                               min="0" step="0.01" placeholder="0.00" inputmode="decimal"
+                                               style="padding-left: 28px;" />
+                                        <div class="invalid-feedback" id="err-jobQuotedAmount"></div>
                                     </div>
-                                    <div class="invalid-feedback" id="err-jobQuotedAmount"></div>
+                                </div>
+                                <div class="col-md-8" id="donorCarpetContainer" style="display:none;">
+                                    <label for="mHasDonorCarpet">Customer Has Donor Carpet (Y/N)</label>
+                                    <div class="form-check mt-2">
+                                        <input type="checkbox" id="mHasDonorCarpet" class="form-check-input" data-field="jobHasDonorCarpet" />
+                                        <label for="mHasDonorCarpet" class="form-check-label fw-normal">Yes (leave unchecked for No)</label>
+                                    </div>
                                 </div>
                             </div>
                         </div>

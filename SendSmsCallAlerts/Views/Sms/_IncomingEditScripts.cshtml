@@ -42,6 +42,8 @@
             $('#btnNewJob').prop('disabled', false).removeClass('btn-blurred');
             $('#btnJobHistory').hide();
             $('#jobStatusBadge').hide().text('').removeClass('badge-scheduled badge-confirmed badge-cancelled badge-completed');
+            $('#donorCarpetContainer').hide();
+            $('#mHasDonorCarpet').prop('checked', false);
             clearErrors();
             $('#btnUpdate').prop('disabled', true);
         }
@@ -167,9 +169,11 @@
             $('#mJobId').val(j.id);
             clearJobAndSchedulerFields();
             $('#mCategory').val(j.categoryId || '');
+            updateDonorCarpetVisibility();
+            $('#mHasDonorCarpet').prop('checked', j.hasDonorCarpet === true);
             $('#mStartAt').val(j.startAt);
             $('#mEndAt').val(j.endAt);
-            $('#mQuotedAmount').val(j.quotedAmount != null ? j.quotedAmount : '');
+            $('#mQuotedAmount').val(j.quotedAmount != null ? Number(j.quotedAmount).toFixed(2) : '');
             $('#mStatus').val(j.status).prop('disabled', false);
             $('#statusHint').text(j.effectiveStatus === 'Completed' ? 'Completed automatically (end time has passed).' : '');
             $('#jobMode').text('Job #' + j.id);
@@ -191,9 +195,9 @@
 
         function clearJobAndSchedulerFields() {
             $('#mCategory').val('');
+            updateDonorCarpetVisibility();
             $('#mTechnician').html('<option value="">-- Select category first --</option>');
-            $('#mStartAt, #mEndAt, #mCustomDate, #mCustomDays, #mCustomHoursVal').val('');
-            $('#mQuotedAmount').val('');
+            $('#mStartAt, #mEndAt, #mQuotedAmount, #mCustomDate, #mCustomDays, #mCustomHoursVal').val('');
             $('#mSchedularTemplate').val('');
             $('#technicianAvailabilityInfo').text('');
             handleTemplateChange();
@@ -256,6 +260,12 @@
         }
 
         $('#mCategory').on('change', function () { $('#mTechnician').val(''); loadTechnicians(null); });
+        function updateDonorCarpetVisibility() {
+            var asks = $('#mCategory option:selected').attr('data-asks-donor') === '1';
+            $('#donorCarpetContainer').toggle(asks);
+            if (!asks) $('#mHasDonorCarpet').prop('checked', false);
+        }
+        $('#mCategory').on('change', updateDonorCarpetVisibility);
         $('#mTechnician').on('change', showTechnicianHint);
         $('#mStartAt, #mEndAt, #mZipCode').on('change', function () { if ($('#mCategory').val()) loadTechnicians(null); });
 
@@ -289,6 +299,8 @@
             var days = parseInt($('#mCustomDays').val(), 10)    || 0;
             var hrs  = parseInt($('#mCustomHoursVal').val(), 10) || 0;
             var total = days * 24 + hrs;
+            var qaRaw = ($('#mQuotedAmount').val() || '').trim();
+            var asksDonor = $('#mCategory option:selected').attr('data-asks-donor') === '1';
 
             return {
                 phoneNumber:  $('#mFromNum').val(),
@@ -308,7 +320,8 @@
                     startAt:      $('#mStartAt').val() || null,
                     endAt:        $('#mEndAt').val()   || null,
                     status:       $('#mStatus').val(),
-                    quotedAmount: $('#mQuotedAmount').val() !== '' ? parseFloat($('#mQuotedAmount').val()) : null
+                    quotedAmount: qaRaw === '' ? null : Number(qaRaw),
+                    hasDonorCarpet: asksDonor ? $('#mHasDonorCarpet').is(':checked') : null
                 },
                 scheduler: isOutgoing ? null : {
                     schedulerId: toInt($('#mSchedularTemplate').val()),
@@ -327,8 +340,11 @@
                 e.contactZip = 'Enter a valid ZIP code (12345 or 12345-6789).';
 
             if (p.job) {
+                var qa = ($('#mQuotedAmount').val() || '').trim();
+                if (qa !== '' && !/^\d{1,7}(\.\d{1,2})?$/.test(qa))
+                    e.jobQuotedAmount = 'Enter a valid amount (e.g. 250 or 250.50).';
                 var anyJob = p.job.jobId || p.job.categoryId || p.job.technicianId || p.job.startAt || p.job.endAt
-                             || (p.scheduler && p.scheduler.schedulerId);
+                    || p.job.quotedAmount != null || (p.scheduler && p.scheduler.schedulerId);
                 if (anyJob) {
                     if (!p.job.categoryId)   e.jobCategory   = 'Select a service category.';
                     if (!p.job.technicianId) e.jobTechnician = 'Select a technician.';

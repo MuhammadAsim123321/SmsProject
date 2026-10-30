@@ -19,6 +19,12 @@ namespace SendSmsCallAlerts.Services
         public const int RunFromCustomDateId = 2;      // RunFrom: "Custom Date"
         public const int TimeToRunCustomMarker = -1;   // TimeToRun.HourCount = -1: "Enter Custom Days and Hours"
 
+        public const decimal MaxQuotedAmount = 1_000_000m;
+        // HARDCODED for now: the category that asks "Customer Has Donor Carpet".
+        // To make this configurable later, replace the body of IsDonorCarpetCategory with a column check.
+        public const string DonorCarpetCategoryKeyword = "Carpet Repair";
+        public static bool IsDonorCarpetCategory(string? keyword) =>
+            string.Equals((keyword ?? "").Trim(), DonorCarpetCategoryKeyword, StringComparison.OrdinalIgnoreCase);
         private static readonly Regex ZipRegex = new(@"^\d{5}(-\d{4})?$", RegexOptions.Compiled);
 
         private readonly ApplicationDbContext _db;
@@ -78,6 +84,7 @@ namespace SendSmsCallAlerts.Services
                 EndAt = j.EndAt.ToString("yyyy-MM-dd'T'HH:mm"),
                 DistanceMiles = j.DistanceMiles,
                 QuotedAmount = j.QuotedAmount,
+                HasDonorCarpet = j.HasDonorCarpet,
                 Status = j.Status,
                 EffectiveStatus = j.GetEffectiveStatus(now),
                 Plans = j.ScheduledJobs.OrderBy(p => p.Id).Select(p => new PlanView
@@ -141,6 +148,8 @@ namespace SendSmsCallAlerts.Services
                     StartAt = j.StartAt.ToString("yyyy-MM-dd'T'HH:mm"),
                     EndAt = j.EndAt.ToString("yyyy-MM-dd'T'HH:mm"),
                     DistanceMiles = j.DistanceMiles,
+                    QuotedAmount = j.QuotedAmount,
+                    HasDonorCarpet = j.HasDonorCarpet,
                     Status = j.Status,
                     EffectiveStatus = j.GetEffectiveStatus(now),
                     Plans = j.ScheduledJobs.OrderBy(p => p.Id).Select(p => new PlanView
@@ -198,7 +207,7 @@ namespace SendSmsCallAlerts.Services
             var sc = isOutgoing ? null : req.Scheduler;
             int schedulerId = sc?.SchedulerId ?? 0;
             bool hasJobInput = j != null && (j.JobId.HasValue || (j.CategoryId ?? 0) > 0 || (j.TechnicianId ?? 0) > 0
-                                             || j.StartAt.HasValue || j.EndAt.HasValue);
+                                 || j.StartAt.HasValue || j.EndAt.HasValue || j.QuotedAmount.HasValue);
             bool needsJob = hasJobInput || schedulerId > 0;
 
             var contact = await _db.ContactDetail.FirstOrDefaultAsync(x => x.PhoneNumber == phone);
@@ -245,6 +254,16 @@ namespace SendSmsCallAlerts.Services
                 var requested = (jj.Status ?? "").Trim();
                 if (requested.Length > 0 && !JobStatus.IsEditable(requested)) errors["jobStatus"] = "Invalid status.";
                 else status = requested.Length > 0 ? requested : (job?.Status ?? JobStatus.Scheduled);
+                if (jj.QuotedAmount.HasValue)
+                {
+                    var amt = jj.QuotedAmount.Value;
+                    if (amt < 0)
+                        errors["jobQuotedAmount"] = "Quoted amount cannot be negative.";
+                    else if (amt > MaxQuotedAmount)
+                        errors["jobQuotedAmount"] = $"Quoted amount cannot be more than {MaxQuotedAmount:N2}.";
+                    else if (decimal.Round(amt, 2) != amt)
+                        errors["jobQuotedAmount"] = "Quoted amount can have at most 2 decimal places.";
+                }
 
                 if (start.HasValue && end.HasValue)
                 {
@@ -287,6 +306,16 @@ namespace SendSmsCallAlerts.Services
             double? distance = null;
             if (needsJob && tech != null)
                 distance = await _distance.GetDistanceInMilesOrNull(zip, tech.ZipCode ?? "");
+
+            bool asksDonorCarpet = false;
+            if (needsJob)
+            {
+                var catKeyword = await _db.IvrOption.AsNoTracking()
+                    .Where(x => x.Id == j!.CategoryId!.Value)
+                    .Select(x => x.keyword)
+                    .FirstOrDefaultAsync();
+                asksDonorCarpet = IsDonorCarpetCategory(catKeyword);
+            }
 
             // ---- 5) save everything in ONE transaction ---------------------------
             await using var tx = await _db.Database.BeginTransactionAsync();
@@ -334,6 +363,7 @@ namespace SendSmsCallAlerts.Services
                     job.EndAt = end!.Value;
                     job.DistanceMiles = distance;
                     job.QuotedAmount = jj.QuotedAmount;
+                    job.HasDonorCarpet = asksDonorCarpet ? (jj.HasDonorCarpet ?? false) : null;
                     job.Status = status;
                     job.UpdatedOn = _clock.UtcNow;
                     await _db.SaveChangesAsync();   // job.Id is needed for the plan

@@ -95,6 +95,7 @@ builder.Services.AddSingleton<ISmsGateway, SmsGateway>();
 builder.Services.AddSingleton<IMediaUrlFactory, MediaUrlFactory>();
 builder.Services.AddScoped<IUploadedMediaStore, UploadedMediaStore>();
 builder.Services.AddScoped<JobService>();
+builder.Services.AddScoped<TechnicianReplyService>();
 
 builder.Services.Configure<FormOptions>(options =>
 {
