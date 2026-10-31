@@ -17,6 +17,11 @@
         <div id="sidebar-menu" class="sidebar-menu signal-sidebar-menu">
             <div class="signal-sidebar-intro"><span class="signal-sidebar-kicker">WORKSPACE</span><span class="signal-sidebar-description">Messaging &amp; automation</span></div>
             <ul>
+                @if (isAdmin)
+                {
+                    <li class="menu-title">OVERVIEW</li>
+                    <li><a class="@(controller == "Dashboard" ? "active" : "")" asp-controller="Dashboard" asp-action="Index"><i class="fa fa-tachometer" aria-hidden="true"></i><span>Dashboard</span></a></li>
+                }
                 <li class="menu-title">MESSAGING</li>
                 @if (hasTwilio)
                 {

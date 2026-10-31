@@ -1,0 +1,484 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<style>
+    .dash-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 16px;
+        align-items: flex-end;
+        background: #fff;
+        border: 1px solid #dbe7f1;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+    }
+
+        .dash-filter label {
+            display: flex;
+            flex-direction: column;
+            font-size: .8rem;
+            font-weight: 600;
+            color: #475569;
+            margin: 0;
+            gap: 4px;
+        }
+
+        .dash-filter input[type=date] {
+            min-height: 38px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-weight: 400;
+        }
+
+    .dash-quick {
+        display: flex;
+        gap: 6px;
+        margin-right: auto;
+    }
+
+        .dash-quick button {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: .85rem;
+            font-weight: 600;
+            color: #2c5b7a;
+            cursor: pointer;
+        }
+
+            .dash-quick button:hover, .dash-quick button.active {
+                background: #eef6fb;
+                border-color: #70b3db;
+            }
+
+    .dash-period {
+        font-size: .85rem;
+        color: #64748b;
+        margin: 0 2px 14px;
+    }
+
+    .dash-kpis, .dash-buckets {
+        display: grid;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .dash-kpis {
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+
+    .dash-buckets {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-bottom: 16px;
+    }
+
+    .dash-kpi {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        background: #fff;
+        border: 1px solid #dbe7f1;
+        border-radius: 12px;
+        padding: 14px 16px;
+        text-decoration: none !important;
+        color: #1e293b;
+        transition: box-shadow .15s, border-color .15s;
+    }
+
+        .dash-kpi:hover {
+            border-color: #70b3db;
+            box-shadow: 0 4px 14px rgba(44,91,122,.12);
+        }
+
+    .dash-kpi-label {
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .dash-kpi-value {
+        font-size: 1.7rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .dash-kpi-sub {
+        font-size: .78rem;
+        color: #94a3b8;
+    }
+
+    .dash-charts {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .dash-card {
+        background: #fff;
+        border: 1px solid #dbe7f1;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+        .dash-card h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #2c5b7a;
+            margin: 0 0 2px;
+        }
+
+        .dash-card p {
+            font-size: .8rem;
+            color: #94a3b8;
+            margin: 0 0 10px;
+        }
+
+    .dash-chart-box {
+        position: relative;
+        height: 300px;
+    }
+
+    .dash-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .88rem;
+    }
+
+        .dash-table th {
+            background: #70b3db;
+            color: #fff;
+            padding: 9px 10px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .dash-table td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+        }
+
+        .dash-table tbody tr {
+            cursor: pointer;
+        }
+
+            .dash-table tbody tr:hover {
+                background: #f0f9ff;
+            }
+
+    .dash-empty {
+        text-align: center;
+        color: #94a3b8;
+        padding: 22px 0;
+    }
+
+    .dash-table-wrap {
+        overflow-x: auto;
+    }
+
+    @@media (max-width: 1199px) {
+        .dash-kpis {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 991px) {
+        .dash-charts {
+            grid-template-columns: 1fr;
+        }
+
+        .dash-buckets {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 575px) {
+        .dash-kpis {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+</style>
+
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-tachometer"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">ADMIN OVERVIEW</span>
+            <h1>Dashboard</h1>
+            <p>Customer messages and how quickly they were answered</p>
+        </div>
+    </div>
+</section>
+
+<div class="dash-filter">
+    <div class="dash-quick">
+        <button type="button" data-quick="today">Today</button>
+        <button type="button" data-quick="yesterday">Yesterday</button>
+        <button type="button" data-quick="last7">Last 7 days</button>
+    </div>
+    <label>From <input type="date" id="dFrom" max="@ViewBag.Today" /></label>
+    <label>To <input type="date" id="dTo" max="@ViewBag.Today" /></label>
+    <button type="button" id="dApply" class="btn btn-primary btn-sm">Apply</button>
+</div>
+
+<div id="dashError" class="alert alert-danger" style="display:none;"></div>
+<div id="dashPeriod" class="dash-period"></div>
+
+<div class="dash-kpis" id="kpiRow"></div>
+<div class="dash-buckets" id="bucketRow"></div>
+
+<div class="dash-charts">
+    <div class="dash-card">
+        <h2 id="seriesTitle">Messages</h2>
+        <p>Click a bar to open those messages</p>
+        <div class="dash-chart-box"><canvas id="seriesChart"></canvas></div>
+    </div>
+    <div class="dash-card">
+        <h2>Response time</h2>
+        <p>Click a bar to open those messages</p>
+        <div class="dash-chart-box"><canvas id="bucketChart"></canvas></div>
+    </div>
+</div>
+
+<section class="nova-list-card" aria-label="Needs attention">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading">
+            <span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-exclamation-circle"></i></span>
+            <div>
+                <h2>Needs attention</h2>
+                <p>Unanswered messages first, then the slowest replies. Click a row to open the conversation.</p>
+            </div>
+        </div>
+    </div>
+    <div class="dash-table-wrap">
+        <table class="dash-table">
+            <thead>
+                <tr><th>Received</th><th>Customer</th><th>Message</th><th>Waiting</th></tr>
+            </thead>
+            <tbody id="attentionBody"></tbody>
+        </table>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var TODAY = '@ViewBag.Today';
+            // same text colours as the Incoming SMS grid
+            var COLORS = { ontime: '#15803d', gold: '#B8860B', orange: '#b35a00', red: '#cc0000', pending: '#64748b' };
+            var LABELS = { ontime: 'On time (under 10 min)', gold: 'Gold (10–15 min)', orange: 'Orange (15–20 min)', red: 'Red (20+ min)', pending: 'Pending (no reply yet)' };
+            var ORDER = ['ontime', 'gold', 'orange', 'red', 'pending'];
+            var SHORT = { ontime: 'On time', gold: 'Gold', orange: 'Orange', red: 'Red', pending: 'Pending' };
+
+            var state = { from: TODAY, to: TODAY };
+            var seriesChart = null, bucketChart = null;
+
+            function el(id) { return document.getElementById(id); }
+            function esc(s) {
+                var d = document.createElement('div');
+                d.textContent = s == null ? '' : String(s);
+                return d.innerHTML.replace(/"/g, '&quot;');
+            }
+            function pad(n) { return (n < 10 ? '0' : '') + n; }
+            function fmt(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+            function parse(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
+            function shift(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return fmt(d); }
+
+            function drillUrl(o) {
+                var q = ['from=' + o.from, 'to=' + o.to];
+                if (o.bucket) q.push('bucket=' + o.bucket);
+                if (o.hour != null) q.push('hour=' + o.hour);
+                return '/Sms/IncomingLogs?' + q.join('&');
+            }
+            function go(o) { window.location.href = drillUrl(o); }
+
+            // ---------------------------------------------------------------- cards
+            function card(label, value, sub, o, color) {
+                return '<a class="dash-kpi" href="' + drillUrl(o) + '">'
+                    + '<span class="dash-kpi-label">' + label + '</span>'
+                    + '<strong class="dash-kpi-value"' + (color ? ' style="color:' + color + '"' : '') + '>' + esc(value) + '</strong>'
+                    + '<span class="dash-kpi-sub">' + esc(sub) + '</span></a>';
+            }
+
+            function pct(n, total) { return total === 0 ? '0%' : (Math.round(1000 * n / total) / 10) + '%'; }
+
+            function renderCards(d) {
+                var base = { from: d.from, to: d.to };
+                el('kpiRow').innerHTML =
+                    card('Customer messages', d.total, 'all incoming', base) +
+                    card('Responded', d.responded, pct(d.responded, d.total) + ' of messages', { from: d.from, to: d.to, bucket: 'responded' }) +
+                    card('Pending', d.pending, 'no reply yet', { from: d.from, to: d.to, bucket: 'pending' }, COLORS.pending) +
+                    card('Average response', d.avgText, 'answered messages', { from: d.from, to: d.to, bucket: 'responded' }) +
+                    card('Median response', d.medianText, 'answered messages', { from: d.from, to: d.to, bucket: 'responded' }) +
+                    card('Timely', d.timelyPercent + '%', 'answered in under 10 min', { from: d.from, to: d.to, bucket: 'ontime' }, COLORS.ontime);
+
+                el('bucketRow').innerHTML = ['ontime', 'gold', 'orange', 'red'].map(function (b) {
+                    return card(LABELS[b], d.buckets[b], pct(d.buckets[b], d.total) + ' of messages', { from: d.from, to: d.to, bucket: b }, COLORS[b]);
+                }).join('');
+            }
+
+            // ---------------------------------------------------------------- charts
+            function hoverPointer(evt, items) {
+                if (evt && evt.native && evt.native.target) evt.native.target.style.cursor = items.length ? 'pointer' : 'default';
+            }
+
+            function renderSeries(d) {
+                el('seriesTitle').textContent = d.granularity === 'hour' ? 'Messages by hour' : 'Messages by day';
+                if (seriesChart) seriesChart.destroy();
+                seriesChart = new Chart(el('seriesChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: d.series.map(function (p) { return p.label; }),
+                        datasets: [
+                            { label: 'Responded', data: d.series.map(function (p) { return p.responded; }), backgroundColor: '#2c5b7a', stack: 's' },
+                            { label: 'Pending', data: d.series.map(function (p) { return p.pending; }), backgroundColor: '#cbd5e1', stack: 's' }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            x: { stacked: true, grid: { display: false } },
+                            y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+                        },
+                        plugins: { legend: { position: 'bottom' } },
+                        onHover: hoverPointer,
+                        onClick: function (evt, items) {
+                            if (!items.length) return;
+                            var p = d.series[items[0].index];
+                            if (d.granularity === 'hour') go({ from: d.from, to: d.to, hour: p.key });
+                            else go({ from: p.key, to: p.key });
+                        }
+                    }
+                });
+            }
+
+            function renderBuckets(d) {
+                if (bucketChart) bucketChart.destroy();
+                bucketChart = new Chart(el('bucketChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: ORDER.map(function (b) { return SHORT[b]; }),
+                        datasets: [{
+                            data: ORDER.map(function (b) { return d.buckets[b]; }),
+                            backgroundColor: ORDER.map(function (b) { return COLORS[b]; })
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } },
+                        plugins: { legend: { display: false } },
+                        onHover: hoverPointer,
+                        onClick: function (evt, items) {
+                            if (!items.length) return;
+                            go({ from: d.from, to: d.to, bucket: ORDER[items[0].index] });
+                        }
+                    }
+                });
+            }
+
+            // ---------------------------------------------------------------- table
+            function renderAttention(d) {
+                var body = el('attentionBody');
+                if (!d.attention.length) {
+                    body.innerHTML = '<tr><td colspan="4" class="dash-empty">Nothing needs attention for this period.</td></tr>';
+                    return;
+                }
+                body.innerHTML = d.attention.map(function (r) {
+                    return '<tr data-phone="' + esc(encodeURIComponent(r.phone)) + '">'
+                        + '<td>' + esc(r.received) + '</td>'
+                        + '<td>' + esc(r.customer) + '</td>'
+                        + '<td>' + esc(r.body) + '</td>'
+                        + '<td style="font-weight:600;color:' + (COLORS[r.bucket] || '#64748b') + '">' + esc(r.waiting) + '</td>'
+                        + '</tr>';
+                }).join('');
+            }
+
+            el('attentionBody').addEventListener('click', function (e) {
+                var tr = e.target.closest('tr[data-phone]');
+                if (tr) window.location.href = '/Conversations/SMS?num=' + tr.getAttribute('data-phone');
+            });
+
+            // ---------------------------------------------------------------- load
+            function showError(msg) {
+                var box = el('dashError');
+                box.textContent = msg;
+                box.style.display = 'block';
+            }
+
+            function render(d) {
+                el('dashPeriod').textContent = (d.from === d.to ? d.from : d.from + ' to ' + d.to) + ' · times in ' + d.timeZone
+                    + (d.total === 0 ? ' · no customer messages in this period' : '');
+                renderCards(d);
+                renderSeries(d);
+                renderBuckets(d);
+                renderAttention(d);
+            }
+
+            function load() {
+                el('dashError').style.display = 'none';
+                el('dashPeriod').textContent = 'Loading…';
+                fetch('/Dashboard/Summary?from=' + state.from + '&to=' + state.to, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin'
+                }).then(function (r) {
+                    if (r.status === 403) {
+                        window.location.href = '/Account/Logout?id=-2&returnUrl=' + encodeURIComponent(window.location.href);
+                        throw new Error('session');
+                    }
+                    if (!r.ok) {
+                        return r.json().then(function (j) { throw new Error(j.message || 'Could not load the dashboard.'); },
+                            function () { throw new Error('Could not load the dashboard.'); });
+                    }
+                    return r.json();
+                }).then(render).catch(function (e) {
+                    if (e.message !== 'session') { el('dashPeriod').textContent = ''; showError(e.message); }
+                });
+            }
+
+            function setRange(from, to) {
+                if (from > to) { var t = from; from = to; to = t; }
+                state.from = from; state.to = to;
+                el('dFrom').value = from; el('dTo').value = to;
+                var quick = document.querySelectorAll('.dash-quick button');
+                var map = { today: [TODAY, TODAY], yesterday: [shift(TODAY, -1), shift(TODAY, -1)], last7: [shift(TODAY, -6), TODAY] };
+                Array.prototype.forEach.call(quick, function (b) {
+                    var m = map[b.getAttribute('data-quick')];
+                    b.classList.toggle('active', m[0] === from && m[1] === to);
+                });
+                if (window.history && history.replaceState) history.replaceState(null, '', '?from=' + from + '&to=' + to);
+                load();
+            }
+
+            Array.prototype.forEach.call(document.querySelectorAll('.dash-quick button'), function (b) {
+                b.addEventListener('click', function () {
+                    var k = b.getAttribute('data-quick');
+                    if (k === 'today') setRange(TODAY, TODAY);
+                    else if (k === 'yesterday') setRange(shift(TODAY, -1), shift(TODAY, -1));
+                    else setRange(shift(TODAY, -6), TODAY);
+                });
+            });
+
+            el('dApply').addEventListener('click', function () {
+                var f = el('dFrom').value, t = el('dTo').value || f;
+                if (!f) { showError('Select a start date.'); return; }
+                setRange(f, t);
+            });
+
+            // coming back from a drill-down keeps the chosen range
+            var q = new URLSearchParams(window.location.search);
+            var qf = q.get('from'), qt = q.get('to');
+            if (qf && /^\d{4}-\d{2}-\d{2}$/.test(qf)) setRange(qf, qt && /^\d{4}-\d{2}-\d{2}$/.test(qt) ? qt : qf);
+            else setRange(TODAY, TODAY);
+        })();
+    </script>
+}

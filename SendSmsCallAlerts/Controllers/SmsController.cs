@@ -1,4 +1,5 @@
 ﻿//using Hangfire.Common;
+using Humanizer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Models;
 using SendSmsCallAlerts.Services;
+using System.Net.Sockets;
 using Twilio;
 using Twilio.Rest.Api.V2010.Account;
 using Twilio.Rest.Api.V2010.Account.Message;
@@ -38,6 +40,7 @@ namespace SendSmsCallAlerts.Controllers
             _clock = clock;
         }
 
+        
         public IActionResult IncomingLogs()
         {
             var userId = Convert.ToInt32(HttpContext.Session.GetString("UserId"));
@@ -766,6 +769,7 @@ namespace SendSmsCallAlerts.Controllers
             // response-time matching: first outgoing reply to the same customer after the incoming message
             var allOutgoing = await _context.SmsDetails
                 .Where(s => s.smsDirection == "Outgoing")
+                .Where(ResponseRules.IsReply)
                 .Select(s => new { s.toNum, s.createdOn })
                 .ToListAsync();
 
@@ -844,7 +848,8 @@ namespace SendSmsCallAlerts.Controllers
             return result.OrderByDescending(x => x.createdOn).ToList();
         }
 
-        public async Task<JsonResult> GetData()
+        // public async Task<JsonResult> GetData()
+        public async Task<JsonResult> GetData(string? from = null, string? to = null, string? bucket = null, int? hour = null)
         {
             string accountSid = _configuration["AppSettings:AccountSid"];
             string authToken = _configuration["AppSettings:AuthToken"];
@@ -859,6 +864,14 @@ namespace SendSmsCallAlerts.Controllers
                 {
                     aaData = new List<Models.Conversation>()
                 });
+            }
+            // Dashboard drill-down: same rules as the dashboard, so counts always match
+            if (DashboardService.TryParseDay(from, out var fromDay))
+            {
+                var toDay = DashboardService.TryParseDay(to, out var parsedTo) ? parsedTo : fromDay;
+                var dash = HttpContext.RequestServices.GetRequiredService<DashboardService>();
+                var ids = await dash.DrillDownIdsAsync(fromDay, toDay, bucket, hour);
+                stats = stats.Where(s => ids.Contains(s.Id)).ToList();
             }
 
             var serializedStats = stats.Select(conversation => new

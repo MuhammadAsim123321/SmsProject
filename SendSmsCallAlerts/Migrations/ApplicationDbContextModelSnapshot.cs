@@ -718,6 +718,9 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.HasIndex("ScheduledJobId");
 
+                    b.HasIndex("createdOn")
+                        .HasDatabaseName("IX_SmsDetails_CreatedOn");
+
                     b.ToTable("SmsDetails");
                 });
 

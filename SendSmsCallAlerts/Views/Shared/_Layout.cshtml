@@ -8,6 +8,7 @@
     var routeAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
     var areaLabel = routeController switch
     {
+        "Dashboard" => "Overview",
         "Sms" => "Messages",
         "Conversations" => "Messages",
         "IvrOptions" => "Voice routing",
