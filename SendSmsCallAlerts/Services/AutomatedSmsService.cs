@@ -329,15 +329,17 @@ namespace SendSmsCallAlerts.Services
                 var tJobs = byTech.First(g => g.Key == t.Id).OrderBy(j => j.StartAt).ThenBy(j => j.Id).ToList();
                 var full = TechFullName(t);
 
-                // miles chain: technician ZIP -> job 1 -> job 2 -> job 3
+                // miles chain: technician address -> job 1 -> job 2 -> job 3
                 var lines = new List<string>();
-                var fromZip = t.ZipCode;
+                var fromLocation = GoogleDistanceService.BuildLocation(t.ZipCode, t.CityState, t.StreetAddress);
                 foreach (var j in tJobs)
                 {
-                    var toZip = j.ContactDetail?.ZipCode;
-                    var miles = await distance.GetDistanceInMilesOrNull(fromZip ?? "", toZip ?? "");
+                    var contact = j.ContactDetail;
+                    var toLocation = GoogleDistanceService.BuildLocation(
+                        contact?.ZipCode, contact?.CityState, contact?.StreetAddress);
+                    var miles = await distance.GetDistanceInMilesOrNull(fromLocation, toLocation);
                     lines.Add(JobLine(lines.Count + 1, j, miles));
-                    fromZip = toZip;
+                    fromLocation = toLocation;
                 }
 
                 // length limit: only jobs that really appear in the SMS are saved in the numbered list

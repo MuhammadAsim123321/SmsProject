@@ -889,8 +889,8 @@ namespace SendSmsCallAlerts.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("ZipCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 

@@ -2,9 +2,9 @@ using Hangfire;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using SendSmsCallAlerts.Data;
-using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Jobs;
 using SendSmsCallAlerts.Services;
+using System.Text.Json;
 
 var configuredEnvironment = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -17,9 +17,11 @@ if (configuredEnvironment is not ("Development" or "Production"))
         "Set the Environment value in appsettings.json to either Development or Production.");
 }
 
+var isDistanceCommand = args.Length > 0
+    && string.Equals(args[0], "distance", StringComparison.OrdinalIgnoreCase);
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
-    Args = args,
+    Args = isDistanceCommand ? Array.Empty<string>() : args,
     EnvironmentName = configuredEnvironment
 });
 
@@ -37,7 +39,44 @@ builder.Configuration.AddInMemoryCollection(environmentSettings);
 if (builder.Environment.IsDevelopment())
     builder.Configuration.AddUserSecrets<Program>(optional: true);
 builder.Configuration.AddEnvironmentVariables();
-builder.Configuration.AddCommandLine(args);
+if (!isDistanceCommand)
+    builder.Configuration.AddCommandLine(args);
+// Optional, self-contained Google Distance Matrix utility. Run with:
+// dotnet run --project SendSmsCallAlerts -- distance [fromLocation] [toLocation]
+// This path exits before the web host starts and can be removed independently.
+if (isDistanceCommand)
+{
+    var apiKey = builder.Configuration["GoogleMaps:ApiKey"];
+    if (string.IsNullOrWhiteSpace(apiKey))
+        apiKey = builder.Configuration["ROUTE_MAPS_API_KEY"];
+    apiKey ??= string.Empty;
+    if (string.IsNullOrWhiteSpace(apiKey))
+    {
+        Console.Write("Google Maps API key: ");
+        apiKey = (Console.ReadLine() ?? string.Empty).Trim();
+    }
+
+    var fromLocation = args.Length > 1 ? args[1] : Ask("From address or ZIP code: ");
+    var toLocation = args.Length > 2 ? args[2] : Ask("To address or ZIP code:   ");
+
+    try
+    {
+        var result = await GetDistanceAsync(apiKey, fromLocation, toLocation);
+        Console.WriteLine();
+        Console.WriteLine($"From: {fromLocation}");
+        Console.WriteLine($"To:   {toLocation}");
+        Console.WriteLine($"Distance:             {result.Miles:F1} miles");
+        Console.WriteLine($"Drive time (traffic): {result.MinutesWithTraffic:F0} min");
+        Console.WriteLine($"Drive time (typical): {result.MinutesTypical:F0} min");
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine("Error: " + ex.Message);
+        Environment.ExitCode = 1;
+    }
+
+    return;
+}
 
 if (builder.Environment.IsProduction())
 {
@@ -98,9 +137,6 @@ builder.Services.AddScoped<IUploadedMediaStore, UploadedMediaStore>();
 builder.Services.AddScoped<JobService>();
 builder.Services.AddScoped<TechnicianReplyService>();
 
-// NEW: password hashing
-builder.Services.AddSingleton<IPasswordService, PasswordService>();
-
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = long.MaxValue; // Set the maximum form size to a large value.
@@ -122,23 +158,6 @@ builder.Services.AddHostedService<HangfireStartUp>();
 
 var app = builder.Build();
 
-// NEW: one-time conversion of legacy plaintext passwords to hashes (idempotent, runs on every start).
-using (var scope = app.Services.CreateScope())
-{
-    try
-    {
-        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        var passwords = scope.ServiceProvider.GetRequiredService<IPasswordService>();
-        var converted = LegacyPasswordMigration.HashPlaintextPasswords(db, passwords);
-        if (converted > 0)
-            app.Logger.LogInformation("Converted {Count} plaintext password(s) to hashes.", converted);
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogError(ex, "Legacy password conversion failed. Plaintext passwords are still accepted and upgraded at login.");
-    }
-}
-
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -152,18 +171,81 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-app.UseSession(); // MOVED UP (was the last line): the Hangfire dashboard filter reads the session
-
 app.UseAuthorization();
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization = new[] { new HangfireAdminFilter() } // Admin only (was: local requests only)
-});
+app.UseHangfireDashboard();
 app.UseHangfireServer();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=LogIn}/{id?}");
-//pattern: "{controller=Sms}/{action=IncomingLogs}/{id?}");
+    //pattern: "{controller=Sms}/{action=IncomingLogs}/{id?}");
 
+app.UseSession();
 app.Run();
+
+static string Ask(string prompt)
+{
+    Console.Write(prompt);
+    return (Console.ReadLine() ?? string.Empty).Trim();
+}
+
+static async Task<DistanceResult> GetDistanceAsync(string apiKey, string fromLocation, string toLocation)
+{
+    if (string.IsNullOrWhiteSpace(apiKey))
+        throw new InvalidOperationException("No API key provided.");
+    if (string.IsNullOrWhiteSpace(fromLocation) || string.IsNullOrWhiteSpace(toLocation))
+        throw new InvalidOperationException("Both locations are required.");
+
+    var origin = NormalizeDistanceLocation(fromLocation);
+    var destination = NormalizeDistanceLocation(toLocation);
+
+    var url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+        + "?origins=" + Uri.EscapeDataString(origin)
+        + "&destinations=" + Uri.EscapeDataString(destination)
+        + "&departure_time=now"
+        + "&traffic_model=best_guess"
+        + "&units=imperial"
+        + "&key=" + Uri.EscapeDataString(apiKey);
+
+    using var http = new HttpClient();
+    using var response = await http.GetAsync(url);
+    response.EnsureSuccessStatusCode();
+    using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+    var root = doc.RootElement;
+
+    var status = root.TryGetProperty("status", out var statusElement)
+        ? statusElement.GetString() ?? string.Empty
+        : string.Empty;
+    if (!string.Equals(status, "OK", StringComparison.Ordinal))
+    {
+        var message = root.TryGetProperty("error_message", out var messageElement)
+            ? messageElement.GetString() ?? string.Empty
+            : string.Empty;
+        throw new InvalidOperationException($"Distance Matrix error: {status} {message}".Trim());
+    }
+
+    var element = root.GetProperty("rows")[0].GetProperty("elements")[0];
+    var elementStatus = element.GetProperty("status").GetString() ?? string.Empty;
+    if (!string.Equals(elementStatus, "OK", StringComparison.Ordinal))
+        throw new InvalidOperationException($"No route found ({elementStatus}). Check the ZIP codes.");
+
+    var meters = element.GetProperty("distance").GetProperty("value").GetDouble();
+    var typicalSeconds = element.GetProperty("duration").GetProperty("value").GetDouble();
+    var trafficSeconds = element.TryGetProperty("duration_in_traffic", out var traffic)
+        ? traffic.GetProperty("value").GetDouble()
+        : typicalSeconds;
+
+    return new DistanceResult(meters / 1609.344, trafficSeconds / 60.0, typicalSeconds / 60.0);
+}
+
+static string NormalizeDistanceLocation(string location)
+{
+    location = location.Trim();
+    var isUsZip = location.Length == 5 && location.All(char.IsDigit)
+        || location.Length == 10 && location[5] == '-'
+            && location.Take(5).All(char.IsDigit)
+            && location.Skip(6).All(char.IsDigit);
+    return isUsZip ? location + ", USA" : location;
+}
+
+record DistanceResult(double Miles, double MinutesWithTraffic, double MinutesTypical);

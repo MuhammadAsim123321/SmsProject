@@ -273,7 +273,8 @@ namespace SendSmsCallAlerts.Controllers
         // GET /Technicians/GetFilteredTechnicians?customerZip=10001&categoryId=3&jobStartAt=2026-10-27T10:00&jobEndAt=2026-10-27T12:00&excludeJobId=5
         [HttpGet]
         public async Task<JsonResult> GetFilteredTechnicians(string customerZip, int? categoryId,
-            DateTime? jobStartAt, DateTime? jobEndAt, int? excludeJobId)
+            DateTime? jobStartAt, DateTime? jobEndAt, int? excludeJobId,
+            string? customerCityState = null, string? customerStreetAddress = null)
         {
             try
             {
@@ -302,10 +303,12 @@ namespace SendSmsCallAlerts.Controllers
                 var tasks = technicians.Select(async tech =>
                 {
                     double? miles = null;
-                    if (!string.IsNullOrWhiteSpace(customerZip) && !string.IsNullOrWhiteSpace(tech.ZipCode))
+                    var customerLocation = GoogleDistanceService.BuildLocation(customerZip, customerCityState, customerStreetAddress);
+                    var technicianLocation = GoogleDistanceService.BuildLocation(tech.ZipCode, tech.CityState, tech.StreetAddress);
+                    if (!string.IsNullOrWhiteSpace(customerLocation) && !string.IsNullOrWhiteSpace(technicianLocation))
                     {
                         await gate.WaitAsync();
-                        try { miles = await _distanceService.GetDistanceInMilesOrNull(customerZip, tech.ZipCode); }
+                        try { miles = await _distanceService.GetDistanceInMilesOrNull(customerLocation, technicianLocation); }
                         finally { gate.Release(); }
                     }
 

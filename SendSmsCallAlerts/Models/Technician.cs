@@ -25,10 +25,12 @@ namespace SendSmsCallAlerts.Models
         [StringLength(200)]
         public string? StreetAddress { get; set; }
 
+        [Display(Name = "City / Region / Country")]
         [StringLength(100)]
         public string? CityState { get; set; }
 
-        [StringLength(10)]
+        [Display(Name = "ZIP / Postal Code")]
+        [StringLength(20)]
         public string? ZipCode { get; set; }
 
         // Comma-separated list of IvrOption IDs (e.g. "1,3,5")
