@@ -5,30 +5,40 @@ using System.Web;
 
 namespace SendSmsCallAlerts.Filters
 {
-    public class SessionCheckingAttribute : ActionFilterAttribute
+    /// Kept so existing [SessionChecking] usages keep compiling.
+    /// It is now exactly [RoleAuthorize] with no role restriction (login + DB-verified user).
+    public class SessionCheckingAttribute : RoleAuthorizeAttribute
     {
-        public override void OnActionExecuting(ActionExecutingContext context)
-        {
-            if (!context.ActionDescriptor.EndpointMetadata.Any(em => em.GetType() == typeof(AllowAnonymousAttribute))
-                && !context.ActionDescriptor.EndpointMetadata.Any(em => em.GetType() == typeof(AllowAnonymousAttribute)))
-            {
-                if (context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest")
-                {
-                    if (context.HttpContext.Session.GetString("UserId") == null)
-                    {
-                        context.HttpContext.Response.StatusCode = 403;
-                        context.Result = new JsonResult("LogOut");
-                    }
-                }
-                else if (context.HttpContext.Session.GetString("UserId") == null)
-                {
-                    var returnUrlWithQueryString = context.HttpContext.Request.Path + context.HttpContext.Request.QueryString;
-                    var redirectUrl = $"/Account/Logout?id=-2&returnUrl={HttpUtility.UrlEncode(returnUrlWithQueryString)}";
-                    context.Result = new RedirectResult(redirectUrl);
-                }
-
-            }
-        }
-
+        public SessionCheckingAttribute() : base() { }
     }
 }
+
+//namespace SendSmsCallAlerts.Filters
+//{
+//    public class SessionCheckingAttribute : ActionFilterAttribute
+//    {
+//        public override void OnActionExecuting(ActionExecutingContext context)
+//        {
+//            if (!context.ActionDescriptor.EndpointMetadata.Any(em => em.GetType() == typeof(AllowAnonymousAttribute))
+//                && !context.ActionDescriptor.EndpointMetadata.Any(em => em.GetType() == typeof(AllowAnonymousAttribute)))
+//            {
+//                if (context.HttpContext.Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+//                {
+//                    if (context.HttpContext.Session.GetString("UserId") == null)
+//                    {
+//                        context.HttpContext.Response.StatusCode = 403;
+//                        context.Result = new JsonResult("LogOut");
+//                    }
+//                }
+//                else if (context.HttpContext.Session.GetString("UserId") == null)
+//                {
+//                    var returnUrlWithQueryString = context.HttpContext.Request.Path + context.HttpContext.Request.QueryString;
+//                    var redirectUrl = $"/Account/Logout?id=-2&returnUrl={HttpUtility.UrlEncode(returnUrlWithQueryString)}";
+//                    context.Result = new RedirectResult(redirectUrl);
+//                }
+
+//            }
+//        }
+
+//    }
+//}

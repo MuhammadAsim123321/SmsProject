@@ -14,6 +14,7 @@ using Twilio.Rest.Api.V2010.Account.Message;
 namespace SendSmsCallAlerts.Controllers
 {
     [SessionChecking]
+    [RoleAuthorize]
     public class SmsController : Controller
     {
         private readonly IConfiguration _configuration;
@@ -39,6 +40,12 @@ namespace SendSmsCallAlerts.Controllers
 
         public IActionResult IncomingLogs()
         {
+            var userId = Convert.ToInt32(HttpContext.Session.GetString("UserId"));
+            var user = _context.User.AsNoTracking().FirstOrDefault(u => u.Id == userId);
+            if (!string.Equals(HttpContext.Session.GetString("UserRole"), AppRoles.Admin, StringComparison.OrdinalIgnoreCase))
+                ViewBag.StaffEmptyMessage = string.IsNullOrWhiteSpace(user?.Phone)
+                    ? "No Twilio number is assigned to your account. Ask an administrator to set your Twilio# in Users."
+                    : $"No messages were sent from or received on your Twilio# {user.Phone}. If you expect messages here, ask an administrator to check that the number is saved in the same format as your messages (for example +1XXXXXXXXXX).";
             return View();
         }
 
@@ -201,8 +208,35 @@ namespace SendSmsCallAlerts.Controllers
             }
         }
 
+        // Helper: Check if Staff user has access to a message by ID.
+        // Admin: always allowed. Staff: allowed only if message's fromNum or toNum matches their Twilio#.
+        // Returns true if allowed, false if denied or message not found.
+        private bool StaffCanAccessMessage(int messageId)
+        {
+            string usrRole = HttpContext.Session.GetString("UserRole");
+            // Admin can access all messages
+            if (usrRole == "ADMIN") return true;
+
+            var sms = _context.SmsDetails.Find(messageId);
+            if (sms == null) return false;
+
+            string staffPhone = GetTwilioNumber();
+            if (string.IsNullOrEmpty(staffPhone) || staffPhone == "N/A" || staffPhone == "Error")
+                return false;
+
+            var variants = PhoneMatch.Variants(staffPhone);
+            // Check if fromNum or toNum matches Staff's phone variants
+            return variants.Contains(sms.fromNum) || variants.Contains(sms.toNum);
+        }
+
         public IActionResult OpenAttachments(int id)
         {
+            // Staff access control: only their own message's attachments
+            if (!StaffCanAccessMessage(id))
+            {
+                return NotFound();
+            }
+
             ViewBag.SmsBody = _context.SmsDetails.Where(r => r.Id == id).First().smsBody;
             var mmsList = _context.MmsLinkss.Where(r => r.SmsId == id).ToList();
             return View(mmsList);
@@ -279,6 +313,12 @@ namespace SendSmsCallAlerts.Controllers
         // =====================================================================
         public async Task<string> DeleteMsg(int id)
         {
+            // Staff access control: only their own message
+            if (!StaffCanAccessMessage(id))
+            {
+                return "not_allowed";
+            }
+
             var sms = await _context.SmsDetails.FindAsync(id);
             if (sms != null)
             {
@@ -302,6 +342,13 @@ namespace SendSmsCallAlerts.Controllers
 
         public async Task<IActionResult> Delete(int id)
         {
+            // Staff access control: only their own message
+            if (!StaffCanAccessMessage(id))
+            {
+                TempData["ErrMsg"] = "You do not have permission to delete this message.";
+                return RedirectToAction("IncomingLogs");
+            }
+
             if (_context.IvrOption == null)
             {
                 return Problem("Entity set 'ApplicationDbContext.IvrOption'  is null.");
@@ -408,8 +455,20 @@ namespace SendSmsCallAlerts.Controllers
             try
             {
                 var endOfToDate = toDate.Date.AddDays(1).AddTicks(-1);
-                var recordsToDelete = _context.SmsDetails
+                var query = _context.SmsDetails
                     .Where(s => s.createdOn >= fromDate.Date && s.createdOn <= endOfToDate);
+
+                // Staff: restrict to their own messages
+                string staffPhone = GetTwilioNumber();
+                if (!string.IsNullOrEmpty(staffPhone) && staffPhone != "N/A" && staffPhone != "Error")
+                {
+                    var variants = PhoneMatch.Variants(staffPhone);
+                    // Only old line commented out for reference; new logic below
+                    // .Where(s => string.IsNullOrEmpty(staffPhone) || s.fromNum == staffPhone)
+                    query = query.Where(s => variants.Contains(s.fromNum) || variants.Contains(s.toNum));
+                }
+
+                var recordsToDelete = query;
 
                 int count = await recordsToDelete.CountAsync();
                 if (count > 0)
@@ -433,9 +492,15 @@ namespace SendSmsCallAlerts.Controllers
             try
             {
                 var endOfToDate = toDate.Date.AddDays(1).AddTicks(-1);
+                
+                // Get Staff phone for filtering (Admin gets null, no filter)
+                string staffPhone = GetTwilioNumber();
+                var variants = PhoneMatch.Variants(staffPhone);
 
                 var logs = await (from sms in _context.SmsDetails
                                   where sms.createdOn >= fromDate.Date && sms.createdOn <= endOfToDate
+                                  // Staff: restrict to their own messages (fromNum OR toNum matches)
+                                  && (string.IsNullOrEmpty(staffPhone) || variants.Contains(sms.fromNum) || variants.Contains(sms.toNum))
                                   let phoneNumber = sms.smsDirection == "Incoming" ? sms.fromNum : sms.toNum
                                   join contact in _context.ContactDetail on phoneNumber equals contact.PhoneNumber into contactJoin
                                   from c in contactJoin.DefaultIfEmpty()
@@ -591,8 +656,13 @@ namespace SendSmsCallAlerts.Controllers
         // =====================================================================
         private async Task<List<SmsDetailsVm>> GetIncomingLogs(string num)
         {
+            // For Staff users, match messages where fromNum OR toNum equals their Twilio number.
+            // This shows both outgoing messages (From = Twilio#) and incoming messages (To = Twilio#).
+            // For Admin (num == null), no filter is applied.
+            var variants = PhoneMatch.Variants(num);
+            
             var rawData = await (from sms in _context.SmsDetails
-                                 .Where(r => string.IsNullOrEmpty(num) || r.fromNum == num)
+                                 .Where(r => string.IsNullOrEmpty(num) || variants.Contains(r.fromNum) || variants.Contains(r.toNum))
 
                                  join contact in _context.ContactDetail
                                      on (sms.ContactDetailId != null ? sms.ContactDetailId.Value : -1) equals contact.Id into contactByIdJoin

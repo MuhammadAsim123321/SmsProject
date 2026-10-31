@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using SendSmsCallAlerts.Data;
+using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Jobs;
 using SendSmsCallAlerts.Services;
 
@@ -97,6 +98,9 @@ builder.Services.AddScoped<IUploadedMediaStore, UploadedMediaStore>();
 builder.Services.AddScoped<JobService>();
 builder.Services.AddScoped<TechnicianReplyService>();
 
+// NEW: password hashing
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
+
 builder.Services.Configure<FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = long.MaxValue; // Set the maximum form size to a large value.
@@ -118,6 +122,23 @@ builder.Services.AddHostedService<HangfireStartUp>();
 
 var app = builder.Build();
 
+// NEW: one-time conversion of legacy plaintext passwords to hashes (idempotent, runs on every start).
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var passwords = scope.ServiceProvider.GetRequiredService<IPasswordService>();
+        var converted = LegacyPasswordMigration.HashPlaintextPasswords(db, passwords);
+        if (converted > 0)
+            app.Logger.LogInformation("Converted {Count} plaintext password(s) to hashes.", converted);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Legacy password conversion failed. Plaintext passwords are still accepted and upgraded at login.");
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
@@ -131,14 +152,18 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseSession(); // MOVED UP (was the last line): the Hangfire dashboard filter reads the session
+
 app.UseAuthorization();
-app.UseHangfireDashboard();
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAdminFilter() } // Admin only (was: local requests only)
+});
 app.UseHangfireServer();
 
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=LogIn}/{id?}");
-    //pattern: "{controller=Sms}/{action=IncomingLogs}/{id?}");
+//pattern: "{controller=Sms}/{action=IncomingLogs}/{id?}");
 
-app.UseSession();
 app.Run();

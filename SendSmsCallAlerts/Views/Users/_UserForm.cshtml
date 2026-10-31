@@ -1,0 +1,22 @@
+@model SendSmsCallAlerts.Models.User
+@{
+    var isSelf = ViewBag.IsSelf == true;
+}
+<form id="userForm" asp-action="@(Model.Id == 0 ? "Create" : "Edit")" method="post" class="user-modal-form">
+    @Html.AntiForgeryToken()
+    <div class="user-form-errors alert alert-danger" role="alert" @(ViewBag.ErMsg == null ? "style=display:none" : "")>@ViewBag.ErMsg</div>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input type="hidden" asp-for="Id" />
+    <div class="row users-form-grid">
+        <div class="col-md-6"><div class="form-group"><label asp-for="Username"></label><input asp-for="Username" class="form-control" autocomplete="off" /><span asp-validation-for="Username" class="text-danger"></span></div></div>
+        <div class="col-md-6"><div class="form-group"><label asp-for="Role"></label>@if (isSelf) { <input type="hidden" asp-for="Role" /><input class="form-control" value="@AppRoles.DisplayName(Model.Role)" disabled /><small class="text-muted">You cannot change your own role.</small> } else { <select asp-for="Role" asp-items="(SelectList)ViewBag.Roles" class="form-control"></select> }<span asp-validation-for="Role" class="text-danger"></span></div></div>
+        <div class="col-md-6"><div class="form-group"><label asp-for="Name"></label><input asp-for="Name" class="form-control" /><span asp-validation-for="Name" class="text-danger"></span></div></div>
+        <div class="col-md-6"><div class="form-group"><label asp-for="Email"></label>@*  <input asp-for="Email" class="form-control" />*@<input asp-for="Email" class="form-control" type="email" data-val-email="Invalid email address" data-val="true" /><span asp-validation-for="Email" class="text-danger"></span></div></div>
+        <div class="col-md-6"><div class="form-group"><label asp-for="Phone">Twilio#</label><input asp-for="Phone" class="form-control" /><small class="form-text text-muted">Staff users only see messages and settings linked to their Twilio number.</small><span asp-validation-for="Phone" class="text-danger"></span></div></div>
+        <div class="col-md-6"><div class="form-group"><label asp-for="Password">@(Model.Id == 0 ? "Password" : "New Password")</label><input type="password" name="Password" class="form-control" autocomplete="new-password" placeholder="@(Model.Id == 0 ? "" : "Leave blank to keep the current password")" /><small class="text-muted">Minimum 8 characters@(Model.Id == 0 ? "." : "; leave blank to keep the current password.")</small><span asp-validation-for="Password" class="text-danger"></span></div></div>
+    </div>
+    @if (ViewBag.IsModal != true)
+    {
+        <div class="form-group mb-0"><button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Save</button></div>
+    }
+</form>

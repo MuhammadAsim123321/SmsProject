@@ -27,6 +27,8 @@ namespace SendSmsCallAlerts.Controllers
             int uId = Convert.ToInt32(HttpContext.Session.GetString("UserId"));
             string uRole = HttpContext.Session.GetString("UserRole");
             if (uRole == "ADMIN") uId = 0;
+            var currentUser = _context.User.AsNoTracking().FirstOrDefault(u => u.Id == uId);
+            ViewBag.HasAssignedTwilio = currentUser?.Phone != null && currentUser.Phone.Trim().Length > 0;
 
             return _context.IvrOption != null ? 
                           View(await _context.IvrOption.Where(r=>uId==0 || r.UserId==uId).OrderBy(r=>r.Num).ToListAsync()) :

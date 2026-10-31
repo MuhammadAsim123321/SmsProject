@@ -1,8 +1,9 @@
 @{
-    var role = Context?.Request?.HttpContext?.Session?.GetString("UserRole") ?? "";
+    var session = Context?.Request?.HttpContext?.Session;
+    var role = session?.CurrentRole() ?? AppRoles.Staff;
     var userName = Context?.Request?.HttpContext?.Session?.GetString("UserName") ?? "";
-    var isLoggedIn = !string.IsNullOrWhiteSpace(role);
-    var isAdmin = role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
+    var isLoggedIn = session.IsLoggedIn();
+    var isAdmin = session.IsAdmin();
     var routeController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "Home";
     var routeAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "Index";
     var areaLabel = routeController switch
@@ -19,6 +20,7 @@
         "SmsTemplates" => "Messaging tools",
         "Technicians" => "Team",
         "Users" => "Administration",
+        "Profile" => "Account",
         _ => "Workspace"
     };
     var displayPage = routeController switch
@@ -39,6 +41,7 @@
         "SmsTemplates" => "SMS templates",
         "Technicians" => "Technicians",
         "Users" => "Users",
+        "Profile" => "My profile",
         _ => routeController
     };
     var pageSuffix = routeAction switch
@@ -50,7 +53,7 @@
         _ => ""
     };
     var pageHeading = string.IsNullOrEmpty(pageSuffix) ? displayPage : $"{pageSuffix} {displayPage}";
-    var shortUser = string.IsNullOrWhiteSpace(userName) ? (isAdmin ? "Admin" : "User") : userName;
+    var shortUser = string.IsNullOrWhiteSpace(userName) ? role : userName;
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -87,11 +90,12 @@
                     <li class="nav-item dropdown has-arrow">
                         <a href="#" class="dropdown-toggle nav-link user-link signal-account-toggle" data-toggle="dropdown" aria-expanded="false" aria-label="Account menu">
                             <span class="signal-avatar" aria-hidden="true"><i class="fa fa-user-o"></i></span>
-                            <span class="signal-account-details"><strong>@shortUser</strong><small>@(isAdmin ? "Administrator" : "Team member")</small></span>
+                            <span class="signal-account-details"><strong>@shortUser</strong><small>@AppRoles.DisplayName(role)</small></span>
                             <i class="fa fa-angle-down signal-account-chevron" aria-hidden="true"></i>
                         </a>
                         <div class="dropdown-menu dropdown-menu-right signal-account-dropdown">
-                            <div class="signal-dropdown-label">Signed in as <strong>@shortUser</strong></div>
+                            <div class="signal-dropdown-label">Signed in as <strong>@shortUser</strong> <span class="badge badge-light">@AppRoles.DisplayName(role)</span></div>
+                            <a class="dropdown-item" asp-controller="Profile" asp-action="Index"><i class="fa fa-user-o" aria-hidden="true"></i> My profile</a>
                             <a class="dropdown-item" asp-controller="Account" asp-action="Logout"><i class="fa fa-sign-out" aria-hidden="true"></i> Log out</a>
                         </div>
                     </li>
@@ -121,6 +125,7 @@
     <script src="~/assets/js/bootstrap.min.js"></script>
     <script src="~/assets/js/jquery.slimscroll.js"></script>
     <script src="~/assets/js/app.js"></script>
+    <script src="~/js/password-toggle.js" asp-append-version="true"></script>
     <script>
         (function () {
             var storageKey = 'signal-sidebar-scroll-top';

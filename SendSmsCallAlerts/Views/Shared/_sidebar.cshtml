@@ -1,6 +1,14 @@
+@inject SendSmsCallAlerts.Data.ApplicationDbContext Db
+@using Microsoft.EntityFrameworkCore
 @{
-    var role = Context?.Request?.HttpContext?.Session?.GetString("UserRole") ?? "";
-    var isAdmin = role.Equals("ADMIN", StringComparison.OrdinalIgnoreCase);
+    var session = Context?.Request?.HttpContext?.Session;
+    var isAdmin = session.IsAdmin();
+    var hasTwilio = isAdmin;
+    if (!isAdmin && int.TryParse(session?.GetString("UserId"), out var sidebarUserId))
+    {
+        var sidebarPhone = Db.User.AsNoTracking().Where(user => user.Id == sidebarUserId).Select(user => user.Phone).FirstOrDefault();
+        hasTwilio = !string.IsNullOrWhiteSpace(sidebarPhone);
+    }
     var controller = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
     var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
 }
@@ -10,13 +18,23 @@
             <div class="signal-sidebar-intro"><span class="signal-sidebar-kicker">WORKSPACE</span><span class="signal-sidebar-description">Messaging &amp; automation</span></div>
             <ul>
                 <li class="menu-title">MESSAGING</li>
-                <li><a class="@(controller == "Sms" && action == "IncomingLogs" ? "active" : "")" asp-controller="Sms" asp-action="IncomingLogs"><i class="fa fa-inbox" aria-hidden="true"></i><span>Incoming SMS</span></a></li>
-                <li><a class="@(controller == "Conversations" ? "active" : "")" asp-controller="Conversations" asp-action="SMS"><i class="fa fa-paper-plane-o" aria-hidden="true"></i><span>Send SMS</span></a></li>
+                @if (hasTwilio)
+                {
+                    <li><a class="@(controller == "Sms" && action == "IncomingLogs" ? "active" : "")" asp-controller="Sms" asp-action="IncomingLogs"><i class="fa fa-inbox" aria-hidden="true"></i><span>Incoming SMS</span></a></li>
+                    <li><a class="@(controller == "Conversations" ? "active" : "")" asp-controller="Conversations" asp-action="SMS"><i class="fa fa-paper-plane-o" aria-hidden="true"></i><span>Send SMS</span></a></li>
+                }
                 <li><a class="@(controller == "Sms" && action == "ScheduledJobs" ? "active" : "")" asp-controller="Sms" asp-action="ScheduledJobs"><i class="fa fa-clock-o" aria-hidden="true"></i><span>Scheduled jobs</span></a></li>
                 <li class="menu-title">CALL FLOWS</li>
                 <li><a class="@(controller == "IvrOptions" ? "active" : "")" asp-controller="IvrOptions" asp-action="Index"><i class="fa fa-sitemap" aria-hidden="true"></i><span>Main options</span></a></li>
                 <li><a class="@(controller == "OptionInstructions" ? "active" : "")" asp-controller="OptionInstructions" asp-action="Index"><i class="fa fa-list-alt" aria-hidden="true"></i><span>Option instructions</span></a></li>
-                <li><a class="@(controller == "IntroSms" ? "active" : "")" asp-controller="IntroSms" asp-action="Create"><i class="fa fa-comment-o" aria-hidden="true"></i><span>Intro SMS</span></a></li>
+                @if (hasTwilio)
+                {
+                    <li><a class="@(controller == "IntroSms" ? "active" : "")" asp-controller="IntroSms" asp-action="Create"><i class="fa fa-comment-o" aria-hidden="true"></i><span>Intro SMS</span></a></li>
+                }
+                @if (!isAdmin && !hasTwilio)
+                {
+                    <li class="signal-sidebar-info"><i class="fa fa-info-circle" aria-hidden="true"></i><span>Ask an administrator to assign your Twilio# to unlock messaging pages.</span></li>
+                }
                 <li class="menu-title">OPERATIONS</li>
                 <li><a class="@(controller == "Technicians" ? "active" : "")" asp-controller="Technicians" asp-action="Index"><i class="fa fa-wrench" aria-hidden="true"></i><span>Technicians</span></a></li>
                 <li><a class="@(controller == "AutomatedNotifications" ? "active" : "")" asp-controller="AutomatedNotifications" asp-action="Index"><i class="fa fa-bell-o" aria-hidden="true"></i><span>Automated SMS</span></a></li>

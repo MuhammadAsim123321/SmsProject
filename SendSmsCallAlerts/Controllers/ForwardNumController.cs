@@ -12,6 +12,7 @@ using SendSmsCallAlerts.Models;
 namespace SendSmsCallAlerts.Controllers
 {
     [SessionChecking]
+    [RoleAuthorize(AppRoles.Admin)]
     public class ForwardNumController : Controller
     {
         private readonly ApplicationDbContext _context;

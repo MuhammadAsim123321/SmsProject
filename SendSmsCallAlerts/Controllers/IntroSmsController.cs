@@ -27,6 +27,8 @@ namespace SendSmsCallAlerts.Controllers
         {
             var UserId = Convert.ToInt32(HttpContext.Session.GetString("UserId"));
             var twNo = _context.User.Where(r => r.Id == UserId).First().Phone;
+            ViewBag.HasAssignedTwilio = twNo != null && twNo.Trim().Length > 0;
+            ViewBag.TwilioNumber = twNo;
             return _context.IntroSms != null ? 
                           View(await _context.IntroSms.Where(r=>r.TwNum==twNo).ToListAsync()) :
                           Problem("Entity set 'ApplicationDbContext.IntroSms'  is null.");

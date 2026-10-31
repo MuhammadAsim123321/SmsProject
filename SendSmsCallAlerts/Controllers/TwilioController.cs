@@ -11,7 +11,7 @@ using Twilio.Rest.Api.V2010.Account.AvailablePhoneNumberCountry;
 
 namespace SendSmsCallAlerts.Controllers
 {
-    [SessionChecking]
+    [RoleAuthorize(AppRoles.Admin)]
     public class TwilioController : Controller
     {
         private readonly IWebHostEnvironment _hostingEnvironment;

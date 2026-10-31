@@ -28,6 +28,12 @@
         <div class="nova-list-controls"><label class="nova-search" for="search-novaOptionInstructionsTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search All Option instructions</span><input type="search" id="search-novaOptionInstructionsTable" data-nova-search="novaOptionInstructionsTable" placeholder="Search records..." autocomplete="off" /></label></div>
     </div>
     <div class="nova-table-viewport">
+@if (!Model.Any() && !Context.Session.IsAdmin())
+{
+    <div class="nova-empty"><i class="fa fa-info-circle"></i> You haven't created any records yet. Use Create New to add one.</div>
+}
+@if (Model.Any())
+{
 <table id="novaOptionInstructionsTable" class="table">
     <thead>
         <tr>
@@ -70,5 +76,6 @@
         }
     </tbody>
 </table>
+}
 </div>
 </section>

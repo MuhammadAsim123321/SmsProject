@@ -8,6 +8,7 @@ using SendSmsCallAlerts.Services;
 namespace SendSmsCallAlerts.Controllers
 {
     [SessionChecking]
+    [RoleAuthorize]
     public class TechniciansController : Controller
     {
         private readonly ApplicationDbContext _context;

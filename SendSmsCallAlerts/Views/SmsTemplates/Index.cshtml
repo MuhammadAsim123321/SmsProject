@@ -13,7 +13,7 @@
             <p>Reusable message content in one place</p>
         </div>
     </div>
-    <div class="nova-page-actions"><a asp-action="Create" class="signal-create-link sg-primary-action"><i class="fa fa-plus" aria-hidden="true"></i> Create template</a></div>
+    <div class="nova-page-actions">@if (Context.Session.IsAdmin()) { <a asp-action="Create" class="signal-create-link sg-primary-action"><i class="fa fa-plus" aria-hidden="true"></i> Create template</a> }</div>
 </section>
 
 @if (TempData["StMsg"] != null)
@@ -73,9 +73,12 @@
             @Html.DisplayFor(modelItem => item.createdOn)
             </td>*@
                 <td>
+                    @if (Context.Session.IsAdmin())
+                    {
                     <a asp-action="Edit" asp-route-id="@item.Id" class="sg-table-link sg-table-link-edit">Edit</a>
                     @* <a asp-action="Details" asp-route-id="@item.Id">Details</a>
                     <a asp-action="Delete" asp-route-id="@item.Id" class="sg-table-link sg-table-link-danger">Delete</a>*@
+                    }
                 </td>
             </tr>
         }

@@ -22,6 +22,12 @@
         <div class="nova-list-controls"><label class="nova-search" for="search-novaIntroSmsTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search All Intro SMS</span><input type="search" id="search-novaIntroSmsTable" data-nova-search="novaIntroSmsTable" placeholder="Search records..." autocomplete="off" /></label></div>
     </div>
     <div class="nova-table-viewport">
+@if (!Model.Any() && !Context.Session.IsAdmin())
+{
+    <div class="nova-empty"><i class="fa fa-info-circle"></i> No records match your Twilio# @ViewBag.TwilioNumber. Ask an administrator to check that the number matches your messages exactly (format +1XXXXXXXXXX). <a asp-action="Create" class="btn btn-sm btn-primary ml-2">Create</a></div>
+}
+@if (Model.Any())
+{
 <table id="novaIntroSmsTable" class="table">
     <thead>
         <tr>
@@ -47,5 +53,6 @@
         }
     </tbody>
 </table>
+}
 </div>
 </section>

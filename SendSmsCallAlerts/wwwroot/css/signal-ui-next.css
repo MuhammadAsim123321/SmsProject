@@ -255,6 +255,24 @@ body.signal-app { color: var(--sg-ink); background: var(--sg-base); font-family:
 /* Non-login guests (error endpoints may use the shared layout without a session). */
 .signal-app.signal-guest .signal-page-wrapper { margin-left: 0; padding-top: 0; }
 
+.password-toggle-wrap { position: relative; display: block; }
+.password-toggle-wrap > input { padding-right: 42px !important; }
+.password-toggle-button { position: absolute; top: 50%; right: 7px; transform: translateY(-50%); width: 32px; height: 32px; border: 0; background: transparent; color: #78869d; cursor: pointer; }
+.password-toggle-button:hover { color: var(--sg-blue); }
+.signal-login-input .password-toggle-wrap { flex: 1; min-width: 0; }
+.signal-login-input .password-toggle-wrap > input { width: 100%; }
+.profile-password-toggle { color: var(--sg-ink); font-weight: 700; text-decoration: none !important; }
+.profile-password-actions { display: flex; gap: 8px; }
+.profile-cards .field-validation-valid { display: none; }
+.profile-cards { max-width: 760px; }
+.profile-cards > [class*="col-"] { flex: 0 0 100%; max-width: 100%; }
+.profile-cards .card { height: auto; }
+@media (max-width: 575.98px) {
+  .profile-cards .btn { width: 100%; }
+  .profile-password-actions { display: block; }
+  .profile-password-actions .btn { margin-top: 8px; }
+}
+
 
 /* ===== signal-ui-overrides.css ===== */
 /* Page-level refinements. Loaded after Razor view content to override older embedded
@@ -1861,3 +1879,22 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
     font-weight: 750 !important;
     color: #34455e !important;
 }
+
+  /* Bootstrap modal baseline: style.css historically made the backdrop white; the
+     Incoming SMS modal relies on the standard dark overlay. */
+  .modal-backdrop { background-color: #000; }
+  .modal-backdrop.show { opacity: .5; }
+
+  /* Staff sidebar notice for accounts without an assigned Twilio number. */
+  .signal-sidebar-info { display: flex; align-items: flex-start; gap: 8px; margin: 10px 12px 4px; padding: 10px 11px; border: 1px solid rgba(255,255,255,.12); border-radius: 9px; color: rgba(255,255,255,.68); font-size: 10px; line-height: 1.45; }
+  .signal-sidebar-info i { color: #a7c0ff; flex: 0 0 auto; margin-top: 2px; }
+
+  /* Password controls: shared by Login, Users AJAX forms, and Profile. */
+  .password-toggle-wrap { position: relative; display: block; width: 100%; }
+  .password-toggle-wrap > input { width: 100%; padding-right: 45px !important; }
+  .password-toggle-button { position: absolute; top: 50%; right: 7px; transform: translateY(-50%); display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: #7d8799; cursor: pointer; outline: none; }
+  .password-toggle-button:hover { color: #5a55d9; }
+  .password-toggle-button:focus { outline: none; box-shadow: none; }
+  .password-toggle-button:focus-visible { outline: 2px solid rgba(90,85,217,.35); outline-offset: 2px; }
+  .signal-login-input .password-toggle-wrap { flex: 1 1 auto; min-width: 0; width: auto; }
+  .signal-login-input .password-toggle-wrap > input { padding-right: 42px !important; }
