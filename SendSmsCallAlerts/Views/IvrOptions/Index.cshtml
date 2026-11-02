@@ -28,6 +28,12 @@
         <div class="nova-list-controls"><label class="nova-search" for="search-novaIvrOptionsTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search All IVR options</span><input type="search" id="search-novaIvrOptionsTable" data-nova-search="novaIvrOptionsTable" placeholder="Search records..." autocomplete="off" /></label></div>
     </div>
     <div class="nova-table-viewport">
+@if (!Model.Any() && !Context.Session.IsAdmin())
+{
+    <div class="nova-empty"><i class="fa fa-info-circle"></i> You haven't created any records yet. Use Create New to add one.</div>
+}
+@if (Model.Any())
+{
 <table id="novaIvrOptionsTable" class="table">
     <thead>
         <tr>
@@ -64,5 +70,6 @@
         }
     </tbody>
 </table>
+}
 </div>
 </section>

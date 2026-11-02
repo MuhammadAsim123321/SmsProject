@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting.Internal;
 using SendSmsCallAlerts.Data;
+using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Migrations;
 using SendSmsCallAlerts.Models;
 using SendSmsCallAlerts.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Twilio.TwiML.Voice;
 
 namespace SendSmsCallAlerts.Controllers
 {
+    [RoleAuthorize(AppRoles.Admin)]
     public class SchedulersController : Controller
     {
         private readonly ApplicationDbContext _context;

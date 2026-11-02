@@ -17,7 +17,10 @@
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-outline-secondary btn-sm sg-secondary-action">
         <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
     </a>
-        <a asp-action="Create" class="sg-create-button signal-create-link sg-primary-action">Add New</a>
+        @if (Context.Session.IsAdmin())
+        {
+            <a asp-action="Create" class="sg-create-button signal-create-link sg-primary-action">Add New</a>
+        }
     </div>
 </section>
 
@@ -57,9 +60,12 @@
                 @Html.DisplayFor(modelItem => item.createdOn)
             </td>*@
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id" class="sg-table-link sg-table-link-edit">Edit</a> |
                     @*  <a asp-action="Details" asp-route-id="@item.Id">Details</a> |*@
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="sg-table-link sg-table-link-danger">Delete</a>
+                    @if (Context.Session.IsAdmin())
+                    {
+                        <text><a asp-action="Edit" asp-route-id="@item.Id" class="sg-table-link sg-table-link-edit">Edit</a> |
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="sg-table-link sg-table-link-danger">Delete</a></text>
+                    }
                 </td>
             </tr>
         }

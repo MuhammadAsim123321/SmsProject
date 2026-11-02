@@ -11,6 +11,7 @@ using System.Xml.Linq;
 namespace SendSmsCallAlerts.Controllers
 {
     [SessionChecking]
+    [RoleAuthorize]
     public class ConversationsController : Controller
     {
         private readonly IWebHostEnvironment _hostingEnvironment;
@@ -41,6 +42,28 @@ namespace SendSmsCallAlerts.Controllers
 
         public async Task<IActionResult> SMS(string num = "")
         {
+            // Staff access control: Staff can only view conversations for customer numbers
+            // that have messages tied to their Twilio#. This prevents URL manipulation.
+            string usrRole = HttpContext.Session.GetString("UserRole");
+            if (usrRole != "ADMIN" && !string.IsNullOrWhiteSpace(num))
+            {
+                string twilioNum = GetTwilioNumber();
+                if (string.IsNullOrEmpty(twilioNum) || twilioNum == "N/A" || twilioNum == "Error")
+                {
+                    return RedirectToAction("IncomingLogs", "SMS");
+                }
+                string e164 = NormaliseToE164(num);
+                string twilioE164 = NormaliseToE164(twilioNum);
+                // Verify Staff has access to this conversation (at least one message connects them)
+                var hasAccess = await _context.SmsDetails
+                    .AnyAsync(s => (s.fromNum == e164 || s.toNum == e164) 
+                                && (s.fromNum == twilioE164 || s.toNum == twilioE164));
+                if (!hasAccess)
+                {
+                    return RedirectToAction("IncomingLogs", "SMS");
+                }
+            }
+
             ViewBag.ToNumber = GetFormattedNumber(num);
             ViewBag.FromNumber = _smsGateway.FromNumber.Length > 0
                 ? _smsGateway.FromNumber
@@ -115,6 +138,29 @@ namespace SendSmsCallAlerts.Controllers
             string e164 = NormaliseToE164(num);
             string twilioNum = GetTwilioNumber();
             string twilioE164 = NormaliseToE164(twilioNum ?? "");
+
+            // Staff access control: Staff can only load conversations for their own Twilio#.
+            // The customer number (e164) is not restricted, but the query implicitly only shows
+            // conversations that involve this Staff's Twilio number (since the UI loads it from
+            // an incoming message's thread). However, to be explicit and prevent URL manipulation,
+            // we verify that if the user is Staff, they only access messages already tied to their number.
+            string usrRole = HttpContext.Session.GetString("UserRole");
+            if (usrRole != "ADMIN")
+            {
+                if (string.IsNullOrEmpty(twilioNum) || twilioNum == "N/A" || twilioNum == "Error")
+                {
+                    return Json(new { success = false, messages = new List<object>(), customerName = "", error = "No Twilio# assigned" });
+                }
+                // For Staff: verify that at least one message in the DB connects this customer to their Twilio#
+                // to prevent them from inventing new conversations with arbitrary numbers.
+                var hasAccess = await _context.SmsDetails
+                    .AnyAsync(s => (s.fromNum == e164 || s.toNum == e164) 
+                                && (s.fromNum == twilioE164 || s.toNum == twilioE164));
+                if (!hasAccess)
+                {
+                    return Json(new { success = false, messages = new List<object>(), customerName = "", error = "Conversation not found" });
+                }
+            }
 
             var messages = await _context.SmsDetails
                 .Where(s => s.fromNum == e164 || s.toNum == e164)

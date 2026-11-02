@@ -718,6 +718,9 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.HasIndex("ScheduledJobId");
 
+                    b.HasIndex("createdOn")
+                        .HasDatabaseName("IX_SmsDetails_CreatedOn");
+
                     b.ToTable("SmsDetails");
                 });
 
@@ -889,8 +892,8 @@ namespace SendSmsCallAlerts.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<string>("ZipCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.HasKey("Id");
 

@@ -1,0 +1,19 @@
+﻿@{
+    ViewData["Title"] = "Access denied";
+}
+
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-lock"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">RESTRICTED</span>
+            <h1>Access denied</h1>
+            <p>Your role does not have permission to open this page.</p>
+        </div>
+    </div>
+    <div class="nova-page-actions">
+        <a asp-controller="Sms" asp-action="IncomingLogs" class="btn btn-outline-secondary btn-sm sg-secondary-action">
+            <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+        </a>
+    </div>
+</section>

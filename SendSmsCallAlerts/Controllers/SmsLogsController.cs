@@ -75,7 +75,7 @@ namespace SendSmsCallAlerts.Controllers
         public List<AutomatedSmsLog> Rows { get; set; } = new();
     }
 
-    [SessionChecking]
+    [RoleAuthorize]
     public class SmsLogsController : Controller
     {
         private const int PageSize = 50;

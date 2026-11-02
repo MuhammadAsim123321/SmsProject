@@ -101,6 +101,7 @@ namespace SendSmsCallAlerts.Data
                 e.HasOne<AllScheduledJob>().WithMany()
                  .HasForeignKey(s => s.ScheduledJobId).OnDelete(DeleteBehavior.SetNull);
                 e.HasIndex(s => s.ScheduledJobId);
+                e.HasIndex(s => s.createdOn).HasDatabaseName("IX_SmsDetails_CreatedOn");
             });
 
             // ---------------- technician ----------------

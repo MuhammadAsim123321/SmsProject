@@ -1,4 +1,6 @@
-﻿namespace SendSmsCallAlerts.Models
+﻿using SendSmsCallAlerts.Services;
+
+namespace SendSmsCallAlerts.Models
 {
     public class SmsDetailsVm
     {
@@ -34,18 +36,22 @@
         public double? WaitingMinutes { get; set; }
 
         /// <summary>
-        /// "gold" (10–14m59s) | "orange" (15–19m59s) | "red" (20m+) | "" based on WaitingMinutes for incoming messages
+        /// "gold" (10–14m59s) | "orange" (15–19m59s) | "red" (20m+) | "" based on WaitingMinutes for incoming messages.
+        /// Thresholds now live in ResponseRules so the grid and the Dashboard always agree.
         /// </summary>
-        public string WaitingColor
-        {
-            get
-            {
-                if (smsDirection != "Incoming" || WaitingMinutes == null) return "";
-                if (WaitingMinutes >= 20) return "red";
-                if (WaitingMinutes >= 15) return "orange";
-                if (WaitingMinutes >= 10) return "gold"; // 10–14 min 59 sec
-                return "";
-            }
-        }
+        public string WaitingColor => smsDirection != "Incoming" ? "" : ResponseRules.ColorFor(WaitingMinutes);
+
+        // OLD (kept for reference, replaced by the line above):
+        //public string WaitingColor
+        //{
+        //    get
+        //    {
+        //        if (smsDirection != "Incoming" || WaitingMinutes == null) return "";
+        //        if (WaitingMinutes >= 20) return "red";
+        //        if (WaitingMinutes >= 15) return "orange";
+        //        if (WaitingMinutes >= 10) return "gold"; // 10–14 min 59 sec
+        //        return "";
+        //    }
+        //}
     }
 }

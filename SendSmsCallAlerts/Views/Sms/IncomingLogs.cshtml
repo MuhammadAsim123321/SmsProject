@@ -136,7 +136,7 @@
                 <th>Name</th>
                 <th>Street Address</th>
                 <th>City/State</th>
-                <th>ZIP Code</th>
+                <th>ZIP / Postal Code</th>
                 <th>Email</th>
                 <th>Category</th>
                 <th>Scheduler</th>
@@ -229,9 +229,20 @@
         }
         return data;
     }
+    (function () {
+        var q = new URLSearchParams(window.location.search);
+        if (!q.get('from')) return;
+        var names = { ontime: 'On time (under 10 min)', gold: 'Gold (10–15 min)', orange: 'Orange (15–20 min)', red: 'Red (20+ min)', pending: 'Pending (no reply)', responded: 'Responded' };
+        var range = q.get('to') && q.get('to') !== q.get('from') ? q.get('from') + ' to ' + q.get('to') : q.get('from');
+        var text = 'Dashboard filter: ' + range + (q.get('hour') ? ' · hour ' + q.get('hour') + ':00' : '') + (names[q.get('bucket')] ? ' · ' + names[q.get('bucket')] : '');
+        var $bar = $('<div class="alert alert-info d-flex justify-content-between align-items-center"></div>');
+        $('<span></span>').text(text).appendTo($bar);
+        $('<a class="btn btn-sm btn-outline-secondary" href="/Sms/IncomingLogs">Clear filter</a>').appendTo($bar);
+        $('.sg-response-legend').before($bar);
+    })();
 
     var RpmDatatable = $('#tblRPM').DataTable({
-        "sAjaxSource": "/SMS/GetData",
+        "sAjaxSource": "/SMS/GetData" + window.location.search,
         "sServerMethod": "POST",
         "bServerSide": false,
         "bProcessing": true,
@@ -240,7 +251,7 @@
             { "orderable": false, "targets": 18 }  // Actions
         ],
         "language": {
-            "emptyTable": "No record found.",
+            "emptyTable": "@(ViewBag.StaffEmptyMessage ?? "No record found.")",
             "processing": '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>'
         },
         // Task 4: color incoming rows based on waiting time — text only, no background change

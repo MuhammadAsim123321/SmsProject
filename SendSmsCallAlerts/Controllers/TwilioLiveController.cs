@@ -1,15 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
-using Twilio.Rest.Api.V2010.Account;
-using Twilio.Rest.Api.V2010.Account.AvailablePhoneNumberCountry;
-using Twilio;
-using SendSmsCallAlerts.Models;
 using Newtonsoft.Json;
 using NuGet.Protocol;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using SendSmsCallAlerts.Filters;
+using SendSmsCallAlerts.Models;
+using Twilio;
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Rest.Api.V2010.Account.AvailablePhoneNumberCountry;
 
 namespace SendSmsCallAlerts.Controllers
 {
+    [RoleAuthorize(AppRoles.Admin)]
     public class TwilioLiveController : Twilio.AspNet.Core.TwilioController
     {
         private readonly IConfiguration _configuration;

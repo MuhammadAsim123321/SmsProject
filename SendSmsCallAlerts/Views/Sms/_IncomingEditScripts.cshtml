@@ -219,6 +219,8 @@
 
             var query = {
                 customerZip: ($('#mZipCode').val() || '').trim(),
+                customerCityState: ($('#mCityState').val() || '').trim(),
+                customerStreetAddress: ($('#mStreetAddress').val() || '').trim(),
                 categoryId: categoryId
             };
             if ($('#mStartAt').val()) query.jobStartAt = $('#mStartAt').val();
@@ -267,7 +269,7 @@
         }
         $('#mCategory').on('change', updateDonorCarpetVisibility);
         $('#mTechnician').on('change', showTechnicianHint);
-        $('#mStartAt, #mEndAt, #mZipCode').on('change', function () { if ($('#mCategory').val()) loadTechnicians(null); });
+        $('#mStartAt, #mEndAt, #mZipCode, #mCityState, #mStreetAddress').on('change', function () { if ($('#mCategory').val()) loadTechnicians(null); });
 
         // ---------------------------------------------------------------- scheduler template
         function handleTemplateChange() {
@@ -336,8 +338,8 @@
             if (!(p.contact.name || '').trim()) e.contactName = 'Customer name is required.';
             if (p.contact.email && !/^[^\s\x40]+\x40[^\s\x40]+\.[^\s\x40]+$/.test(p.contact.email.trim()))
                 e.contactEmail = 'Enter a valid email address.';
-            if (p.contact.zipCode && !/^\d{5}(-\d{4})?$/.test(p.contact.zipCode.trim()))
-                e.contactZip = 'Enter a valid ZIP code (12345 or 12345-6789).';
+            if (p.contact.zipCode && !/^[\p{L}0-9][\p{L}0-9 -]{0,19}$/u.test(p.contact.zipCode.trim()))
+                e.contactZip = 'Enter a postal code with up to 20 letters, numbers, spaces or hyphens.';
 
             if (p.job) {
                 var qa = ($('#mQuotedAmount').val() || '').trim();

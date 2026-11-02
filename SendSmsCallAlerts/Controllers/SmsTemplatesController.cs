@@ -1,15 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SendSmsCallAlerts.Data;
+using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Models;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace SendSmsCallAlerts.Controllers
 {
+    [RoleAuthorize]
     public class SmsTemplatesController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -36,6 +38,7 @@ namespace SendSmsCallAlerts.Controllers
             return usEastCoastNow;
         }
 
+        [RoleAuthorize]
         public string GetTemplateImage(int TemplateId)
         {
             var tmplate = _context.SmsTemplates.Where(r => r.Id == TemplateId).First();
@@ -48,6 +51,7 @@ namespace SendSmsCallAlerts.Controllers
             return string.Empty;
         }
 
+        [RoleAuthorize]
         public IActionResult GetTemplates()
         {
             var urs = _context.SmsTemplates.OrderBy(r => r.name).ToList();
@@ -56,6 +60,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // GET: SmsTemplates
+        [RoleAuthorize(AppRoles.Admin)]
         public async Task<IActionResult> Index()
         {
               return _context.SmsTemplates != null ? 
@@ -64,6 +69,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // GET: SmsTemplates/Details/5
+        [RoleAuthorize(AppRoles.Admin)]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null || _context.SmsTemplates == null)
@@ -82,6 +88,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // GET: SmsTemplates/Create
+        [RoleAuthorize(AppRoles.Admin)]
         public IActionResult Create()
         {
             return View();
@@ -91,6 +98,7 @@ namespace SendSmsCallAlerts.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
+        [RoleAuthorize(AppRoles.Admin)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,name,templateBody,createdOn,imgPath")] SmsTemplate smsTemplate, IFormFile ImgFile)
         {
@@ -138,6 +146,7 @@ namespace SendSmsCallAlerts.Controllers
 
 
         // GET: SmsTemplates/Edit/5
+        [RoleAuthorize(AppRoles.Admin)]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null || _context.SmsTemplates == null)
@@ -158,6 +167,7 @@ namespace SendSmsCallAlerts.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RoleAuthorize(AppRoles.Admin)]
         public async Task<IActionResult> Edit(int id, [Bind("Id,name,templateBody,createdOn,imgPath")] SmsTemplate smsTemplate, IFormFile ImgFile)
         {
             if (id != smsTemplate.Id)
@@ -208,6 +218,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // GET: SmsTemplates/Delete/5
+        [RoleAuthorize(AppRoles.Admin)]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null || _context.SmsTemplates == null)
@@ -227,6 +238,7 @@ namespace SendSmsCallAlerts.Controllers
 
         // POST: SmsTemplates/Delete/5
         [HttpPost, ActionName("Delete")]
+        [RoleAuthorize(AppRoles.Admin)]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {

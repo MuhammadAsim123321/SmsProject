@@ -15,9 +15,9 @@
     </div>
     <div class="nova-page-actions">
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-outline-secondary btn-sm sg-secondary-action">
-        <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
-    </a>
-        <a asp-action="Create" class="sg-create-button signal-create-link sg-primary-action">Create New</a>
+            <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+        </a>
+        <a href="#" class="btn btn-primary sg-primary-action" id="create-user-button"><i class="fa fa-plus"></i> Create New</a>
     </div>
 </section>
 @if (TempData["StMsg"] != null)
@@ -26,180 +26,240 @@
         <b>@TempData["StMsg"]</b>
     </div>
 }
-
-<link href="~/css/bootstrapcopyfromlive.min.css" rel="stylesheet" />
-<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
-
-
-
-<section class="nova-list-card sg-fix-users" aria-label="All Users">
-    <div class="nova-list-toolbar">
-        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>All Users</h2><p>Manage account records and access</p></div></div>
-        <div class="nova-list-controls"><span class="nova-table-hint"><i class="fa fa-sliders" aria-hidden="true"></i> Use the table filters below</span></div>
+@if (TempData["ErMsg"] != null)
+{
+    <div class="alert alert-danger">
+        <b>@TempData["ErMsg"]</b>
     </div>
-    <div class="nova-table-viewport">
-<table class="table table-bordered table-striped" id="tblRPM">
-    <thead style="background: #70b3db;">
-        <tr>
-            <th>Name</th>
-            <th>Username</th>
-            <th>Password</th>
-            <th>Email</th>
-            <th>Twilio#</th>
-            @*  <th>Action&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</th>
-       *@
-        </tr>
+}
 
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
 
-    </thead>
-</table>
-    </div>
-</section>
-
-<div>
+<div class="users-page">
+    <section class="nova-list-card sg-fix-users" aria-label="All Users">
+        <div class="nova-list-toolbar">
+            <div class="nova-list-heading">
+                <span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span>
+                <div>
+                    <h2>All Users</h2>
+                    <p>Manage account records and access</p>
+                </div>
+            </div>
+            <div class="nova-list-controls"></div>
+        </div>
+        <div class="nova-table-viewport">
+            <table class="table table-bordered table-striped" id="tblRPM">
+                <thead style="background: #70b3db;">
+                    <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        @* Password column removed on purpose: passwords are hashed and must never be displayed. *@
+                        <th>Email</th>
+                        <th>Twilio#</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+    </section>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.js"></script>
-<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+<div class="modal fade users-modal" id="user-form-modal" tabindex="-1" role="dialog" aria-labelledby="user-form-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable users-modal-dialog" role="document"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="user-form-title">User</h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body" id="user-form-body"><div class="users-modal-loader"><i class="fa fa-spinner fa-spin fa-3x fa-fw" aria-hidden="true"></i><span class="sr-only">Loading...</span></div></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Close</button><button type="submit" form="userForm" class="btn btn-primary" id="save-user-button"><i class="fa fa-save" aria-hidden="true"></i> Save</button></div></div></div>
+</div>
+<div class="modal fade users-modal" id="delete-user-modal" tabindex="-1" role="dialog" aria-labelledby="delete-user-title" aria-hidden="true">
+    <div class="modal-dialog users-delete-dialog" role="document"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="delete-user-title">Delete user?</h5><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body text-center"><i class="fa fa-exclamation-triangle users-delete-icon" aria-hidden="true"></i><p class="users-delete-name" id="delete-user-name"></p><p class="text-muted mb-0">This cannot be undone.</p><div class="users-delete-error alert alert-danger text-left" id="delete-user-error" role="alert" style="display:none;"></div></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-dismiss="modal">Cancel</button><button type="button" class="btn btn-danger" id="confirm-delete-user"><i class="fa fa-trash" aria-hidden="true"></i> Delete</button></div></div></div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
+    <script>
+        (function ($) {
+            function setLoader(settings, on) {
+                $(settings.nTableWrapper).find('.dataTables_processing').each(function () {
+                    this.style.setProperty('display', on ? 'block' : 'none', 'important');
+                });
+            }
+            $('#tblRPM').on('processing.dt', function (e, settings, processing) { setLoader(settings, processing); });
+            $('#tblRPM').on('xhr.dt error.dt', function (e, settings) { setLoader(settings, false); });
+
+            var table = $('#tblRPM').DataTable({
+                autoWidth: false,
+                sAjaxSource: '/Users/GetUsersTbl',
+                sServerMethod: 'POST',
+                bServerSide: false,
+                bProcessing: true,
+                scrollX: true,
+                pageLength: 100,
+                order: [],
+                dom: '<"users-toolbar"<"users-search"f><"users-length"l>>rt<"users-footer"ip>',
+                language: {
+                    emptyTable: 'No record found.',
+                    processing: '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i><span class="sr-only">Loading...</span>',
+                    loadingRecords: ' ',
+                    search: '',
+                    searchPlaceholder: 'Search users...',
+                    lengthMenu: '_MENU_'
+                },
+                columns: [
+                    { data: 'name', searchable: true },
+                    { data: 'username', searchable: true },
+                    { data: 'email', searchable: true },
+                    { data: 'phone', searchable: true },
+                    { data: 'role', searchable: true, render: function (data, type) { if (type !== 'display') return data; var admin = (data || '').toUpperCase() === 'ADMIN'; return '<span class="user-role-badge ' + (admin ? 'user-role-admin' : 'user-role-staff') + '">' + (admin ? 'Admin' : 'Staff') + '</span>'; } },
+                    { data: 'id', orderable: false, searchable: false, render: function (data, type, row) { return '<button type="button" class="btn btn-sm btn-primary" onclick="EditRecord(' + data + ')"><i class="fa fa-edit"></i> Edit</button> <button type="button" class="btn btn-sm btn-danger" onclick="DeleteRecord(' + data + ', this.dataset.username, this.dataset.name)" data-username="' + $('<div>').text(row.username || '').html() + '" data-name="' + $('<div>').text(row.name || '').html() + '"><i class="fa fa-trash"></i> Delete</button>'; } }
+                ],
+                // Keep header/body widths aligned after data loads
+                initComplete: function (settings) { this.api().columns.adjust(); setLoader(settings, false); },
+                drawCallback: function (settings) { setLoader(settings, false); }
+            });
 
 
+            function showForm(url, title) {
+                $('#user-form-title').text(title);
+                $('#save-user-button').html('<i class="fa fa-spinner fa-spin fa-3x fa-fw users-button-spinner" aria-hidden="true"></i><span class="sr-only">Loading...</span>').prop('disabled', true);
+                $('#user-form-body').html('<div class="users-modal-loader"><i class="fa fa-spinner fa-spin fa-3x fa-fw" aria-hidden="true"></i><span class="sr-only">Loading...</span></div>');
+                $('#user-form-modal').modal('show');
+                $.get(url).done(function (html) { $('#user-form-body').html(html); window.initPasswordToggles($('#user-form-body')[0]); setSaveButton(false, title); }).fail(showAjaxError);
+            }
+            function setSaveButton(busy, title) { var label = title && title.indexOf('Edit') === 0 ? 'Update' : 'Save'; $('#save-user-button').prop('disabled', busy).html(busy ? '<i class="fa fa-spinner fa-spin fa-3x fa-fw users-button-spinner" aria-hidden="true"></i><span class="sr-only">Loading...</span>' : '<i class="fa fa-save" aria-hidden="true"></i> ' + label); }
+            function showAjaxError(xhr) { var message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Unable to complete the request.'; $('#user-form-body').html('<div class="alert alert-danger" role="alert">' + message + '</div>'); setSaveButton(false, $('#user-form-title').text()); }
+            $('#create-user-button').on('click', function (e) { e.preventDefault(); showForm('@Url.Action("CreateForm", "Users")', 'Create user'); });
+            window.EditRecord = function (id) { showForm('@Url.Action("EditForm", "Users")?id=' + id, 'Edit user'); };
+            window.DeleteRecord = function (id, username, name) { $('#confirm-delete-user').data('id', id); $('#delete-user-name').text((username || '') + (name ? ' - ' + name : '')); $('#delete-user-error').hide().empty(); $('#delete-user-modal').modal('show'); };
+            $('#confirm-delete-user').on('click', function () { var button = $(this); button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin fa-3x fa-fw users-button-spinner" aria-hidden="true"></i><span class="sr-only">Loading...</span>'); $.post('@Url.Action("Delete", "Users")', { id: button.data('id'), __RequestVerificationToken: $('#user-form-body input[name="__RequestVerificationToken"]').val() || $('input[name="__RequestVerificationToken"]').first().val() }).done(function (response) { if (!response.success) { $('#delete-user-error').text(response.message).show(); return; } $('#delete-user-modal').modal('hide'); $('.signal-view-surface').prepend('<div class="alert alert-success ajax-user-message">' + response.message + '</div>'); table.ajax.reload(null, false); }).fail(function (xhr) { var message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Unable to complete the request.'; $('#delete-user-error').text(message).show(); }).always(function () { button.prop('disabled', false).html('<i class="fa fa-trash" aria-hidden="true"></i> Delete'); }); });
+            $(document).on('submit', '.user-modal-form', function (e) { e.preventDefault(); var form = $(this); var title = $('#user-form-title').text(); setSaveButton(true, title); $.ajax({ url: form.attr('action'), method: 'POST', data: form.serialize(), headers: { 'X-Requested-With': 'XMLHttpRequest' } }).done(function (response) { if (response.success) { $('#user-form-modal').modal('hide'); $('.signal-view-surface').prepend('<div class="alert alert-success ajax-user-message">' + response.message + '</div>'); table.ajax.reload(null, false); } else { $('#user-form-body').html(response); window.initPasswordToggles($('#user-form-body')[0]); setSaveButton(false, title); } }).fail(function (xhr) { if (xhr.status === 403 && xhr.responseJSON) { $('#user-form-body').html('<div class="alert alert-danger">' + xhr.responseJSON.message + '</div>'); } else { showAjaxError(xhr); } }); });
+        })(jQuery);
+    </script>
 
-<script>
+    <style>
+        /* ID selector (#tblRPM_wrapper) outranks global class-based CSS, even when that uses !important */
+        #tblRPM_wrapper {
+            position: relative;
+        }
 
-    var RpmDatatable = $('#tblRPM').on('error.dt', function (e, settings, techNote, message) {
-    //SessionExpiredRedirect();
+            /* ===== Toolbar ===== */
+            #tblRPM_wrapper .users-toolbar {
+                display: flex !important;
+                align-items: center;
+                gap: 12px;
+                width: 100%;
+                margin-bottom: 12px;
+            }
 
-    }).DataTable({
-    "drawCallback": function (settings) {
-    $(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
-    },
-    //"initComplete": function (settings, json) {
-    //    //$(".dtfc-fixed-left").css("background-color", "rgb(112 179 219)");
+            #tblRPM_wrapper .users-search {
+                flex: 1 1 0% !important;
+                width: auto !important;
+                min-width: 0;
+                float: none !important;
+            }
 
+            #tblRPM_wrapper .users-length {
+                flex: 0 0 auto !important;
+                width: auto !important;
+                float: none !important;
+            }
 
-    //    //$('#tblRPM thead th:eq(1)').css({
-    //    //    'position': 'sticky',
-    //    //    'left': 102,
-    //    //    'background-color': '#70b3db',
-    //    //    'z-index': 2
-    //    //});
+            #tblRPM_wrapper div.dataTables_filter,
+            #tblRPM_wrapper div.dataTables_length {
+                float: none !important;
+                width: 100% !important;
+                margin: 0 !important;
+                text-align: left !important;
+            }
 
-    //    //this.api().columns.adjust();
-    //},
-    //"rowCallback": function (row, data, index) {
+            #tblRPM_wrapper div.dataTables_length {
+                width: auto !important;
+            }
 
-    //    $("table > thead > tr > th:first-child").css({
-    //        'position': 'sticky',
-    //        'left': 0,
-    //        'background-color': '#70b3db',
-    //        'z-index': 2
-    //    });
+                #tblRPM_wrapper div.dataTables_filter label,
+                #tblRPM_wrapper div.dataTables_length label {
+                    display: block !important;
+                    width: 100% !important;
+                    margin: 0 !important;
+                }
 
-    //    $("table > thead > tr > th:nth-child(2)").css({
-    //        'position': 'sticky',
-    //        'left': 102,
-    //        'background-color': '#70b3db',
-    //        'z-index': 2
-    //    });
+            #tblRPM_wrapper div.dataTables_filter input {
+                display: block !important;
+                width: 100% !important;
+                max-width: none !important;
+                height: 42px !important;
+                margin: 0 !important;
+                padding: 8px 12px 8px 44px !important;
+                border: 1px solid #d0d8e0 !important;
+                border-radius: 10px !important;
+                font-size: 14px;
+                background-color: #fff !important;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath fill='%238899aa' d='M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z'/%3E%3C/svg%3E") !important;
+                background-repeat: no-repeat !important;
+                background-position: 14px center !important;
+                background-size: 16px !important;
+            }
 
-    //    $('td:eq(0)', row).css({
-    //        'position': 'sticky',
-    //        'left': 0,
-    //        'background-color': '#70b3db',
-    //        'z-index': 1  // Ensure that it's above the other cells
-    //    });
-    //    $('td:eq(1)', row).css({
-    //        'position': 'sticky',
-    //        'left': 102,
-    //        'background-color': '#70b3db',
-    //        'z-index': 1
-    //    });
-    //},
-    "autoWidth": false,
-    "sAjaxSource": "/Users/GetUsersTbl",
-    //"fnServerParams": function (aoData) {
-    //    aoData.push(
-    //        { "name": "storeId", "value": $('#StoreId').val() }
-    //    );
-    //},
-    "sServerMethod": "POST",
-    "bServerSide": false,
-    "bProcessing": true,
-    "bSearchable": true,
-    "scrollX": true,
-    "scrollY": "400px",
-    "pageLength": 100,
-    //"fixedColumns": {
-    //    "leftColumns": 2 // Number of columns to freeze on the left
-    //},
-    "order": [],
-    //"order": [[0, 'asc']],
-    "language": {
-    "emptyTable": "No record found.",
-    "processing":
-    '<i class="fa fa-spinner fa-spin fa-3x fa-fw" style="color:#2a2b2b;"></i><span class="sr-only">Loading...</span> '
-    },
-    "columns": [
-    {
-    "data": "name",
-    "autoWidth": true,
-    "searchable": true
-    },
-    {
-    "data": "username",
-    "autoWidth": true,
-    "searchable": true
-    },
-    {
-    "data": "password",
-    "autoWidth": true,
-    "searchable": true
-    },
-    {
-    "data": "email",
-    "autoWidth": true,
-    "searchable": true
-    },
-    {
-    "data": "phone",
-    "autoWidth": true,
-    "searchable": true
-    }
-    //{
-    //    "render": function (data, type, row) {
+                #tblRPM_wrapper div.dataTables_filter input:focus {
+                    outline: none !important;
+                    border-color: #5b4fd6 !important;
+                    box-shadow: 0 0 0 3px rgba(91,79,214,.15) !important;
+                }
 
-    //        return '<button style="background: #52aadf;margin: 2px" onclick="EditRecord(' + row.id + ')"> Edit </button>' +
-    //            '<button style="background: #52aadf;" onclick="DeleteRecord(' + row.id + ')"> Delete </button>';
+                #tblRPM_wrapper div.dataTables_filter input::placeholder {
+                    color: #888;
+                    opacity: 1;
+                }
 
+            #tblRPM_wrapper div.dataTables_length select {
+                width: 90px !important;
+                height: 42px !important;
+                margin: 0 !important;
+                padding: 8px 12px !important;
+                border: 1px solid #d0d8e0 !important;
+                border-radius: 10px !important;
+                background-color: #fff !important;
+            }
 
-    //    },
-    //    "searchable": true
-    //}
+            /* ===== Loader ===== */
+            #tblRPM_wrapper .dataTables_processing {
+                position: absolute !important;
+                top: 50% !important;
+                left: 50% !important;
+                width: auto !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                transform: translate(-50%, -50%) !important;
+                background: none !important;
+                border: 0 !important;
+                box-shadow: none !important;
+                pointer-events: none;
+                z-index: 10;
+            }
+                /* when DataTables hides it, stay hidden no matter what other CSS says */
+                #tblRPM_wrapper .dataTables_processing[style*="display: none"] {
+                    display: none !important;
+                }
 
+                #tblRPM_wrapper .dataTables_processing::before,
+                #tblRPM_wrapper .dataTables_processing::after {
+                    display: none !important;
+                    content: none !important;
+                }
 
-    ]
-    });
+                #tblRPM_wrapper .dataTables_processing i {
+                    font-size: 32px;
+                    color: #3498db;
+                }
 
-    //RpmDatatable.on('draw.dt', function () {
-    //    $(".dtfc-fixed-left").css("background-color", "#66b7d1");
-    //});
+        /* ===== Mobile ===== */
+        @@media (max-width: 768px) {
+            #tblRPM_wrapper .users-toolbar {
+                gap: 8px;
+            }
 
-
-
-    function EditRecord(id) {
-    var url = '@Url.Action("Edit", "Users")';
-    url += '?id=' + id;
-    window.location.href = url;
-    }
-
-
-    function DeleteRecord(id) {
-    var url = '@Url.Action("Delete", "Users")';
-    url += '?id=' + id;
-    window.location.href = url;
-    }
-
-</script>
-
+            #tblRPM_wrapper div.dataTables_length select {
+                width: 76px !important;
+            }
+        }
+    </style>
+}

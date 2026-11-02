@@ -1,11 +1,13 @@
 ﻿using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using SendSmsCallAlerts.Data;
+using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Jobs;
 using SendSmsCallAlerts.Models;
 
 namespace SendSmsCallAlerts.Controllers
 {
+    [RoleAuthorize(AppRoles.Admin)]
     public class HangFireJobsController : Controller
     {
         private readonly ApplicationDbContext dbContext;

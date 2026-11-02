@@ -25,7 +25,7 @@ namespace SendSmsCallAlerts.Services
         public const string DonorCarpetCategoryKeyword = "Carpet Repair";
         public static bool IsDonorCarpetCategory(string? keyword) =>
             string.Equals((keyword ?? "").Trim(), DonorCarpetCategoryKeyword, StringComparison.OrdinalIgnoreCase);
-        private static readonly Regex ZipRegex = new(@"^\d{5}(-\d{4})?$", RegexOptions.Compiled);
+        private static readonly Regex PostalCodeRegex = new(@"^[\p{L}0-9][\p{L}0-9 -]{0,19}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
         private readonly ApplicationDbContext _db;
         private readonly TechnicianAvailabilityService _availability;
@@ -199,7 +199,8 @@ namespace SendSmsCallAlerts.Services
             if (name.Length == 0) errors["contactName"] = "Customer name is required.";
             else if (name.Length > 100) errors["contactName"] = "Name cannot be longer than 100 characters.";
             if (email.Length > 0 && !new EmailAddressAttribute().IsValid(email)) errors["contactEmail"] = "Enter a valid email address.";
-            if (zip.Length > 0 && !ZipRegex.IsMatch(zip)) errors["contactZip"] = "Enter a valid ZIP code (12345 or 12345-6789).";
+            if (zip.Length > 0 && !PostalCodeRegex.IsMatch(zip))
+                errors["contactZip"] = "Enter a postal code with up to 20 letters, numbers, spaces or hyphens.";
 
             // ---- 2) what was submitted -------------------------------------------
             bool isOutgoing = (req.SmsDirection ?? "").StartsWith("Outgoing", StringComparison.OrdinalIgnoreCase);
@@ -305,7 +306,9 @@ namespace SendSmsCallAlerts.Services
             // ---- 4) distance (outside the transaction: external call) -------------
             double? distance = null;
             if (needsJob && tech != null)
-                distance = await _distance.GetDistanceInMilesOrNull(zip, tech.ZipCode ?? "");
+                distance = await _distance.GetDistanceInMilesOrNull(
+                    GoogleDistanceService.BuildLocation(zip, c.CityState, c.StreetAddress),
+                    GoogleDistanceService.BuildLocation(tech.ZipCode, tech.CityState, tech.StreetAddress));
 
             bool asksDonorCarpet = false;
             if (needsJob)

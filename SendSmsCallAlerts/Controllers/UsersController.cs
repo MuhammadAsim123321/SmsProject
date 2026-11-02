@@ -2,30 +2,112 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Models;
+using SendSmsCallAlerts.Services;
 
 namespace SendSmsCallAlerts.Controllers
 {
-    [SessionChecking]
+    [RoleAuthorize(AppRoles.Admin)]
     public class UsersController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        // Hidden built-in account: not listed, cannot be created, edited or deleted from the UI.
+        private const string HiddenSuperUser = "Snowbro";
+        private const int MinPasswordLength = 8;
 
-        public UsersController(ApplicationDbContext context)
+        private readonly ApplicationDbContext _context;
+        private readonly IPasswordService _passwords;
+
+        public UsersController(ApplicationDbContext context, IPasswordService passwords)
         {
             _context = context;
+            _passwords = passwords;
         }
 
+        // ---------------- helpers ----------------
+        private int CurrentUserId =>
+            int.TryParse(HttpContext.Session.GetString("UserId"), out var id) ? id : 0;
+
+        private void LoadRoles(string? selected = null)
+        {
+            var items = new[]
+            {
+                new { Value = AppRoles.Admin, Text = "Admin" },
+                new { Value = AppRoles.Staff, Text = "Staff" }
+            };
+            ViewBag.Roles = new SelectList(items, "Value", "Text", selected == null ? null : AppRoles.Normalize(selected));
+        }
+
+        // true when another visible Admin (not the hidden account) would still exist
+        private bool IsOtherAdminLeft(int excludingUserId) =>
+            _context.User.Any(u => u.Id != excludingUserId
+                                   && u.Username != HiddenSuperUser
+                                   && u.Role != null && u.Role.ToUpper() == AppRoles.Admin);
+
+        private static bool IsHidden(User u) =>
+            string.Equals(u.Username, HiddenSuperUser, StringComparison.OrdinalIgnoreCase);
+
+        private static bool TryNormalizePhone(User user)
+        {
+            var phone = user.Phone;
+            var valid = PhoneNumberService.TryNormalize(ref phone);
+            user.Phone = phone;
+            return valid;
+        }
+
+        private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
+
+        private IActionResult FormFailure(User user)
+        {
+            if (!IsAjax) return View(user);
+            ViewBag.IsModal = true;
+            return PartialView("_UserForm", user);
+        }
+
+        private IActionResult FormSuccess(string message) => IsAjax
+            ? Json(new { success = true, message })
+            : RedirectToAction(nameof(Index));
+
+        [HttpGet]
+        public IActionResult CreateForm()
+        {
+            LoadRoles(AppRoles.Staff);
+            ViewBag.IsModal = true;
+            return PartialView("_UserForm", new User { Role = AppRoles.Staff });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EditForm(int id)
+        {
+            var user = await _context.User.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null || IsHidden(user)) return NotFound();
+
+            user.Password = "";
+            user.Role = AppRoles.Normalize(user.Role);
+            LoadRoles(user.Role);
+            ViewBag.IsSelf = user.Id == CurrentUserId;
+            ViewBag.IsModal = true;
+            return PartialView("_UserForm", user);
+        }
+
+        private object[] BuildListRows()
+        {
+            return _context.User.Where(u => u.Username != HiddenSuperUser).OrderBy(n => n.Name).ToList()
+                .Select(u => (object)new { u.Id, u.Username, u.Name, u.Email, u.Phone, Role = AppRoles.Normalize(u.Role) })
+                .ToArray();
+        }
+
+        // ---------------- JSON (password / hash is never returned) ----------------
         public IActionResult GetUsersTbl()
         {
-            var urs = _context.User.Where(u=>u.Username!= "Snowbro").OrderBy(n => n.Name).ToList();
+            var urs = BuildListRows();
 
-            if (urs == null || urs.Count() == 0)
+            if (urs.Length == 0)
             {
                 return Json(new
                 {
@@ -44,23 +126,19 @@ namespace SendSmsCallAlerts.Controllers
 
             //var urs = _context.Users.OrderBy(n => n.Name).ToList();
             //return Ok(urs);
-
         }
 
         public IActionResult GetUsers()
         {
             //return Json(_context.Users.ToList(), JsonRequestBehavior.AllowGet);
-            var urs = _context.User.Where(u => u.Username != "Snowbro").OrderBy(n => n.Name).ToList();
-            return Ok(urs);
-
+            return Ok(BuildListRows());
         }
 
         // GET: Users
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-              return _context.User != null ? 
-                          View(await _context.User.ToListAsync()) :
-                          Problem("Entity set 'ApplicationDbContext.User'  is null.");
+            // The grid is filled by GetUsersTbl (AJAX); the page itself needs no user rows.
+            return View(new List<User>());
         }
 
         // GET: Users/Details/5
@@ -72,7 +150,7 @@ namespace SendSmsCallAlerts.Controllers
             }
 
             var user = await _context.User
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(m => m.Id == id && m.Username != HiddenSuperUser);
             if (user == null)
             {
                 return NotFound();
@@ -84,51 +162,74 @@ namespace SendSmsCallAlerts.Controllers
         // GET: Users/Create
         public IActionResult Create()
         {
-            return View();
+            LoadRoles(AppRoles.Staff);
+            return View(new User { Role = AppRoles.Staff });
         }
 
         // POST: Users/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(User user)
         {
+            LoadRoles(user.Role);
+            user.Username = user.Username?.Trim() ?? "";
+
             if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
             {
                 ViewBag.ErMsg = "Please enter a username and password!";
-                return View(user);
+                return FormFailure(user);
+            }
+
+            if (IsHidden(user))
+            {
+                ViewBag.ErMsg = "This username is reserved. Please choose another one.";
+                return FormFailure(user);
+            }
+
+            if (user.Password.Length < MinPasswordLength)
+            {
+                ViewBag.ErMsg = $"Password must be at least {MinPasswordLength} characters.";
+                return FormFailure(user);
             }
 
             if (_context.User.Any(u => u.Username.ToLower() == user.Username.ToLower()))
             {
                 ViewBag.ErMsg = "A user with this username already exists!";
-                return View(user);
+                return FormFailure(user);
             }
 
-            if (user.Phone != null && user.Phone != "")
+            if (!AppRoles.IsValid(user.Role))
             {
-                user.Phone = user.Phone.Trim();
-                if (user.Phone.Length == 10) user.Phone = "+1" + user.Phone;
-                else if (user.Phone.Length == 11) user.Phone = "+" + user.Phone;
-                else if (user.Phone.Length < 10 || user.Phone.Length > 12)
-                {
-                    ViewBag.ErMsg = "Please enter a valid Twilio number!";
-                    return View(user);
-                }
+                ViewBag.ErMsg = "Please select a valid role!";
+                return FormFailure(user);
+            }
+
+            if (!TryNormalizePhone(user))
+            {
+                ViewBag.ErMsg = "Please enter a valid Twilio number!";
+                return FormFailure(user);
             }
 
             if (ModelState.IsValid)
             {
-                if (user.Username == "Snowbro") user.Role = "ADMIN";
+                var entity = new User
+                {
+                    Username = user.Username,
+                    Name = user.Name?.Trim(),
+                    Email = user.Email?.Trim(),
+                    Phone = user.Phone,
+                    Role = AppRoles.Normalize(user.Role)
+                };
+                entity.Password = _passwords.Hash(entity, user.Password);
 
-                    _context.Add(user);
+                _context.Add(entity);
                 await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
+                TempData["StMsg"] = "User created successfully!";
+                return FormSuccess("User created successfully!");
             }
 
             ViewBag.ErMsg = "Please try again with all necessary details!";
-            return View(user);
+            return FormFailure(user);
         }
 
         // GET: Users/Edit/5
@@ -139,17 +240,20 @@ namespace SendSmsCallAlerts.Controllers
                 return NotFound();
             }
 
-            var user = await _context.User.FindAsync(id);
-            if (user == null)
+            var user = await _context.User.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+            if (user == null || IsHidden(user))
             {
                 return NotFound();
             }
+
+            user.Password = ""; // the stored hash is never sent to the page
+            user.Role = AppRoles.Normalize(user.Role);
+            LoadRoles(user.Role);
+            ViewBag.IsSelf = user.Id == CurrentUserId;
             return View(user);
         }
 
         // POST: Users/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, User user)
@@ -159,26 +263,85 @@ namespace SendSmsCallAlerts.Controllers
                 return NotFound();
             }
 
-            if (user.Phone != null && user.Phone != "")
+            var existing = await _context.User.FirstOrDefaultAsync(u => u.Id == id);
+            if (existing == null || IsHidden(existing))
             {
-                user.Phone = user.Phone.Trim();
-                if (user.Phone.Length == 10) user.Phone = "+1" + user.Phone;
-                else if (user.Phone.Length == 11) user.Phone = "+" + user.Phone;
-                else if (user.Phone.Length < 10 || user.Phone.Length > 12)
+                return NotFound();
+            }
+
+            var isSelf = existing.Id == CurrentUserId;
+            LoadRoles(user.Role);
+            ViewBag.IsSelf = isSelf;
+
+            ModelState.Remove("Password"); // blank password = keep the current one
+            user.Username = user.Username?.Trim() ?? "";
+
+            if (string.IsNullOrEmpty(user.Username))
+            {
+                ViewBag.ErMsg = "Please enter a username!";
+                return FormFailure(user);
+            }
+
+            if (IsHidden(user))
+            {
+                ViewBag.ErMsg = "This username is reserved. Please choose another one.";
+                return FormFailure(user);
+            }
+
+            if (_context.User.Any(u => u.Id != id && u.Username.ToLower() == user.Username.ToLower()))
+            {
+                ViewBag.ErMsg = "A user with this username already exists!";
+                return FormFailure(user);
+            }
+
+            if (!AppRoles.IsValid(user.Role))
+            {
+                ViewBag.ErMsg = "Please select a valid role!";
+                return FormFailure(user);
+            }
+
+            var newRole = AppRoles.Normalize(user.Role);
+            var oldRole = AppRoles.Normalize(existing.Role);
+            if (newRole != oldRole)
+            {
+                if (isSelf)
                 {
-                    ViewBag.ErMsg = "Please enter a valid Twilio number!";
-                    return View(user);
+                    ViewBag.ErMsg = "You cannot change your own role.";
+                    return FormFailure(user);
                 }
+                if (oldRole == AppRoles.Admin && !IsOtherAdminLeft(id))
+                {
+                    ViewBag.ErMsg = "At least one Admin must remain.";
+                    return FormFailure(user);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(user.Password) && user.Password.Length < MinPasswordLength)
+            {
+                ViewBag.ErMsg = $"Password must be at least {MinPasswordLength} characters.";
+                return FormFailure(user);
+            }
+
+            if (!TryNormalizePhone(user))
+            {
+                ViewBag.ErMsg = "Please enter a valid Twilio number!";
+                return FormFailure(user);
             }
 
             if (ModelState.IsValid)
             {
+                existing.Username = user.Username;
+                existing.Name = user.Name?.Trim();
+                existing.Email = user.Email?.Trim();
+                existing.Phone = user.Phone;
+                existing.Role = newRole;
+                if (!string.IsNullOrEmpty(user.Password))
+                    existing.Password = _passwords.Hash(existing, user.Password);
+
                 try
                 {
-                    _context.Update(user);
                     await _context.SaveChangesAsync();
                     TempData["StMsg"] = "Record Updated Successfully!";
-
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -191,9 +354,9 @@ namespace SendSmsCallAlerts.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
+                return FormSuccess("Record Updated Successfully!");
             }
-            return View(user);
+            return FormFailure(user);
         }
 
         // GET: Users/Delete/5
@@ -205,7 +368,7 @@ namespace SendSmsCallAlerts.Controllers
             }
 
             var user = await _context.User
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(m => m.Id == id && m.Username != HiddenSuperUser);
             if (user == null)
             {
                 return NotFound();
@@ -223,20 +386,37 @@ namespace SendSmsCallAlerts.Controllers
             {
                 return Problem("Entity set 'ApplicationDbContext.User'  is null.");
             }
+
+            if (id == CurrentUserId)
+            {
+                TempData["ErMsg"] = "You cannot delete your own account.";
+                return IsAjax ? Json(new { success = false, message = "You cannot delete your own account." }) : RedirectToAction(nameof(Index));
+            }
+
             var user = await _context.User.FindAsync(id);
             if (user != null)
             {
+                if (IsHidden(user)) return NotFound();
+
+                if (AppRoles.Normalize(user.Role) == AppRoles.Admin && !IsOtherAdminLeft(id))
+                {
+                    TempData["ErMsg"] = "At least one Admin must remain.";
+                    return IsAjax ? Json(new { success = false, message = "At least one Admin must remain." }) : RedirectToAction(nameof(Index));
+                }
+
                 _context.User.Remove(user);
+                await _context.SaveChangesAsync();
                 TempData["StMsg"] = "Record Deleted Successfully!";
             }
-            
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            return IsAjax
+                ? Json(new { success = true, message = "Record Deleted Successfully!" })
+                : RedirectToAction(nameof(Index));
         }
 
         private bool UserExists(int id)
         {
-          return (_context.User?.Any(e => e.Id == id)).GetValueOrDefault();
+            return (_context.User?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }
