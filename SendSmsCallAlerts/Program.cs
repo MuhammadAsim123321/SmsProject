@@ -96,6 +96,7 @@ builder.Services.AddSingleton<IMediaUrlFactory, MediaUrlFactory>();
 builder.Services.AddScoped<IUploadedMediaStore, UploadedMediaStore>();
 builder.Services.AddScoped<JobService>();
 builder.Services.AddScoped<TechnicianReplyService>();
+builder.Services.AddScoped<RingCentralService>();
 
 builder.Services.Configure<FormOptions>(options =>
 {

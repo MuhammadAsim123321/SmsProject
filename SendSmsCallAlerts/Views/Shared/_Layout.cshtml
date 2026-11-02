@@ -19,6 +19,7 @@
         "SmsTemplates" => "Messaging tools",
         "Technicians" => "Team",
         "Users" => "Administration",
+        "RingCentralCalls" => "Calls",
         _ => "Workspace"
     };
     var displayPage = routeController switch
@@ -39,6 +40,7 @@
         "SmsTemplates" => "SMS templates",
         "Technicians" => "Technicians",
         "Users" => "Users",
+        "RingCentralCalls" => "Outgoing calls",
         _ => routeController
     };
     var pageSuffix = routeAction switch
