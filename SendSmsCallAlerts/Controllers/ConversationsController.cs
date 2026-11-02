@@ -296,7 +296,8 @@ namespace SendSmsCallAlerts.Controllers
                     imgPath = "",
                     smsDirection = send.Simulated ? "OutgoingTest" : "Outgoing",
                     smsBody = conversation.smsBody ?? "",
-                    createdOn = DateTime.UtcNow
+                    createdOn = DateTime.UtcNow,
+                    SentByUserId = int.TryParse(HttpContext.Session.GetString("UserId"), out var senderId) ? senderId : (int?)null
                 };
                 _context.SmsDetails.Add(smsDetail);
                 await _context.SaveChangesAsync();

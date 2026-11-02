@@ -1,0 +1,80 @@
+﻿@using SendSmsCallAlerts.Services
+@model List<StaffRow>
+@{
+    ViewData["Title"] = "Staff Activity";
+    string from = ViewBag.From, to = ViewBag.To, today = ViewBag.Today;
+    string Drill(int id, string kind) => $"/Sms/IncomingLogs?from={from}&to={to}&staffId={id}&kind={kind}";
+}
+<div class="mb-3">
+    <h3>Staff Activity</h3>
+    <form method="get" class="form-inline">
+        <input type="date" name="from" value="@from" class="form-control mr-2" />
+        <input type="date" name="to" value="@to" class="form-control mr-2" />
+        <button class="btn btn-primary mr-3">Show</button>
+        <a class="btn btn-outline-secondary btn-sm mr-1" href="?from=@today&to=@today">Today</a>
+        <a class="btn btn-outline-secondary btn-sm mr-1" href="?from=@ViewBag.Last7&to=@today">7 days</a>
+        <a class="btn btn-outline-secondary btn-sm" href="?from=@ViewBag.Last30&to=@today">30 days</a>
+    </form>
+    <small class="text-muted">
+        Received = customer messages to the staff member's Twilio#. Answered = first real reply sent by that person.
+        Late = 10 minutes or more. Replies sent before tracking started show as unattributed.
+    </small>
+</div>
+<div style="overflow-x:auto">
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Staff</th>
+                <th>Status</th>
+                <th>Sessions</th>
+                <th>Logged in</th>
+                <th>Active</th>
+                <th>Last seen</th>
+                <th>Pages</th>
+                <th>Actions</th>
+                <th>Received</th>
+                <th>Not answered</th>
+                <th>Answered</th>
+                <th>Late</th>
+                <th>Avg response</th>
+                <th>Replies sent</th>
+                <th>Unattributed</th>
+                <th>Technician msgs</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td><a href="/StaffActivity/Detail/@r.UserId?from=@from&to=@to">@r.Name</a><br /><small class="text-muted">@r.Phone</small></td>
+                    <td>@if (r.Online) {
+                        <span class="badge badge-success">Online</span>
+                    } else
+                    {
+
+                        <span class="badge badge-secondary">Offline</span>
+                    }
+                </td>
+                <td>@r.Sessions</td>
+                <td>@StaffActivityService.Duration(r.LoggedInSeconds)</td>
+                <td>@StaffActivityService.Duration(r.ActiveSeconds)</td>
+                <td>@(r.LastSeenUtc.HasValue ? r.LastSeenUtc.Value.ToString("dd MMM HH:mm") + " UTC" : "—")</td>
+                <td>@r.PageViews</td>
+                <td>@r.Actions</td>
+                <td><a href="@Drill(r.UserId, "received")">@r.Received</a></td>
+                <td><a href="@Drill(r.UserId, "pending")" style="@(r.NotAnswered > 0 ? "color:#cc0000;font-weight:600" : "")">@r.NotAnswered</a></td>
+                <td><a href="@Drill(r.UserId, "handled")">@r.Handled</a></td>
+                <td><a href="@Drill(r.UserId, "late")" style="@(r.HandledLate > 0 ? "color:#b35a00;font-weight:600" : "")">@r.HandledLate</a></td>
+                <td>@r.AvgText</td>
+                <td>@r.RepliesSent</td>
+                <td>@r.Unattributed</td>
+                <td>@r.TechnicianMessages</td>
+            </tr>
+        }
+        @if (Model.Count == 0)
+        {
+            <tr><td colspan="16" class="text-center">No staff users found.</td></tr>
+        }
+    </tbody>
+</table>
+</div>

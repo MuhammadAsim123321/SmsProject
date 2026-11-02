@@ -849,7 +849,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // public async Task<JsonResult> GetData()
-        public async Task<JsonResult> GetData(string? from = null, string? to = null, string? bucket = null, int? hour = null)
+        public async Task<JsonResult> GetData(string? from = null, string? to = null, string? bucket = null, int? hour = null, int? staffId = null, string? kind = null)
         {
             string accountSid = _configuration["AppSettings:AccountSid"];
             string authToken = _configuration["AppSettings:AuthToken"];
@@ -872,6 +872,13 @@ namespace SendSmsCallAlerts.Controllers
                 var dash = HttpContext.RequestServices.GetRequiredService<DashboardService>();
                 var ids = await dash.DrillDownIdsAsync(fromDay, toDay, bucket, hour);
                 stats = stats.Where(s => ids.Contains(s.Id)).ToList();
+
+                if (staffId.HasValue)
+                {
+                    var staffSvc = HttpContext.RequestServices.GetRequiredService<StaffActivityService>();
+                    var staffIds = await staffSvc.DrillDownIdsAsync(fromDay, toDay, staffId.Value, kind);
+                    stats = stats.Where(s => staffIds.Contains(s.Id)).ToList();
+                }
             }
 
             var serializedStats = stats.Select(conversation => new

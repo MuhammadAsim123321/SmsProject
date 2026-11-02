@@ -51,6 +51,7 @@
                     <li><a class="@(controller == "Twilio" && action != "BuyNumber" ? "active" : "")" asp-controller="Twilio" asp-action="Index"><i class="fa fa-phone" aria-hidden="true"></i><span>Twilio number</span></a></li>
                     <li><a class="@(controller == "ForwardNum" ? "active" : "")" asp-controller="ForwardNum" asp-action="Index"><i class="fa fa-exchange" aria-hidden="true"></i><span>Forward numbers</span></a></li>
                     <li><a class="@(controller == "Users" ? "active" : "")" asp-controller="Users" asp-action="Index"><i class="fa fa-users" aria-hidden="true"></i><span>Users</span></a></li>
+                    <li><a class="@(controller == "StaffActivity" ? "active" : "")" asp-controller="StaffActivity" asp-action="Index"><i class="fa fa-line-chart" aria-hidden="true"></i><span>Staff Activity</span></a></li>
                     <li><a class="@(controller == "Twilio" && action == "BuyNumber" ? "active" : "")" asp-controller="Twilio" asp-action="BuyNumber"><i class="fa fa-shopping-cart" aria-hidden="true"></i><span>Buy &amp; configure number</span></a></li>
                     <li><a class="@(controller == "Schedulers" ? "active" : "")" asp-controller="Schedulers" asp-action="Index"><i class="fa fa-calendar" aria-hidden="true"></i><span>Schedulers</span></a></li>
                 }

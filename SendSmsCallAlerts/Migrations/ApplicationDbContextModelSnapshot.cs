@@ -687,6 +687,9 @@ namespace SendSmsCallAlerts.Migrations
                     b.Property<int?>("ScheduledJobId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("SentByUserId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("createdOn")
                         .HasColumnType("datetime2");
 
@@ -717,6 +720,9 @@ namespace SendSmsCallAlerts.Migrations
                     b.HasIndex("ContactDetailId");
 
                     b.HasIndex("ScheduledJobId");
+
+                    b.HasIndex("SentByUserId")
+                        .HasDatabaseName("IX_SmsDetails_SentByUserId");
 
                     b.HasIndex("createdOn")
                         .HasDatabaseName("IX_SmsDetails_CreatedOn");
@@ -1097,6 +1103,106 @@ namespace SendSmsCallAlerts.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("User");
+                });
+
+            modelBuilder.Entity("SendSmsCallAlerts.Models.UserActivityLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Controller")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedOn")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("HttpMethod")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<long?>("LoginSessionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Path")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<bool>("Success")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Target")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LoginSessionId")
+                        .HasDatabaseName("IX_UserActivityLogs_Session");
+
+                    b.HasIndex("UserId", "CreatedOn")
+                        .HasDatabaseName("IX_UserActivityLogs_User_Created");
+
+                    b.ToTable("UserActivityLogs");
+                });
+
+            modelBuilder.Entity("SendSmsCallAlerts.Models.UserLoginSession", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("ActiveSeconds")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<DateTime>("LastActivityAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LoginAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LogoutAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "LoginAt")
+                        .HasDatabaseName("IX_UserLoginSessions_User_Login");
+
+                    b.ToTable("UserLoginSessions");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.AllScheduledJob", b =>

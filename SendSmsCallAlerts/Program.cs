@@ -109,12 +109,16 @@ if (builder.Environment.IsProduction())
 // Add services to the container.
 
 
-builder.Services.AddControllersWithViews();
+// was: builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options => options.Filters.Add<SendSmsCallAlerts.Filters.StaffActivityFilter>());
 
 builder.Services.AddDbContext<ApplicationDbContext>(option =>
 option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddSession();
+// was: builder.Services.AddSession();   (this is where the 20-minute default lived; now one setting)
+builder.Services.AddSession(options =>
+    options.IdleTimeout = TimeSpan.FromMinutes(builder.Configuration.GetValue<int?>("StaffActivity:SessionTimeoutMinutes") ?? 20));
+
 builder.Services.AddHttpClient();
 
 // NEW: Register GoogleDistanceService
@@ -138,6 +142,10 @@ builder.Services.AddScoped<JobService>();
 builder.Services.AddScoped<TechnicianReplyService>();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddScoped<DashboardService>();
+
+builder.Services.AddSingleton<ActivityTracker>();
+builder.Services.AddScoped<StaffActivityService>();
+builder.Services.AddScoped<ActivityRetentionJob>();
 
 builder.Services.Configure<FormOptions>(options =>
 {

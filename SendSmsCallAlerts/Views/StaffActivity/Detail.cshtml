@@ -1,0 +1,94 @@
+﻿@using SendSmsCallAlerts.Services
+@model StaffDetail
+@{
+    ViewData["Title"] = "Staff Activity";
+    var r = Model.Row;
+    string from = ViewBag.From, to = ViewBag.To;
+    int maxActive = Math.Max(1, Model.Days.Count == 0 ? 1 : Model.Days.Max(d => d.ActiveSeconds));
+}
+<a href="/StaffActivity?from=@from&to=@to">&larr; All staff</a>
+<h3 class="mt-2">
+    @r.Name <small class="text-muted">@r.Username · @r.Phone</small>
+    @if (r.Online)
+    {
+        <span class="badge badge-success">Online</span>
+    }
+</h3>
+<form method="get" class="form-inline mb-3">
+    <input type="date" name="from" value="@from" class="form-control mr-2" />
+    <input type="date" name="to" value="@to" class="form-control mr-2" />
+    <button class="btn btn-primary">Show</button>
+</form>
+
+<div class="row mb-3">
+    @foreach (var (label, value) in new[] {
+        ("Sessions", r.Sessions.ToString()), ("Logged in", StaffActivityService.Duration(r.LoggedInSeconds)),
+        ("Active", StaffActivityService.Duration(r.ActiveSeconds)), ("Replies sent", r.RepliesSent.ToString()),
+        ("Answered", r.Handled.ToString()), ("Late", r.HandledLate.ToString()), ("Avg response", r.AvgText) })
+    {
+        <div class="col-6 col-md"><div class="card p-2 text-center"><small class="text-muted">@label</small><strong style="font-size:1.3rem">@value</strong></div></div>
+    }
+</div>
+
+<h5>Per day</h5>
+<table class="table table-bordered table-sm">
+    <thead><tr><th>Day</th><th>Sessions</th><th>Logged in</th><th>Active</th><th style="width:30%"></th><th>Pages</th><th>Actions</th></tr></thead>
+    <tbody>
+        @foreach (var d in Model.Days)
+        {
+            <tr>
+                <td>@d.Day</td>
+                <td>@d.Sessions</td>
+                <td>@StaffActivityService.Duration(d.LoggedInSeconds)</td>
+                <td>@StaffActivityService.Duration(d.ActiveSeconds)</td>
+                <td><div style="background:#70b3db;height:12px;width:@(d.ActiveSeconds * 100 / maxActive)%"></div></td>
+                <td>@d.PageViews</td>
+                <td>@d.Actions</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h5>What they did (actions)</h5>
+<table class="table table-bordered table-sm">
+    <thead><tr><th>Action</th><th>Times</th></tr></thead>
+    <tbody>@foreach (var b in Model.Breakdown) {
+        <tr><td>@b.Description</td><td>@b.Count</td></tr>
+    }
+</tbody>
+</table>
+
+<h5>Sessions</h5>
+<div style="overflow-x:auto">
+    <table class="table table-bordered table-sm">
+        <thead><tr><th>Login</th><th>Logout</th><th>Result</th><th>Logged in</th><th>Active</th><th>IP</th><th>Browser</th></tr></thead>
+        <tbody>
+            @foreach (var s in Model.Sessions)
+            {
+                <tr>
+                    <td>@s.LoginLocal</td>
+                    <td>@(s.LogoutLocal ?? "—")</td>
+                    <td>@s.State</td>
+                    <td>@StaffActivityService.Duration(s.LoggedInSeconds)</td>
+                    <td>@StaffActivityService.Duration(s.ActiveSeconds)</td>
+                    <td>@s.Ip</td>
+                    <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="@s.Agent">@s.Agent</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<h5>Latest activity (up to 300)</h5>
+<table class="table table-bordered table-sm">
+    <thead><tr><th>Time</th><th>Type</th><th>Description</th><th>Customer / record</th></tr></thead>
+    <tbody>
+        @foreach (var a in Model.Activities)
+        {
+            <tr><td>@a.TimeLocal</td><td>@a.Type</td><td>@a.Description @if (!a.Success) {
+                <span class="badge badge-danger">failed</span>
+            }
+        </td><td>@a.Target</td></tr>
+    }
+</tbody>
+</table>
