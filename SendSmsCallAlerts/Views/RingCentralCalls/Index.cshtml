@@ -1,0 +1,175 @@
+@model SendSmsCallAlerts.Controllers.RcCallsVm
+@{
+    ViewData["Title"] = "Outgoing calls";
+}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+
+<style>
+    #tblOutgoingCalls { width: 100% !important; border-collapse: collapse; }
+
+    #tblOutgoingCalls thead th {
+        background-color: #70b3db;
+        color: white;
+        padding: 10px 8px;
+        white-space: nowrap;
+        border: 1px solid #5a9fc7;
+        text-align: left;
+    }
+
+    #tblOutgoingCalls tbody td {
+        padding: 6px 8px;
+        vertical-align: middle;
+        border: 1px solid #dee2e6;
+        white-space: nowrap;
+    }
+
+    #tblOutgoingCalls tbody tr:nth-child(odd)  { background-color: #fff; }
+    #tblOutgoingCalls tbody tr:nth-child(even) { background-color: #f2f2f2; }
+    #tblOutgoingCalls tbody tr:hover           { background-color: #e8f4fc; }
+
+    div.dataTables_wrapper div.dataTables_length select {
+        width: 70px !important;
+        display: inline-block !important;
+        border-radius: 4px !important;
+        border: 1px solid #ced4da !important;
+        padding: 2px 4px !important;
+        height: auto !important;
+        -webkit-appearance: menulist !important;
+        appearance: menulist !important;
+        background-image: none !important;
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        border-radius: 4px;
+        border: 1px solid #ced4da;
+        padding: 4px 8px;
+    }
+
+    .sg-table-x { overflow-x: auto; width: 100%; }
+</style>
+
+<div class="sg-content-stack">
+
+    @* Page heading *@
+    <section class="nova-page-head" aria-label="Page heading">
+        <div class="nova-heading-group">
+            <span class="nova-heading-icon"><i class="fa fa-phone" aria-hidden="true"></i></span>
+            <div class="nova-heading-copy">
+                <span class="nova-eyebrow">CALLS</span>
+                <h1>Outgoing calls</h1>
+                <p>Outbound calls placed through RingCentral</p>
+            </div>
+        </div>
+        <div class="nova-page-actions">
+            <span class="text-muted small">Powered by RingCentral</span>
+        </div>
+    </section>
+
+    @if (Model.Error != null)
+    {
+        <div class="alert alert-danger">
+            <strong>Could not load calls.</strong> @Model.Error
+        </div>
+    }
+    else
+    {
+        @* Date range filter — submitted to the server to fetch the right window *@
+        <section class="nova-list-card mb-3">
+            <form method="get" class="p-3 d-flex flex-wrap align-items-center gap-2" id="rcFilters">
+                <input type="date" name="dateFrom" class="form-control"
+                       value="@Model.DateFrom?.ToString("yyyy-MM-dd")" style="width:160px" />
+                <span>to</span>
+                <input type="date" name="dateTo" class="form-control"
+                       value="@Model.DateTo?.ToString("yyyy-MM-dd")" style="width:160px" />
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="@Url.Action("Index", "RingCentralCalls")" class="btn btn-outline-secondary">Clear</a>
+                <span class="text-muted small ms-2">
+                    Showing @Model.DateFrom?.ToString("dd-MMM-yyyy") &ndash; @Model.DateTo?.ToString("dd-MMM-yyyy")
+                </span>
+            </form>
+        </section>
+
+        <div class="nova-list-card">
+            <div class="sg-table-x">
+                <table class="table table-bordered table-striped" id="tblOutgoingCalls">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Duration</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            <tr>
+                                <td>@row.Date</td>
+                                <td>@row.Time</td>
+                                <td>
+                                    @row.FromNumber
+                                    @if (!string.IsNullOrWhiteSpace(row.FromName))
+                                    {
+                                        <small class="d-block text-muted">@row.FromName</small>
+                                    }
+                                </td>
+                                <td>
+                                    @row.ToNumber
+                                    @if (!string.IsNullOrWhiteSpace(row.ToName))
+                                    {
+                                        <small class="d-block text-muted">@row.ToName</small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (row.DurationSeconds > 0)
+                                    {
+                                        <span title="@row.DurationSeconds seconds">@row.Duration</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0:00</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="nova-status @row.ResultCss">@row.Result</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#tblOutgoingCalls').DataTable({
+                "pageLength": 10,
+                "lengthMenu": [10, 25, 50, 100],
+                "order": [],
+                "language": {
+                    "emptyTable": "No outgoing calls found for the selected date range.",
+                    "processing": '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>'
+                },
+                "initComplete": function () {
+                    $('#tblOutgoingCalls').wrap('<div class="sg-table-x"></div>');
+                }
+            });
+
+            $('#toggle_btn, #mobile_btn').on('click', function () {
+                setTimeout(function () {
+                    $('#tblOutgoingCalls').DataTable().columns.adjust();
+                }, 320);
+            });
+        });
+    </script>
+}

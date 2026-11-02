@@ -140,6 +140,7 @@ builder.Services.AddSingleton<IMediaUrlFactory, MediaUrlFactory>();
 builder.Services.AddScoped<IUploadedMediaStore, UploadedMediaStore>();
 builder.Services.AddScoped<JobService>();
 builder.Services.AddScoped<TechnicianReplyService>();
+builder.Services.AddScoped<RingCentralService>();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddScoped<DashboardService>();
 
