@@ -260,7 +260,7 @@ namespace SendSmsCallAlerts.Migrations
                             NotificationType = "TechnicianDailyJobSummary",
                             RecipientType = "Technician",
                             SendTime = new TimeSpan(0, 17, 0, 0, 0),
-                            TemplateBody = "Hi {technicianFirstName}, please confirm tomorrow's jobs ({jobDate}):\n{jobsList}\nReply 'C 123' to confirm or call {officePhone}."
+                            TemplateBody = "Hi {technicianFirstName}, please confirm tomorrow's jobs ({jobDate}):\n{jobsList}\n{jobConfirmationCode}\nCall {officePhone} with questions."
                         },
                         new
                         {

@@ -6,19 +6,16 @@ using System.Text.RegularExpressions;
 namespace SendSmsCallAlerts.Services
 {
     /// <summary>
-    /// Technician replies like "C 123", "C123", "C 1,2,3", "c 1 3", "C1", "confirm 1 2".
-    /// Numbers are positions in the latest daily SMS (TechnicianJobLists).
-    /// Returns true only when the sender is a technician AND the message is a confirm command,
-    /// so every other message keeps its normal handling.
+    /// Understands a technician's reply to the daily job list: "C 123", "C123", "c 1,2,3", "C1", "confirm 1 and 3", "C 1-3".
+    /// Numbers are positions in the latest list sent to that technician (TechnicianJobLists).
+    /// Valid jobs become Job.Status = Confirmed (same status the modal uses). The technician gets a reply SMS.
+    /// Returns false when the message is not a technician confirm command, so the normal customer flow continues.
     /// </summary>
     public class TechnicianReplyService
     {
-        // NOTE: replace with an existing SmsLogSources constant if you have a suitable one.
-        private const string LogSource = "Technician Reply";
-
-        private static readonly Regex ConfirmRx = new(
-            @"^\s*(?:confirm(?:ed)?|c)\s*(?<rest>[\d\s,;.&+\-]*)$",
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex CommandRegex = new(
+            @"^\s*(?:confirm(?:ed)?|c)(?![a-z])\s*[:.\-]?\s*(?<rest>.*?)\s*$",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
         private readonly ApplicationDbContext db;
         private readonly ISmsGateway gateway;
@@ -30,105 +27,151 @@ namespace SendSmsCallAlerts.Services
         public TechnicianReplyService(ApplicationDbContext db, ISmsGateway gateway, IAppClock clock,
             SmsLogService smsLog, IConfiguration config, ILogger<TechnicianReplyService> logger)
         {
-            this.db = db; this.gateway = gateway; this.clock = clock; this.smsLog = smsLog; this.logger = logger;
-            var office = (config["AutomatedSms:OfficePhone"] ?? "").Trim();
-            officePhone = office.Length > 0 ? office : "the office";
+            this.db = db;
+            this.gateway = gateway;
+            this.clock = clock;
+            this.smsLog = smsLog;
+            this.logger = logger;
+            officePhone = (config["AutomatedSms:OfficePhone"] ?? "").Trim();
         }
 
         public async Task<bool> TryHandleAsync(SmsDetail sms, CancellationToken ct = default)
         {
-            var body = Regex.Replace((sms.smsBody ?? "").Trim(), @"\s+and\s+", ",", RegexOptions.IgnoreCase);
-            var m = ConfirmRx.Match(body);
-            if (!m.Success) return false;
+            if (!LooksLikeCommand(sms.smsBody, out var rest)) return false;
+            var from10 = Last10(sms.fromNum);
+            if (from10.Length < 10) return false;
 
-            var from = gateway.NormalizePhone(sms.fromNum);
-            if (from.Length == 0) return false;
-
-            var techs = await db.Technicians.AsNoTracking().ToListAsync(ct);
-            var tech = techs.FirstOrDefault(t => gateway.NormalizePhone(t.ContactNumber) == from);
-            if (tech == null) return false;   // not a technician: customer logic continues
-
-            var today = clock.BusinessNow.Date;
-            var list = await db.TechnicianJobLists.Include(l => l.Job)
-                .Where(l => l.TechnicianId == tech.Id && l.JobDate >= today)
-                .OrderBy(l => l.Position).ToListAsync(ct);
-
-            string reply;
-            if (list.Count == 0)
-            {
-                reply = $"No job list to confirm right now. Please call {officePhone}.";
-            }
-            else
-            {
-                var (positions, invalid) = ParseNumbers(m.Groups["rest"].Value, list.Count);
-                if (positions.Count == 0 && invalid.Count == 0)
-                {
-                    reply = "Please include the job numbers, e.g. 'C 123' or 'C 1 3'.";
-                }
-                else
-                {
-                    var confirmed = new List<int>();
-                    var problems = new List<string>();
-
-                    foreach (var pos in positions.OrderBy(x => x))
-                    {
-                        var row = list.FirstOrDefault(l => l.Position == pos);
-                        var job = row?.Job;
-                        if (row == null || job == null) problems.Add($"{pos} (not found)");
-                        else if (job.Status == JobStatus.Cancelled) problems.Add($"{pos} (cancelled)");
-                        else if (job.TechnicianId != tech.Id || job.StartAt != row.JobStartAt) problems.Add($"{pos} (changed)");
-                        else if (job.Status == JobStatus.Confirmed) confirmed.Add(pos);
-                        else if (job.Status == JobStatus.Scheduled)
-                        {
-                            job.Status = JobStatus.Confirmed;
-                            job.UpdatedOn = clock.UtcNow;
-                            confirmed.Add(pos);
-                        }
-                        else problems.Add($"{pos} (not available)");
-                    }
-                    await db.SaveChangesAsync(ct);
-
-                    var parts = new List<string>();
-                    if (confirmed.Count > 0) parts.Add($"Confirmed: {string.Join(", ", confirmed)}.");
-                    if (problems.Count > 0) parts.Add($"Could not confirm: {string.Join(", ", problems)}. Please call {officePhone}.");
-                    if (invalid.Count > 0) parts.Add($"Not recognised: {string.Join(", ", invalid)}. Job numbers are 1-{list.Count}.");
-                    reply = string.Join(" ", parts);
-                }
-            }
-
+            bool handled = false;
             try
             {
-                var send = await gateway.SendAsync(tech.ContactNumber, reply);
-                await smsLog.RecordImmediateAsync(LogSource, from, reply, send.Success, send.Simulated, send.Error,
-                    recipientName: AutomatedSmsService.TechFullName(tech), recipientType: RecipientTypes.Technician,
-                    recipientId: tech.Id, ct: ct);
+                var techs = await db.Technicians.AsNoTracking()
+                    .Select(t => new { t.Id, t.FirstName, t.LastName, t.ContactNumber })
+                    .ToListAsync(ct);
+                var tech = techs.FirstOrDefault(t => Last10(t.ContactNumber) == from10);
+                if (tech == null) return false;          // not a technician: customer flow continues
+                handled = true;
+
+                var reply = await BuildReplyAsync(tech.Id, rest, ct);
+                var name = $"{tech.FirstName} {tech.LastName}".Trim();
+
+                var send = await gateway.SendAsync(sms.fromNum, reply, fallbackFrom: sms.toNum);
+                await smsLog.RecordImmediateAsync(SmsLogSources.Automated, sms.fromNum, reply,
+                    send.Success, send.Simulated, send.Error,
+                    recipientName: name, recipientType: RecipientTypes.Technician, recipientId: tech.Id, ct: ct);
+                return true;
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Technician reply SMS failed for technician {Id}", tech.Id);
+                logger.LogError(ex, "Technician reply handling failed for {From}", sms.fromNum);
+                return handled;
             }
+        }
+
+        private async Task<string> BuildReplyAsync(int techId, string rest, CancellationToken ct)
+        {
+            var now = clock.BusinessNow;
+            var rows = await db.TechnicianJobLists
+                .Where(l => l.TechnicianId == techId && l.JobDate >= now.Date)
+                .OrderBy(l => l.Position)
+                .ToListAsync(ct);
+
+            if (rows.Count == 0)
+                return "There is no job list waiting for your confirmation." + CallOffice();
+
+            var numbers = ExpandNumbers(rest, rows.Count);
+            if (numbers.Count == 0)
+            {
+                var all = rows.Count <= 9 ? string.Concat(Enumerable.Range(1, rows.Count)) : "1,2,3";
+                return $"Please include the job numbers. Example: 'C {all}'.";
+            }
+
+            var jobIds = rows.Select(r => r.JobId).ToList();
+            var jobs = await db.Jobs.Where(j => jobIds.Contains(j.Id)).ToDictionaryAsync(j => j.Id, ct);
+
+            var confirmed = new List<int>();
+            var invalid = new List<int>();
+            var notes = new List<string>();
+
+            foreach (var n in numbers)
+            {
+                var row = rows.FirstOrDefault(r => r.Position == n);
+                if (row == null) { invalid.Add(n); continue; }
+                if (!jobs.TryGetValue(row.JobId, out var job)) { notes.Add($"Job {n} no longer exists."); continue; }
+                if (job.Status == JobStatus.Cancelled) { notes.Add($"Job {n} was cancelled."); continue; }
+                if (job.TechnicianId != techId || job.StartAt != row.JobStartAt)
+                { notes.Add($"Job {n} was changed after the list was sent."); continue; }
+                if (job.StartAt < now) { notes.Add($"Job {n} has already started."); continue; }
+                if (job.Status == JobStatus.Confirmed) { confirmed.Add(n); continue; }
+
+                job.Status = JobStatus.Confirmed;
+                job.UpdatedOn = clock.UtcNow;
+                confirmed.Add(n);
+                // LATER: if today's customer reminder already ran, queue this customer's reminder here (late confirmation).
+            }
+            await db.SaveChangesAsync(ct);
+
+            var parts = new List<string>();
+            if (confirmed.Count > 0)
+                parts.Add($"Thank you. {(confirmed.Count > 1 ? "Jobs" : "Job")} {string.Join(", ", confirmed)} confirmed.");
+            else
+                parts.Add("Nothing was confirmed.");
+            if (invalid.Count > 0) parts.Add($"Not in your list: {string.Join(", ", invalid)}.");
+            parts.AddRange(notes);
+            if (invalid.Count > 0 || notes.Count > 0 || confirmed.Count == 0)
+            {
+                var call = CallOffice();
+                if (call.Length > 0) parts.Add(call.Trim());
+            }
+            return string.Join(" ", parts);
+        }
+
+        private string CallOffice() => officePhone.Length > 0 ? $" Questions? Call {officePhone}." : "";
+
+        // ------------------------------------------------------------ parsing
+        private static bool LooksLikeCommand(string? body, out string rest)
+        {
+            rest = "";
+            var m = CommandRegex.Match(body ?? "");
+            if (!m.Success) return false;
+
+            var r = m.Groups["rest"].Value.ToLowerInvariant();
+            r = Regex.Replace(r, @"\band\b", ",");
+            r = Regex.Replace(r, @"([0-9]+)\s*-\s*([0-9]+)", ExpandRange);
+            if (!Regex.IsMatch(r, @"^[0-9\s,;&+/]*$")) return false;   // e.g. "C 1 thanks" is not a command
+            rest = r;
             return true;
         }
 
-        /// <summary>
-        /// "123" -> 1,2,3 | "1,2,3" | "1 3" | "12" -> job 12 only when the list has 12+ jobs, otherwise 1 and 2.
-        /// A token that cannot be read is returned in 'bad'.
-        /// </summary>
-        private static (List<int> ok, List<string> bad) ParseNumbers(string rest, int count)
+        private static string ExpandRange(Match m)
         {
-            var ok = new List<int>();
-            var bad = new List<string>();
-            void Add(int n) { if (!ok.Contains(n)) ok.Add(n); }
+            if (!int.TryParse(m.Groups[1].Value, out var a) || !int.TryParse(m.Groups[2].Value, out var b)
+                || a < 1 || b < a || b - a > 20) return "0";
+            return string.Join(",", Enumerable.Range(a, b - a + 1));
+        }
 
-            foreach (Match t in Regex.Matches(rest, @"\d+"))
+        /// <summary>
+        /// "123" = jobs 1,2,3. With 10 or more jobs a separated token such as "12" means job 12.
+        /// </summary>
+        private static List<int> ExpandNumbers(string rest, int listCount)
+        {
+            var result = new List<int>();
+            foreach (var token in Regex.Split(rest, @"[\s,;&+/]+").Where(t => t.Length > 0))
             {
-                var tok = t.Value;
-                if (int.TryParse(tok, out var whole) && whole >= 1 && whole <= count) { Add(whole); continue; }
-                var digits = tok.Select(ch => ch - '0').ToList();
-                if (digits.All(d => d >= 1 && d <= count)) digits.ForEach(Add);
-                else bad.Add(tok);
+                IEnumerable<int> values;
+                if (token.Length == 1) values = new[] { token[0] - '0' };
+                else if (listCount >= 10 && int.TryParse(token, out var whole) && whole >= 1 && whole <= listCount)
+                    values = new[] { whole };
+                else values = token.Select(ch => ch - '0');
+
+                foreach (var v in values) if (!result.Contains(v)) result.Add(v);
             }
-            return (ok, bad);
+            return result.Take(30).ToList();
+        }
+
+        private static string Last10(string? s)
+        {
+            var d = new string((s ?? "").Where(char.IsDigit).ToArray());
+            return d.Length > 10 ? d.Substring(d.Length - 10) : d;
         }
     }
 }

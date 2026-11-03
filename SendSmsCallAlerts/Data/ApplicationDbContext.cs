@@ -145,7 +145,7 @@ namespace SendSmsCallAlerts.Data
                         RecipientType = RecipientTypes.Technician,
                         Frequency = SmsFrequencies.Daily,
                         SendTime = new TimeSpan(17, 0, 0),
-                        TemplateBody = "Hi {technicianFirstName}, please confirm tomorrow's jobs ({jobDate}):\n{jobsList}\nReply 'C 123' to confirm or call {officePhone}.",
+                        TemplateBody = "Please confirm tomorrow's jobs:\n{jobsList}\nReply '{replyExample}' to confirm or call {officePhone}",
                         IsActive = true,
                         CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
                     },
@@ -157,7 +157,7 @@ namespace SendSmsCallAlerts.Data
                         RecipientType = RecipientTypes.Customer,
                         Frequency = SmsFrequencies.Daily,
                         SendTime = new TimeSpan(19, 0, 0),
-                        TemplateBody = "Hi {customerName}, reminder from {companyName}: your {category} appointment is tomorrow, {jobDate}, at {jobTime}. Technician: {technicianName}. Reply STOP to opt out.",
+                        TemplateBody = "Hi {customerName}, this is {companyName}. Your {category} appointment is confirmed for tomorrow, {jobDate}, at {jobTime} with {technicianName}. Questions? Call {officePhone}. Reply STOP to opt out.",
                         IsActive = true,
                         CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
                     });

@@ -18,6 +18,8 @@ namespace SendSmsCallAlerts.Services
         public string? SkipReason { get; set; }
         public string Status { get; set; } = "";
         public int? JobId { get; set; }
+        public List<int>? JobIds { get; set; }   // technician summary: job ids in SMS number order
+        public DateTime? JobDate { get; set; }
         public List<TechnicianJobList>? JobList { get; set; }
     }
 
@@ -273,6 +275,9 @@ namespace SendSmsCallAlerts.Services
                 item.Status = item.SkipReason != null ? "Skipped: " + item.SkipReason
                             : dryRun ? "Test (not sent)"
                             : SmsLogStatus.Pending;
+
+                if (!dryRun && item.SkipReason == null && item.JobIds is { Count: > 0 } && item.JobDate.HasValue)
+                    await SaveTechnicianJobListAsync(item.RecipientId, item.JobDate.Value, item.JobIds, ct);
             }
             return items;
         }
@@ -316,73 +321,60 @@ namespace SendSmsCallAlerts.Services
 
         private async Task<List<AutomatedSmsItem>> BuildDailySummaryAsync(AutomatedSmsSetting s, DateTime nowLocal, CancellationToken ct)
         {
-            var jobs = await TomorrowJobsAsync(nowLocal, false, ct);
+            var jobs = await TomorrowJobsAsync(nowLocal, ct);
+
             var tomorrow = nowLocal.Date.AddDays(1);
 
-            var byTech = jobs.Where(j => j.TechnicianId != null).GroupBy(j => j.TechnicianId!.Value).ToList();
-            var techIds = byTech.Select(g => g.Key).ToList();
+            var byTech = jobs.Where(j => j.TechnicianId != null).GroupBy(j => j.TechnicianId!.Value)
+                .ToDictionary(g => g.Key, g => g.OrderBy(j => j.StartAt).ThenBy(j => j.Id).ToList());
+
+            var techIds = byTech.Keys.ToList();
+
             var techs = await db.Technicians.AsNoTracking().Where(t => techIds.Contains(t.Id)).ToListAsync(ct);
 
             var items = new List<AutomatedSmsItem>();
-            foreach (var t in techs) // technicians with no jobs tomorrow are not included
+
+            foreach (var t in techs)
             {
-                var tJobs = byTech.First(g => g.Key == t.Id).OrderBy(j => j.StartAt).ThenBy(j => j.Id).ToList();
+                var tJobs = byTech[t.Id];
+
+                var miles = await ChainMilesAsync(t, tJobs);
+
+                var lines = tJobs.Select((j, i) => JobLine(i + 1, j, miles[i])).ToList();
+
+                var (jobsText, shown) = JoinJobLines(lines);
+
                 var full = TechFullName(t);
-
-                // miles chain: technician address -> job 1 -> job 2 -> job 3
-                var lines = new List<string>();
-                var fromLocation = GoogleDistanceService.BuildLocation(t.ZipCode, t.CityState, t.StreetAddress);
-                foreach (var j in tJobs)
-                {
-                    var contact = j.ContactDetail;
-                    var toLocation = GoogleDistanceService.BuildLocation(
-                        contact?.ZipCode, contact?.CityState, contact?.StreetAddress);
-                    var miles = await distance.GetDistanceInMilesOrNull(fromLocation, toLocation);
-                    lines.Add(JobLine(lines.Count + 1, j, miles));
-                    fromLocation = toLocation;
-                }
-
-                // length limit: only jobs that really appear in the SMS are saved in the numbered list
-                var shown = new List<string>();
-                var length = 0;
-                foreach (var line in lines)
-                {
-                    if (shown.Count > 0 && length + line.Length + 1 > maxJobsChars) break;
-                    shown.Add(line);
-                    length += line.Length + 1;
-                }
-                var jobsList = string.Join("\n", shown);
-                if (shown.Count < lines.Count)
-                    jobsList += $"\n+{lines.Count - shown.Count} more, call {officePhone}.";
 
                 var vars = new Dictionary<string, string>
                 {
                     ["technicianFirstName"] = TechFirstName(t),
                     ["technicianName"] = full,
-                    ["jobCount"] = tJobs.Count.ToString(),
-                    ["jobDate"] = tomorrow.ToString("dd-MMM-yyyy", CultureInfo.InvariantCulture),
-                    ["jobsList"] = jobsList,
+                    ["jobCount"] = shown.ToString(),
+                    ["jobDate"] = tomorrow.ToString("dd-MMM-yyyy"),
+                    ["jobsList"] = jobsText,
+                    ["replyExample"] = ReplyExample(shown),
+                    ["officePhone"] = officePhone,
                     ["companyName"] = companyName,
-                    ["officePhone"] = officePhone
+                    ["jobConfirmationCode"] = GenerateJobConfirmationCode(shown)
                 };
 
                 var item = MakeItem(RecipientTypes.Technician, t.Id, full, t.ContactNumber, Tidy(Render(s.TemplateBody, vars)), null);
-                item.JobList = tJobs.Take(shown.Count).Select((j, i) => new TechnicianJobList
-                {
-                    TechnicianId = t.Id,
-                    JobDate = tomorrow,
-                    Position = i + 1,
-                    JobId = j.Id,
-                    JobStartAt = j.StartAt
-                }).ToList();
+
+                item.JobIds = tJobs.Take(shown).Select(j => j.Id).ToList();
+
+                item.JobDate = tomorrow;
+
                 items.Add(item);
+
             }
+
             return items;
         }
 
         private async Task<List<AutomatedSmsItem>> BuildCustomerReminderAsync(AutomatedSmsSetting s, DateTime nowLocal, CancellationToken ct)
         {
-            var jobs = await TomorrowJobsAsync(nowLocal, true, ct);
+            var jobs = await TomorrowJobsAsync(nowLocal, ct, confirmedOnly: true);
             var allTechs = await db.Technicians.AsNoTracking().ToListAsync(ct);
             var techNames = allTechs.ToDictionary(t => t.Id, t => TechFullName(t));
             var optOut = (await db.OptOuts.Select(o => o.PhoneNumber).ToListAsync(ct))
@@ -404,7 +396,8 @@ namespace SendSmsCallAlerts.Services
                     ["technicianName"] = string.Join(", ", list
                         .Where(j => j.TechnicianId != null && techNames.ContainsKey(j.TechnicianId.Value))
                         .Select(j => techNames[j.TechnicianId!.Value]).Distinct()),
-                    ["companyName"] = companyName
+                    ["companyName"] = companyName,
+                    ["officePhone"] = officePhone
                 };
                 var item = MakeItem(RecipientTypes.Customer, contact.Id, CustomerFullName(contact),
                     contact.PhoneNumber, Tidy(Render(s.TemplateBody, vars)), contact.Id);
@@ -420,55 +413,19 @@ namespace SendSmsCallAlerts.Services
 
         // ---------- helpers ----------
         /// <summary>Tomorrow's jobs that are not cancelled (Scheduled / Confirmed).</summary>
-        private async Task<List<Job>> TomorrowJobsAsync(DateTime nowLocal, bool confirmedOnly, CancellationToken ct)
+        private async Task<List<Job>> TomorrowJobsAsync(DateTime nowLocal, CancellationToken ct, bool confirmedOnly = false)
         {
             var start = nowLocal.Date.AddDays(1);
             var end = start.AddDays(1);
-            IQueryable<Job> q = db.Jobs.AsNoTracking()
+            return await db.Jobs.AsNoTracking()
                 .Include(j => j.ContactDetail)
                 .Include(j => j.Category)
-                .Where(j => j.Status != JobStatus.Cancelled && j.StartAt >= start && j.StartAt < end);
-            if (confirmedOnly) q = q.Where(j => j.Status == JobStatus.Confirmed);
-            return await q.OrderBy(j => j.StartAt).ThenBy(j => j.Id).ToListAsync(ct);
-        }
-        /// <summary>"(1) 8:00 AM - Carpet Repair - Orange CA - $700 - 35 miles". Missing parts are dropped.</summary>
-        private static string JobLine(int number, Job j, double? miles)
-        {
-            var inv = CultureInfo.InvariantCulture;
-            var parts = new List<string> { j.StartAt.ToString("h:mm tt", inv) };
-
-            var category = (j.Category?.keyword ?? "").Trim();
-            if (category.Length > 0) parts.Add(category);
-
-            var city = Regex.Replace((j.ContactDetail?.CityState ?? "").Trim(), @"\s+", " ");
-            if (city.Length > 0) parts.Add(city);
-
-            if (j.QuotedAmount.HasValue)
-            {
-                var a = j.QuotedAmount.Value;
-                parts.Add("$" + a.ToString(a % 1 == 0 ? "N0" : "N2", inv));
-            }
-
-            if (miles.HasValue)
-            {
-                var m = (int)Math.Round(miles.Value, MidpointRounding.AwayFromZero);
-                parts.Add($"{m} mile{(m == 1 ? "" : "s")}");
-            }
-
-            return $"({number}) " + string.Join(" - ", parts);
+                .Where(j => j.StartAt >= start && j.StartAt < end
+                            && (confirmedOnly ? j.Status == JobStatus.Confirmed : j.Status != JobStatus.Cancelled))
+                .OrderBy(j => j.StartAt).ThenBy(j => j.Id)
+                .ToListAsync(ct);
         }
 
-        /// <summary>Removes double spaces, trailing spaces and extra blank lines.</summary>
-        private static string Tidy(string? s)
-        {
-            s = (s ?? "").Replace("\r\n", "\n");
-            s = Regex.Replace(s, @"[ \t]+", " ");
-            s = Regex.Replace(s, @" ?\n ?", "\n");
-            s = Regex.Replace(s, @"\n{3,}", "\n\n");
-            return s.Trim();
-        }
-
-        /// <summary>Keeps only the latest numbered list of this technician (used to understand "C 123").</summary>
         private async Task SaveJobListAsync(int technicianId, List<TechnicianJobList> rows, CancellationToken ct)
         {
             try
@@ -494,6 +451,20 @@ namespace SendSmsCallAlerts.Services
         {
             var combined = $"{t.FirstName} {t.LastName}".Trim();
             return combined.Length > 0 ? combined : (t.FullName ?? "").Trim();
+        }
+
+        private static string GenerateJobConfirmationCode(int jobCount)
+        {
+            return jobCount switch
+            {
+                0 => "",
+                1 => "Reply C to confirm your job.",
+                2 => "Reply C 1 2 to confirm jobs 1 and 2.",
+                3 => "Reply C 1 2 3 to confirm jobs 1, 2 and 3.",
+                4 => "Reply C 1 2 3 4 to confirm jobs 1, 2, 3 and 4.",
+                5 => "Reply C 1 2 3 4 5 to confirm jobs 1, 2, 3, 4 and 5.",
+                _ => $"Reply C with space-separated job numbers (1-{jobCount}) to confirm."
+            };
         }
 
         public static string TechFirstName(Technician t)
@@ -540,5 +511,97 @@ namespace SendSmsCallAlerts.Services
         private static string Last10(string? s) { var d = Digits(s); return d.Length > 10 ? d.Substring(d.Length - 10) : d; }
 
         private static string Truncate(string s, int max) => s.Length <= max ? s : s.Substring(0, max);
+
+        // ---------- NEW METHODS FOR TASK 2/3 ----------
+
+        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+        // miles chain: technician ZIP -> job 1 ZIP -> job 2 ZIP -> ... ; missing ZIP or Google failure = no miles for that line
+        private async Task<double?[]> ChainMilesAsync(Technician t, List<Job> jobs)
+        {
+            var result = new double?[jobs.Count];
+            string? origin = t.ZipCode;
+            for (int i = 0; i < jobs.Count; i++)
+            {
+                var dest = jobs[i].ContactDetail?.ZipCode;
+                if (!string.IsNullOrWhiteSpace(origin) && !string.IsNullOrWhiteSpace(dest))
+                    result[i] = await distance.GetDistanceInMilesOrNull(origin!, dest!);
+                origin = dest;
+            }
+            return result;
+        }
+
+        // "(1) 8:00 AM - Carpet Repair - Orange CA - $700 - 35 miles"; empty parts are left out
+        private static string JobLine(int n, Job j, double? miles)
+        {
+            var parts = new List<string> { j.StartAt.ToString("h:mm tt", Inv) };
+            var cat = CleanText(j.Category?.keyword); if (cat.Length > 0) parts.Add(cat);
+            var city = CleanText(j.ContactDetail?.CityState); if (city.Length > 0) parts.Add(city);
+            if (j.QuotedAmount.HasValue && j.QuotedAmount.Value > 0) parts.Add(FormatMoney(j.QuotedAmount.Value));
+            if (miles.HasValue) parts.Add(FormatMiles(miles.Value));
+            return $"({n}) " + string.Join(" - ", parts);
+        }
+
+        private static string FormatMoney(decimal a) => "$" + (a % 1 == 0 ? a.ToString("N0", Inv) : a.ToString("N2", Inv));
+
+        private static string FormatMiles(double m)
+        {
+            var r = (int)Math.Round(m, MidpointRounding.AwayFromZero);
+            return r <= 0 ? "under 1 mile" : r == 1 ? "1 mile" : $"{r} miles";
+        }
+
+        private static string CleanText(string? s) => Regex.Replace((s ?? "").Trim(), @"\s+", " ");
+
+        private static string Tidy(string text)
+        {
+            text = (text ?? "").Replace("\r\n", "\n");
+            text = Regex.Replace(text, @"[ \t]+", " ");
+            text = Regex.Replace(text, @" ?\n ?", "\n");
+            text = Regex.Replace(text, @"\n{3,}", "\n\n");
+            return text.Trim();
+        }
+
+        // "C 123" for 3 jobs, "C 1" for 1 job
+        private static string ReplyExample(int count) =>
+            count <= 1 ? "C 1" : count <= 9 ? "C " + string.Concat(Enumerable.Range(1, count)) : "C 1,2,3";
+
+        // one line per job, "\n" between lines; returns how many lines fit in maxJobsChars (only those get numbers)
+        private (string Text, int Shown) JoinJobLines(List<string> lines)
+        {
+            var text = string.Join("\n", lines);
+            if (text.Length <= maxJobsChars) return (text, lines.Count);
+            var kept = new List<string>(); var len = 0;
+            foreach (var l in lines)
+            {
+                var add = (kept.Count == 0 ? 0 : 1) + l.Length;
+                if (len + add > maxJobsChars) break;
+                kept.Add(l); len += add;
+            }
+            return (string.Join("\n", kept) + "\n...call the office for the rest.", kept.Count);
+        }
+
+        // replaces the technician's list with the one just queued; deletes lists of past days
+        private async Task SaveTechnicianJobListAsync(int technicianId, DateTime jobDate, List<int> jobIds, CancellationToken ct)
+        {
+            try
+            {
+                var starts = await db.Jobs.AsNoTracking().Where(j => jobIds.Contains(j.Id))
+                    .ToDictionaryAsync(j => j.Id, j => j.StartAt, ct);
+                var today = BusinessNow().Date;
+                await using var tx = await db.Database.BeginTransactionAsync(ct);
+                await db.TechnicianJobLists.Where(l => l.TechnicianId == technicianId || l.JobDate < today).ExecuteDeleteAsync(ct);
+                for (int i = 0; i < jobIds.Count; i++)
+                    if (starts.TryGetValue(jobIds[i], out var startAt))
+                        db.TechnicianJobLists.Add(new TechnicianJobList
+                        { TechnicianId = technicianId, JobDate = jobDate, Position = i + 1, JobId = jobIds[i], JobStartAt = startAt });
+                await db.SaveChangesAsync(ct);
+                await tx.CommitAsync(ct);
+            }
+            catch (Exception ex)
+            {
+                foreach (var e in db.ChangeTracker.Entries<TechnicianJobList>().ToList()) e.State = EntityState.Detached;
+                logger.LogError(ex, "Could not save job list for technician {TechnicianId}", technicianId);
+            }
+        }
     }
 }
