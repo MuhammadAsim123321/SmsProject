@@ -260,7 +260,7 @@ namespace SendSmsCallAlerts.Migrations
                             NotificationType = "TechnicianDailyJobSummary",
                             RecipientType = "Technician",
                             SendTime = new TimeSpan(0, 17, 0, 0, 0),
-                            TemplateBody = "Hi {technicianFirstName}, please confirm tomorrow's jobs ({jobDate}):\n{jobsList}\n{jobConfirmationCode}\nCall {officePhone} with questions."
+                            TemplateBody = "Hi {technicianFirstName}, Please confirm tomorrow's jobs:\n{jobsList}\nReply '{replyExample}' to confirm or call {officePhone}"
                         },
                         new
                         {
@@ -272,7 +272,7 @@ namespace SendSmsCallAlerts.Migrations
                             NotificationType = "CustomerJobReminder",
                             RecipientType = "Customer",
                             SendTime = new TimeSpan(0, 19, 0, 0, 0),
-                            TemplateBody = "Hi {customerName}, reminder from {companyName}: your {category} appointment is tomorrow, {jobDate}, at {jobTime}. Technician: {technicianName}. Reply STOP to opt out."
+                            TemplateBody = "Hi {customerName}, this is {companyName}. Your {category} appointment is confirmed for tomorrow, {jobDate}, at {jobTime} with {technicianName}. Questions? Call {officePhone}. Reply STOP to opt out."
                         });
                 });
 
@@ -1189,6 +1189,10 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.Property<DateTime?>("LogoutAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("LogoutType")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<string>("UserAgent")
                         .HasMaxLength(300)

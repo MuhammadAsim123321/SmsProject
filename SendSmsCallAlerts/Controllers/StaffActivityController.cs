@@ -27,7 +27,18 @@ namespace SendSmsCallAlerts.Controllers
             ViewBag.Today = today.ToString("yyyy-MM-dd");
             ViewBag.Last7 = today.AddDays(-6).ToString("yyyy-MM-dd");
             ViewBag.Last30 = today.AddDays(-29).ToString("yyyy-MM-dd");
+            ViewBag.MonthStart = new DateTime(today.Year, today.Month, 1).ToString("yyyy-MM-dd");   // NEW
             return (f, t);
+        }
+
+        public async Task<IActionResult> Detail(int id, string? from, string? to, string? group)
+        {
+            var (f, t) = Range(from, to);
+            var g = (group ?? "day").ToLowerInvariant();
+            ViewBag.Group = g is "week" or "month" ? g : "day";
+            var detail = await _svc.GetDetailAsync(id, f, t, (string)ViewBag.Group);
+            if (detail == null) return NotFound();
+            return View(detail);
         }
 
         public async Task<IActionResult> Index(string? from, string? to)
@@ -36,12 +47,6 @@ namespace SendSmsCallAlerts.Controllers
             return View(await _svc.GetStaffRowsAsync(f, t));
         }
 
-        public async Task<IActionResult> Detail(int id, string? from, string? to)
-        {
-            var (f, t) = Range(from, to);
-            var detail = await _svc.GetDetailAsync(id, f, t);
-            if (detail == null) return NotFound();
-            return View(detail);
-        }
+        
     }
 }

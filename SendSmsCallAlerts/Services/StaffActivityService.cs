@@ -5,15 +5,16 @@ using SendSmsCallAlerts.Models;
 namespace SendSmsCallAlerts.Services
 {
     public record StaffRow(int UserId, string Name, string Username, string Phone,
-        int Sessions, int LoggedInSeconds, int ActiveSeconds, DateTime? LastSeenUtc, bool Online,
-        int PageViews, int Actions,
-        int Received, int NotAnswered, int Handled, int HandledLate, string AvgText,
-        int RepliesSent, int Unattributed, int TechnicianMessages);
+    int Sessions, int LoggedInSeconds, int ActiveSeconds, DateTime? LastSeenUtc, bool Online,
+    int PageViews, int Actions, int ManualLogouts, int SystemLogouts,
+    int Inbound, int Outbound, int Pending, int Answered, int ReplyUnknown,
+    int OnTime, int Gold, int Orange, int Red, string AvgText, int TechnicianMessages);
     public record SessionRow(long Id, string LoginLocal, string? LogoutLocal, string State, int LoggedInSeconds, int ActiveSeconds, string? Ip, string? Agent);
-    public record DayRow(string Day, int Sessions, int LoggedInSeconds, int ActiveSeconds, int PageViews, int Actions);
+    public record PeriodRow(string Label, int Sessions, int LoggedInSeconds, int ActiveSeconds, int PageViews, int Actions, int Inbound, int Answered);
     public record ActivityRow(string TimeLocal, string Type, string Description, string? Target, bool Success);
     public record BreakdownRow(string Description, int Count);
-    public record StaffDetail(StaffRow Row, List<SessionRow> Sessions, List<DayRow> Days, List<ActivityRow> Activities, List<BreakdownRow> Breakdown);
+    public record StaffDetail(StaffRow Row, List<SessionRow> Sessions, List<PeriodRow> Periods, List<ActivityRow> Activities, List<BreakdownRow> Breakdown);
+
 
     /// <summary>
     /// Staff stats for the admin. Uses ResponseRules (same first-reply rule and buckets as the Dashboard and the grid).
@@ -36,6 +37,19 @@ namespace SendSmsCallAlerts.Services
         }
 
         private record IncomingEvent(int Id, DateTime CreatedUtc, int? OwnerId, bool Shared, bool IsTechnician, int? ReplyBy, double? Minutes);
+
+        public static string Pct(int n, int total) => total <= 0 ? "0%" : Math.Round(100.0 * n / total, 1) + "%";
+
+        /// <summary>Sessions with no logout and no sign of life for longer than the timeout = System logout (time = last activity).</summary>
+        private async Task CloseStaleSessionsAsync()
+        {
+            var cutoff = _clock.UtcNow - _timeout;
+            await _db.UserLoginSessions
+                .Where(s => s.LogoutAt == null && s.LastActivityAt < cutoff)
+                .ExecuteUpdateAsync(u => u
+                    .SetProperty(s => s.LogoutAt, s => s.LastActivityAt)
+                    .SetProperty(s => s.LogoutType, LogoutTypes.System));
+        }
 
         public static string Duration(int seconds)
         {
@@ -105,6 +119,8 @@ namespace SendSmsCallAlerts.Services
 
         public async Task<List<StaffRow>> GetStaffRowsAsync(DateTime fromDay, DateTime toDay, int? onlyUserId = null)
         {
+            await CloseStaleSessionsAsync();
+
             var (fromUtc, toUtc) = UtcRange(fromDay, toDay);
             var now = _clock.UtcNow;
 
@@ -140,9 +156,11 @@ namespace SendSmsCallAlerts.Services
             foreach (var u in staff.Where(u => onlyUserId == null || u.Id == onlyUserId))
             {
                 var mine = sessions.Where(s => s.UserId == u.Id).ToList();
-                var owned = events.Where(e => e.OwnerId == u.Id).ToList();
-                var handled = events.Where(e => !e.IsTechnician && e.ReplyBy == u.Id).ToList();
-                var mins = handled.Where(e => e.Minutes.HasValue).Select(e => e.Minutes!.Value).ToList();
+                var ownedAll = events.Where(e => e.OwnerId == u.Id).ToList();
+                var owned = ownedAll.Where(e => !e.IsTechnician).ToList();
+                var answered = events.Where(e => !e.IsTechnician && e.ReplyBy == u.Id).ToList();
+                var mins = answered.Where(e => e.Minutes.HasValue).Select(e => e.Minutes!.Value).ToList();
+                int Bucket(string b) => answered.Count(e => ResponseRules.BucketFor(e.Minutes) == b);
                 counts.TryGetValue((u.Id, ActivityTypes.PageView), out var pv);
                 counts.TryGetValue((u.Id, ActivityTypes.Action), out var ac);
                 sent.TryGetValue(u.Id, out var sentCount);
@@ -151,14 +169,17 @@ namespace SendSmsCallAlerts.Services
                     mine.Count, mine.Sum(Span), mine.Sum(s => s.ActiveSeconds),
                     mine.Count == 0 ? null : mine.Max(s => s.LogoutAt ?? s.LastActivityAt), online.Contains(u.Id),
                     pv, ac,
-                    owned.Count(e => !e.IsTechnician),
-                    owned.Count(e => !e.IsTechnician && e.Minutes == null),
-                    handled.Count,
-                    handled.Count(e => e.Minutes >= ResponseRules.GoldFromMinutes),
+                    mine.Count(s => s.LogoutAt != null && s.LogoutType != LogoutTypes.System),
+                    mine.Count(s => s.LogoutType == LogoutTypes.System),
+                    owned.Count,                                                        // Inbound
+                    sentCount,                                                          // Outbound
+                    owned.Count(e => e.Minutes == null),                                // Pending
+                    answered.Count,                                                     // Answered
+                    owned.Count(e => e.Minutes != null && e.ReplyBy == null),           // replier unknown (sent before tracking)
+                    Bucket(ResponseRules.OnTime), Bucket(ResponseRules.Gold),
+                    Bucket(ResponseRules.Orange), Bucket(ResponseRules.Red),
                     mins.Count == 0 ? "—" : ResponseRules.FormatWaiting(mins.Average()),
-                    sentCount,
-                    owned.Count(e => !e.IsTechnician && e.Minutes != null && e.ReplyBy == null),
-                    owned.Count(e => e.IsTechnician)));
+                    ownedAll.Count(e => e.IsTechnician)));
             }
             return rows;
         }
@@ -176,18 +197,25 @@ namespace SendSmsCallAlerts.Services
                 "pending" => q.Where(e => e.OwnerId == staffId && e.Minutes == null),
                 "handled" => q.Where(e => e.ReplyBy == staffId),
                 "late" => q.Where(e => e.ReplyBy == staffId && e.Minutes >= ResponseRules.GoldFromMinutes),
+                // DrillDownIdsAsync: add 4 cases to the switch (keep the existing ones)
+                "ontime" => q.Where(e => e.ReplyBy == staffId && ResponseRules.BucketFor(e.Minutes) == ResponseRules.OnTime),
+                "gold" => q.Where(e => e.ReplyBy == staffId && ResponseRules.BucketFor(e.Minutes) == ResponseRules.Gold),
+                "orange" => q.Where(e => e.ReplyBy == staffId && ResponseRules.BucketFor(e.Minutes) == ResponseRules.Orange),
+                "red" => q.Where(e => e.ReplyBy == staffId && ResponseRules.BucketFor(e.Minutes) == ResponseRules.Red),
                 _ => q.Where(e => e.OwnerId == staffId)
             };
             return q.Select(e => e.Id).ToHashSet();
         }
 
-        public async Task<StaffDetail?> GetDetailAsync(int userId, DateTime fromDay, DateTime toDay)
+        public async Task<StaffDetail?> GetDetailAsync(int userId, DateTime fromDay, DateTime toDay, string? group = null)
         {
             var row = (await GetStaffRowsAsync(fromDay, toDay, userId)).FirstOrDefault();
             if (row == null) return null;
 
             var (fromUtc, toUtc) = UtcRange(fromDay, toDay);
             var now = _clock.UtcNow;
+            var g = (group ?? "day").ToLowerInvariant();
+            if (g != "week" && g != "month") g = "day";
 
             var sessions = await _db.UserLoginSessions.AsNoTracking()
                 .Where(s => s.UserId == userId && s.LoginAt >= fromUtc && s.LoginAt < toUtc)
@@ -197,33 +225,58 @@ namespace SendSmsCallAlerts.Services
                 .OrderByDescending(a => a.CreatedOn)
                 .Select(a => new { a.CreatedOn, a.Type, a.Description, a.Target, a.Success }).ToListAsync();
 
+            var staff = await LoadStaffAsync();
+            var tech = await LoadTechnicianNumbersAsync();
+            var events = (await LoadEventsAsync(fromUtc, toUtc, staff, tech)).Where(e => !e.IsTechnician).ToList();
+
             string State(UserLoginSession s) =>
-                s.LogoutAt != null ? "Logged out"
+                s.LogoutAt != null ? (s.LogoutType == LogoutTypes.System ? "System logout (timed out / browser closed)" : "Manual logout")
                 : now - s.LastActivityAt <= _timeout ? "Online"
-                : "Timed out / browser closed";
+                : "System logout (timed out / browser closed)";
 
             var sessionRows = sessions.Select(s => new SessionRow(s.Id, Local(s.LoginAt),
                 s.LogoutAt.HasValue ? Local(s.LogoutAt.Value) : null, State(s), Span(s), s.ActiveSeconds,
                 s.IpAddress, s.UserAgent)).ToList();
 
-            var days = new SortedDictionary<DateTime, int[]>(Comparer<DateTime>.Create((a, b) => b.CompareTo(a)));
-            int[] Slot(DateTime d) { if (!days.TryGetValue(d, out var v)) days[d] = v = new int[5]; return v; }
-            foreach (var s in sessions) { var v = Slot(_clock.ToBusiness(s.LoginAt).Date); v[0]++; v[1] += Span(s); v[2] += s.ActiveSeconds; }
+            // Day / Week (Monday) / Month grouping
+            (DateTime Key, string Label) PeriodOf(DateTime d)
+            {
+                d = d.Date;
+                if (g == "month") return (new DateTime(d.Year, d.Month, 1), d.ToString("MMM yyyy"));
+                if (g == "week") { var ws = d.AddDays(-(((int)d.DayOfWeek + 6) % 7)); return (ws, "Week of " + ws.ToString("dd MMM yyyy")); }
+                return (d, d.ToString("ddd dd MMM yyyy"));
+            }
+            var labels = new Dictionary<DateTime, string>();
+            var periods = new SortedDictionary<DateTime, int[]>(Comparer<DateTime>.Create((a, b) => b.CompareTo(a)));
+            int[] Slot(DateTime businessDay)
+            {
+                var p = PeriodOf(businessDay);
+                labels[p.Key] = p.Label;
+                if (!periods.TryGetValue(p.Key, out var v)) periods[p.Key] = v = new int[7];
+                return v;
+            }
+            foreach (var s in sessions) { var v = Slot(_clock.ToBusiness(s.LoginAt)); v[0]++; v[1] += Span(s); v[2] += s.ActiveSeconds; }
             foreach (var a in activity)
             {
-                var v = Slot(_clock.ToBusiness(a.CreatedOn).Date);
+                var v = Slot(_clock.ToBusiness(a.CreatedOn));
                 if (a.Type == ActivityTypes.PageView) v[3]++; else if (a.Type == ActivityTypes.Action) v[4]++;
             }
-            var dayRows = days.Select(d => new DayRow(d.Key.ToString("ddd dd MMM yyyy"), d.Value[0], d.Value[1], d.Value[2], d.Value[3], d.Value[4])).ToList();
+            foreach (var e in events.Where(e => e.OwnerId == userId || e.ReplyBy == userId))
+            {
+                var v = Slot(_clock.ToBusiness(e.CreatedUtc));
+                if (e.OwnerId == userId) v[5]++;
+                if (e.ReplyBy == userId) v[6]++;
+            }
+            var periodRows = periods.Select(p => new PeriodRow(labels[p.Key], p.Value[0], p.Value[1], p.Value[2], p.Value[3], p.Value[4], p.Value[5], p.Value[6])).ToList();
 
             var breakdown = activity.Where(a => a.Type == ActivityTypes.Action)
-                .GroupBy(a => a.Description).Select(g => new BreakdownRow(g.Key, g.Count()))
+                .GroupBy(a => a.Description).Select(x => new BreakdownRow(x.Key, x.Count()))
                 .OrderByDescending(b => b.Count).ToList();
 
             var recent = activity.Take(300).Select(a => new ActivityRow(
                 _clock.ToBusiness(a.CreatedOn).ToString("dd MMM hh:mm:ss tt"), a.Type, a.Description, a.Target, a.Success)).ToList();
 
-            return new StaffDetail(row, sessionRows, dayRows, recent, breakdown);
+            return new StaffDetail(row, sessionRows, periodRows, recent, breakdown);
         }
     }
 

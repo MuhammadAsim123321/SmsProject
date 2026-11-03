@@ -54,7 +54,8 @@ namespace SendSmsCallAlerts.Services
         }
 
         /// <summary>Call BEFORE the session keys are removed.</summary>
-        public async Task EndSessionAsync(HttpContext http, int userId)
+        // EndSessionAsync: signature + one line
+        public async Task EndSessionAsync(HttpContext http, int userId, string logoutType = LogoutTypes.Manual)
         {
             try
             {
@@ -63,7 +64,9 @@ namespace SendSmsCallAlerts.Services
                 var now = DateTime.UtcNow;
                 var row = await GetOrCreateSessionAsync(db, http, userId, now);
                 row.LogoutAt = now;
-                db.UserActivityLogs.Add(NewLog(http, userId, row.Id, ActivityTypes.Logout, "Logged out", null, null, null, true));
+                row.LogoutType = logoutType;   // NEW
+                db.UserActivityLogs.Add(NewLog(http, userId, row.Id, ActivityTypes.Logout,
+                    logoutType == LogoutTypes.System ? "Logged out (session expired)" : "Logged out", null, null, null, true));
                 await db.SaveChangesAsync();
                 http.Session.Remove(SessionKey);
             }
@@ -137,8 +140,15 @@ namespace SendSmsCallAlerts.Services
                 await db.SaveChangesAsync();
                 http.Session.SetString(SessionKey, row.Id.ToString());
             }
+            // GetOrCreateSessionAsync, in the else branch, add the first 5 lines.
+            // The stale-session sweep may have closed a session that is actually still alive (AJAX-only usage). User is back, so reopen it.
             else
             {
+                if (row.LogoutAt != null && row.LogoutType == LogoutTypes.System)
+                {
+                    row.LogoutAt = null;
+                    row.LogoutType = null;
+                }
                 var gap = (int)(now - row.LastActivityAt).TotalSeconds;
                 if (gap > 0 && gap <= _activeGapSeconds) row.ActiveSeconds += gap;
                 if (now > row.LastActivityAt) row.LastActivityAt = now;

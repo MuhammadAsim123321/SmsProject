@@ -563,7 +563,7 @@ namespace SendSmsCallAlerts.Services
 
         // "C 123" for 3 jobs, "C 1" for 1 job
         private static string ReplyExample(int count) =>
-            count <= 1 ? "C 1" : count <= 9 ? "C " + string.Concat(Enumerable.Range(1, count)) : "C 1,2,3";
+            count <= 1 ? "C" : count <= 9 ? "C " + string.Concat(Enumerable.Range(1, count)) : "C 1,2,3";
 
         // one line per job, "\n" between lines; returns how many lines fit in maxJobsChars (only those get numbers)
         private (string Text, int Shown) JoinJobLines(List<string> lines)

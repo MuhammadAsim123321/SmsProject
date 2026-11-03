@@ -16,6 +16,10 @@ namespace SendSmsCallAlerts.Models
 
         /// <summary>Null = never logged out explicitly (browser closed / session timed out).</summary>
         public DateTime? LogoutAt { get; set; }
+        // add inside UserLoginSession, after LogoutAt
+        /// <summary>Manual = user clicked Logout. System = session expired / timed out / browser closed. Null = still open (or old row).</summary>
+        [StringLength(10)]
+        public string? LogoutType { get; set; }
 
         /// <summary>Seconds the user was really working (see ActivityTracker.ActiveGapSeconds).</summary>
         public int ActiveSeconds { get; set; }
@@ -35,7 +39,12 @@ namespace SendSmsCallAlerts.Models
         public const string PageView = "PageView";   // opened a page
         public const string Action = "Action";       // did something (send, save, delete ...)
     }
-
+    // add next to ActivityTypes
+    public static class LogoutTypes
+    {
+        public const string Manual = "Manual";
+        public const string System = "System";
+    }
     /// <summary>One row per tracked step of a STAFF user.</summary>
     public class UserActivityLog
     {

@@ -1,80 +1,340 @@
 ﻿@using SendSmsCallAlerts.Services
 @model List<StaffRow>
+@inject IAppClock Clock
 @{
     ViewData["Title"] = "Staff Activity";
     string from = ViewBag.From, to = ViewBag.To, today = ViewBag.Today;
     string Drill(int id, string kind) => $"/Sms/IncomingLogs?from={from}&to={to}&staffId={id}&kind={kind}";
+    string P(int n, int total) => StaffActivityService.Pct(n, total);
+    var chartJson = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        labels = Model.Select(r => r.Name),
+        ontime = Model.Select(r => r.OnTime),
+        gold = Model.Select(r => r.Gold),
+        orange = Model.Select(r => r.Orange),
+        red = Model.Select(r => r.Red),
+        pending = Model.Select(r => r.Pending)
+    });
 }
-<div class="mb-3">
-    <h3>Staff Activity</h3>
-    <form method="get" class="form-inline">
-        <input type="date" name="from" value="@from" class="form-control mr-2" />
-        <input type="date" name="to" value="@to" class="form-control mr-2" />
-        <button class="btn btn-primary mr-3">Show</button>
-        <a class="btn btn-outline-secondary btn-sm mr-1" href="?from=@today&to=@today">Today</a>
-        <a class="btn btn-outline-secondary btn-sm mr-1" href="?from=@ViewBag.Last7&to=@today">7 days</a>
-        <a class="btn btn-outline-secondary btn-sm" href="?from=@ViewBag.Last30&to=@today">30 days</a>
-    </form>
-    <small class="text-muted">
-        Received = customer messages to the staff member's Twilio#. Answered = first real reply sent by that person.
-        Late = 10 minutes or more. Replies sent before tracking started show as unattributed.
-    </small>
-</div>
-<div style="overflow-x:auto">
-    <table class="table table-bordered table-striped">
-        <thead>
-            <tr>
-                <th>Staff</th>
-                <th>Status</th>
-                <th>Sessions</th>
-                <th>Logged in</th>
-                <th>Active</th>
-                <th>Last seen</th>
-                <th>Pages</th>
-                <th>Actions</th>
-                <th>Received</th>
-                <th>Not answered</th>
-                <th>Answered</th>
-                <th>Late</th>
-                <th>Avg response</th>
-                <th>Replies sent</th>
-                <th>Unattributed</th>
-                <th>Technician msgs</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var r in Model)
-            {
-                <tr>
-                    <td><a href="/StaffActivity/Detail/@r.UserId?from=@from&to=@to">@r.Name</a><br /><small class="text-muted">@r.Phone</small></td>
-                    <td>@if (r.Online) {
-                        <span class="badge badge-success">Online</span>
-                    } else
-                    {
+@await Html.PartialAsync("_StaffActivityStyles")
 
-                        <span class="badge badge-secondary">Offline</span>
-                    }
-                </td>
-                <td>@r.Sessions</td>
-                <td>@StaffActivityService.Duration(r.LoggedInSeconds)</td>
-                <td>@StaffActivityService.Duration(r.ActiveSeconds)</td>
-                <td>@(r.LastSeenUtc.HasValue ? r.LastSeenUtc.Value.ToString("dd MMM HH:mm") + " UTC" : "—")</td>
-                <td>@r.PageViews</td>
-                <td>@r.Actions</td>
-                <td><a href="@Drill(r.UserId, "received")">@r.Received</a></td>
-                <td><a href="@Drill(r.UserId, "pending")" style="@(r.NotAnswered > 0 ? "color:#cc0000;font-weight:600" : "")">@r.NotAnswered</a></td>
-                <td><a href="@Drill(r.UserId, "handled")">@r.Handled</a></td>
-                <td><a href="@Drill(r.UserId, "late")" style="@(r.HandledLate > 0 ? "color:#b35a00;font-weight:600" : "")">@r.HandledLate</a></td>
-                <td>@r.AvgText</td>
-                <td>@r.RepliesSent</td>
-                <td>@r.Unattributed</td>
-                <td>@r.TechnicianMessages</td>
-            </tr>
-        }
-        @if (Model.Count == 0)
-        {
-            <tr><td colspan="16" class="text-center">No staff users found.</td></tr>
-        }
-    </tbody>
-</table>
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-users"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">MANAGER</span>
+            <h1>Staff Activity</h1>
+            <p>Login activity and message performance for each staff member</p>
+        </div>
+    </div>
+</section>
+
+<form method="get" class="sa-filter">
+    <div class="sa-quick">
+        <button type="button" data-from="@today" data-to="@today">Today</button>
+        <button type="button" data-from="@ViewBag.Last7" data-to="@today">Last 7 days</button>
+        <button type="button" data-from="@ViewBag.MonthStart" data-to="@today">This month</button>
+        <button type="button" data-from="@ViewBag.Last30" data-to="@today">Last 30 days</button>
+    </div>
+    <label>From <input type="date" name="from" value="@from" max="@today" /></label>
+    <label>To <input type="date" name="to" value="@to" max="@today" /></label>
+    <button class="btn btn-primary btn-sm">Apply</button>
+</form>
+
+<div class="sa-legend">
+    <span><i class="sa-dot" style="background:#15803d"></i>On time: under 10 min</span>
+    <span><i class="sa-dot" style="background:#B8860B"></i>Gold: 10–15 min</span>
+    <span><i class="sa-dot" style="background:#b35a00"></i>Orange: 15–20 min</span>
+    <span><i class="sa-dot" style="background:#cc0000"></i>Red: 20+ min</span>
+    <span><i class="sa-dot" style="background:#64748b"></i>Pending: no reply yet</span>
 </div>
+
+<div class="sa-tabs">
+    <button type="button" class="active" data-tab="sms">SMS performance</button>
+    <button type="button" data-tab="calls">Phone calls</button>
+    <button type="button" data-tab="sessions">Logins &amp; activity</button>
+</div>
+
+<div class="sa-pane active" id="pane-sms">
+    <div class="sa-card">
+        <h2>Staff comparison</h2>
+        <p>Response speed of the messages each staff member answered, plus their pending messages</p>
+        <div class="sa-chart-box"><canvas id="cmpChart"></canvas></div>
+    </div>
+
+    <div class="sa-card sa-wrap" style="padding:0">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Staff</th>
+                    <th>Inbound</th>
+                    <th>Outbound</th>
+                    <th>Answered</th>
+                    <th>Pending</th>
+                    <th>Avg response</th>
+                    <th>On time</th>
+                    <th>Gold</th>
+                    <th>Orange</th>
+                    <th>Red</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td class="sa-name"><a href="/StaffActivity/Detail/@r.UserId?from=@from&to=@to">@r.Name</a><br /><small>@r.Phone</small></td>
+                        <td><a href="@Drill(r.UserId, "received")">@r.Inbound</a></td>
+                        <td>@r.Outbound</td>
+                        <td><a href="@Drill(r.UserId, "handled")">@r.Answered</a></td>
+                        <td><a href="@Drill(r.UserId, "pending")" style="@(r.Pending > 0 ? "color:#cc0000;font-weight:700" : "")">@r.Pending</a></td>
+                        <td>@r.AvgText</td>
+                        <td style="color:#15803d;font-weight:600"><a href="@Drill(r.UserId, "ontime")" style="color:inherit">@r.OnTime</a> <span class="sa-sub">@P(r.OnTime, r.Answered)</span></td>
+                        <td style="color:#B8860B;font-weight:600"><a href="@Drill(r.UserId, "gold")" style="color:inherit">@r.Gold</a> <span class="sa-sub">@P(r.Gold, r.Answered)</span></td>
+                        <td style="color:#b35a00;font-weight:600"><a href="@Drill(r.UserId, "orange")" style="color:inherit">@r.Orange</a> <span class="sa-sub">@P(r.Orange, r.Answered)</span></td>
+                        <td style="color:#cc0000;font-weight:600"><a href="@Drill(r.UserId, "red")" style="color:inherit">@r.Red</a> <span class="sa-sub">@P(r.Red, r.Answered)</span></td>
+                    </tr>
+                }
+                @if (Model.Count == 0)
+                {
+                    <tr><td colspan="10" class="sa-empty">No staff users found.</td></tr>
+                }
+            </tbody>
+            @if (Model.Count > 0)
+            {
+                <tfoot>
+                    <tr>
+                        <td>Team total</td>
+                        <td>@Model.Sum(r => r.Inbound)</td>
+                        <td>@Model.Sum(r => r.Outbound)</td>
+                        <td>@Model.Sum(r => r.Answered)</td>
+                        <td>@Model.Sum(r => r.Pending)</td>
+                        <td></td>
+                        <td>@Model.Sum(r => r.OnTime)</td>
+                        <td>@Model.Sum(r => r.Gold)</td>
+                        <td>@Model.Sum(r => r.Orange)</td>
+                        <td>@Model.Sum(r => r.Red)</td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+    <p class="sa-sub" style="margin-top:8px">
+        Inbound = customer messages sent to the staff member's own number. Outbound = replies they sent from the app.
+        Answered = messages whose first real reply was sent by them (percentages are of Answered).
+        @{
+            var unknown = Model.Sum(r => r.ReplyUnknown);
+        }
+        @if (unknown > 0)
+        {
+            <text>@unknown inbound message(s) were answered before sender tracking started, so they are not credited to anyone.</text>
+        }
+    </p>
+</div>
+
+<div class="sa-pane" id="pane-calls">
+    <div class="sa-card">
+        <div class="sa-empty">
+            <strong>Call log tracking is not implemented yet</strong>
+            Inbound/outbound calls, call handling and response-time statistics will appear here once call logging is added.
+        </div>
+    </div>
+</div>
+
+<div class="sa-pane" id="pane-sessions">
+    <div class="sa-card sa-wrap" style="padding:0">
+        <table class="sa-table">
+            <thead>
+                <tr>
+                    <th>Staff</th>
+                    <th>Status</th>
+                    <th>Sessions</th>
+                    <th>Logged in</th>
+                    <th>Active</th>
+                    <th>Manual logouts</th>
+                    <th>System logouts</th>
+                    <th>Pages</th>
+                    <th>Actions</th>
+                    <th>Last seen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td class="sa-name"><a href="/StaffActivity/Detail/@r.UserId?from=@from&to=@to">@r.Name</a></td>
+                        <td><span class="sa-badge @(r.Online ? "sa-on" : "sa-off")">@(r.Online ? "Online" : "Offline")</span></td>
+                        <td>@r.Sessions</td>
+                        <td>@StaffActivityService.Duration(r.LoggedInSeconds)</td>
+                        <td>@StaffActivityService.Duration(r.ActiveSeconds)</td>
+                        <td>@r.ManualLogouts</td>
+                        <td>@r.SystemLogouts</td>
+                        <td>@r.PageViews</td>
+                        <td>@r.Actions</td>
+                        <td>@(r.LastSeenUtc.HasValue ? Clock.ToBusiness(r.LastSeenUtc.Value).ToString("dd MMM hh:mm tt") : "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <p class="sa-sub" style="margin-top:8px">
+        Manual logout = the user clicked Logout. System logout = session expired, timed out or the browser was closed.
+        Active = time actually spent working (gaps longer than the idle limit are not counted).
+    </p>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var TAB_KEY = 'saTab-index';
+
+            // -------------------------
+            // Tabs
+            // -------------------------
+            var tabButtons = document.querySelectorAll('.sa-tabs button[data-tab]');
+            var panes = document.querySelectorAll('.sa-pane');
+
+            function showTab(name) {
+                var targetPane = document.getElementById('pane-' + name);
+                var targetButton = document.querySelector('.sa-tabs button[data-tab="' + name + '"]');
+
+                // Ignore invalid or unavailable tab names.
+                if (!targetPane || !targetButton) return;
+
+                tabButtons.forEach(function (button) {
+                    button.classList.toggle('active', button === targetButton);
+                });
+
+                panes.forEach(function (pane) {
+                    pane.classList.toggle('active', pane === targetPane);
+                });
+            }
+
+            tabButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var selectedTab = button.getAttribute('data-tab');
+                    showTab(selectedTab);
+
+                    try {
+                        sessionStorage.setItem(TAB_KEY, selectedTab);
+                    } catch (e) {
+                        // The page still works if session storage is unavailable.
+                    }
+                });
+            });
+
+            // Restore the previously selected tab, if it still exists.
+            try {
+                var savedTab = sessionStorage.getItem(TAB_KEY);
+                if (savedTab) {
+                    showTab(savedTab);
+                }
+            } catch (e) {
+                // Use the default active tab.
+            }
+
+            // -------------------------
+            // Date preset buttons
+            // -------------------------
+            var form = document.querySelector('.sa-filter');
+
+            if (form) {
+                var fromInput = form.querySelector('input[name="from"]');
+                var toInput = form.querySelector('input[name="to"]');
+                var groupSelect = form.querySelector('select[name="group"]');
+
+                if (fromInput && toInput) {
+                    var presetButtons = document.querySelectorAll('.sa-quick button[data-from][data-to]');
+
+                    presetButtons.forEach(function (button) {
+                        button.classList.toggle(
+                            'active',
+                            button.dataset.from === fromInput.value &&
+                            button.dataset.to === toInput.value
+                        );
+
+                        button.addEventListener('click', function () {
+                            fromInput.value = button.dataset.from;
+                            toInput.value = button.dataset.to;
+
+                            // This field is present on Detail only.
+                            if (groupSelect && button.dataset.group) {
+                                groupSelect.value = button.dataset.group;
+                            }
+
+                            form.submit();
+                        });
+                    });
+                }
+            }
+
+            // -------------------------
+            // Staff comparison chart
+            // -------------------------
+            var chartCanvas = document.getElementById('cmpChart');
+
+            if (chartCanvas && typeof Chart !== 'undefined') {
+                var chartData = @Html.Raw(chartJson);
+
+                new Chart(chartCanvas.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [
+                            {
+                                label: 'On time',
+                                data: chartData.ontime,
+                                backgroundColor: '#15803d',
+                                stack: 's'
+                            },
+                            {
+                                label: 'Gold',
+                                data: chartData.gold,
+                                backgroundColor: '#B8860B',
+                                stack: 's'
+                            },
+                            {
+                                label: 'Orange',
+                                data: chartData.orange,
+                                backgroundColor: '#b35a00',
+                                stack: 's'
+                            },
+                            {
+                                label: 'Red',
+                                data: chartData.red,
+                                backgroundColor: '#cc0000',
+                                stack: 's'
+                            },
+                            {
+                                label: 'Pending',
+                                data: chartData.pending,
+                                backgroundColor: '#94a3b8',
+                                stack: 's'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                stacked: true,
+                                grid: { display: false }
+                            },
+                            y: {
+                                stacked: true,
+                                beginAtZero: true,
+                                ticks: { precision: 0 }
+                            }
+                        },
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+}

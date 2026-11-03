@@ -124,7 +124,7 @@ namespace SendSmsCallAlerts.Controllers
         {
             if (ActivityTracker.IsStaff(HttpContext.Session.GetString("UserRole"))
                 && int.TryParse(HttpContext.Session.GetString("UserId"), out var trackedUserId))
-                await _activity.EndSessionAsync(HttpContext, trackedUserId);
+                await _activity.EndSessionAsync(HttpContext, trackedUserId, id == -2 ? LogoutTypes.System : LogoutTypes.Manual);
 
             HttpContext.Session.Remove("UserRole");
             HttpContext.Session.Remove("UserName");
