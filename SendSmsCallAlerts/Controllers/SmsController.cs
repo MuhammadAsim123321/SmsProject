@@ -252,8 +252,32 @@ namespace SendSmsCallAlerts.Controllers
             return File(path, "application/octet-stream", "TempFileName");
         }
 
-        public IActionResult DownloadMMSFileDirect(string fileName)
+        public async Task<IActionResult> DownloadMMSFileDirect(string fileName)
         {
+            // If an absolute remote Location was supplied, proxy it server-side so the
+            // browser downloads it with Content-Disposition: attachment instead of
+            // navigating away from the attachments page.
+            if (!string.IsNullOrWhiteSpace(fileName)
+                && Uri.TryCreate(fileName, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                try
+                {
+                    using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                    response.EnsureSuccessStatusCode();
+
+                    var bytes = await response.Content.ReadAsByteArrayAsync();
+                    var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+                    var suggestedName = Path.GetFileName(uri.LocalPath) ?? "downloaded_file";
+
+                    return File(bytes, contentType, suggestedName);
+                }
+                catch
+                {
+                    return NotFound();
+                }
+            }
+
             string filePath = Path.Combine(_hostingEnvironment.WebRootPath, fileName);
 
             if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))

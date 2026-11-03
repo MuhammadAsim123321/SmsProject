@@ -30,7 +30,14 @@
             {
                 <tr>
                     <td>
-                        @* @attachment.FileName.Substring(10)*@
+                        @if (!string.IsNullOrWhiteSpace(attachment.FileName))
+                        {
+                            <div class="attachment-name" style="font-size:.85rem;color:#555;margin-bottom:.2rem;word-break:break-all;">@attachment.FileName</div>
+                        }
+                        else if (!string.IsNullOrWhiteSpace(attachment.Location))
+                        {
+                            <div class="attachment-name" style="font-size:.85rem;color:#555;margin-bottom:.2rem;word-break:break-all;">@attachment.Location.Split('/').LastOrDefault() ?? "Attachment"</div>
+                        }
                         @if (IsImage(attachment.FileName))
                         {
                             <img src="@AttachmentUrl(attachment)" alt="Image preview" style="max-width: 300px; max-height: 300px;" />
@@ -61,7 +68,7 @@
                                 <i class="fa fa-eye" aria-hidden="true"></i> View image
                             </button>
                         }
-                        <button class="btn btn-primary btn-sm" type="button" onclick="downloadAttachment('@attachment.FileName')"><i class="fa fa-download" aria-hidden="true"></i> Download</button>
+                        <button class="btn btn-primary btn-sm" type="button" onclick="downloadAttachment('@DownloadUrl(attachment)')"><i class="fa fa-download" aria-hidden="true"></i> Download</button>
                     </td>
                 </tr>
             }
@@ -83,11 +90,22 @@
 @functions {
         string AttachmentUrl(MmsLinks attachment)
         {
+                var source = AttachmentUrlResolver.ResolveSource(attachment.Location, attachment.FileName);
+                if (source == AttachmentUrlSource.Remote)
+                {
+                        return attachment.Location!;
+                }
+                if (source == AttachmentUrlSource.None)
+                {
+                        return string.Empty;
+                }
+
+                // Local: derive a local path and serve it only when the file actually exists.
                 var path = (attachment.FileName ?? string.Empty).Replace('\\', '/').TrimStart('/');
                 var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
                 if (segments.Length == 0 || segments.Any(segment => segment == "." || segment == ".."))
                 {
-                        throw new InvalidOperationException("The attachment file path is invalid.");
+                        return string.Empty;
                 }
 
                 if (!string.Equals(segments[0], "uploads", StringComparison.OrdinalIgnoreCase)
@@ -96,8 +114,24 @@
                         path = "uploads/" + path;
                 }
 
+                var env = Context.RequestServices.GetRequiredService<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>();
+                var localFilePath = System.IO.Path.Combine(env.WebRootPath, path.Replace('/', System.IO.Path.DirectorySeparatorChar));
+                if (!System.IO.File.Exists(localFilePath))
+                {
+                        return string.Empty;
+                }
+
                 var encodedPath = string.Join("/", path.Split('/').Select(Uri.EscapeDataString));
                 return Url.Content("~/" + encodedPath);
+        }
+
+        string DownloadUrl(MmsLinks attachment)
+        {
+                if (AttachmentUrlResolver.ResolveSource(attachment.Location, attachment.FileName) == AttachmentUrlSource.Remote)
+                {
+                        return attachment.Location!;
+                }
+                return attachment.FileName ?? string.Empty;
         }
 
         bool IsImage(string? fileName)
@@ -137,9 +171,7 @@ document.getElementById("closeImageViewer").addEventListener("click", function (
     imageViewer.close();
 });
 
-function downloadAttachment(id) {
-    // Assuming you have a DownloadAttachment action in your controller
-    debugger;
-    window.location.href = '@Url.Action("DownloadMMSFileDirect", "Sms")' + '?fileName=' + id;
+function downloadAttachment(fileName) {
+    window.location.href = '@Url.Action("DownloadMMSFileDirect", "Sms")' + '?fileName=' + encodeURIComponent(fileName);
 }
 </script>
