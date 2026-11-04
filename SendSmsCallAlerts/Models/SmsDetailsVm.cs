@@ -33,25 +33,60 @@ namespace SendSmsCallAlerts.Models
 
         // Task 4: Response time tracking
         public DateTime? RespondedOn { get; set; }
+
+        /// <summary>
+        /// True when a real outgoing reply has been sent for this incoming message.
+        /// </summary>
+        public bool IsResponded => RespondedOn.HasValue;
+
+        /// <summary>
+        /// Elapsed minutes from incoming to the actual reply (set only when IsResponded is true).
+        /// Used for the Waiting Time display column and for admin locked colour.
+        /// </summary>
         public double? WaitingMinutes { get; set; }
 
         /// <summary>
-        /// "gold" (10–14m59s) | "orange" (15–19m59s) | "red" (20m+) | "" based on WaitingMinutes for incoming messages.
-        /// Thresholds now live in ResponseRules so the grid and the Dashboard always agree.
+        /// The colour bucket locked at the moment the message was responded to,
+        /// based on WaitingMinutes (actual reply elapsed time).
+        /// Used by admin to permanently show the colour the message had when staff replied.
+        /// Returns "" when not yet responded or when the reply came in under 10 min (no threshold crossed).
         /// </summary>
-        public string WaitingColor => smsDirection != "Incoming" ? "" : ResponseRules.ColorFor(WaitingMinutes);
+        public string RespondedColor =>
+            smsDirection != "Incoming" || !IsResponded
+                ? ""
+                : ResponseRules.ColorFor(WaitingMinutes);
 
-        // OLD (kept for reference, replaced by the line above):
-        //public string WaitingColor
-        //{
-        //    get
-        //    {
-        //        if (smsDirection != "Incoming" || WaitingMinutes == null) return "";
-        //        if (WaitingMinutes >= 20) return "red";
-        //        if (WaitingMinutes >= 15) return "orange";
-        //        if (WaitingMinutes >= 10) return "gold"; // 10–14 min 59 sec
-        //        return "";
-        //    }
-        //}
+        /// <summary>
+        /// Staff-view colour:
+        ///   - Pending → based on (UtcNow – createdOn), grows live.
+        ///   - Responded → always "" (default, no colour).
+        /// </summary>
+        public string WaitingColor
+        {
+            get
+            {
+                if (smsDirection != "Incoming") return "";
+                if (IsResponded) return "";   // staff: responded = no colour
+                var elapsedMinutes = (DateTime.UtcNow - createdOn).TotalMinutes;
+                return ResponseRules.ColorFor(elapsedMinutes);
+            }
+        }
+
+        /// <summary>
+        /// Admin-view colour:
+        ///   - Pending → same as WaitingColor (live elapsed time).
+        ///   - Responded → locked to RespondedColor (the colour the message held at reply time).
+        ///     If staff replied before any threshold (under 10 min) this returns "" — same as staff.
+        /// </summary>
+        public string AdminWaitingColor
+        {
+            get
+            {
+                if (smsDirection != "Incoming") return "";
+                if (IsResponded) return RespondedColor;  // lock in the colour from reply time
+                var elapsedMinutes = (DateTime.UtcNow - createdOn).TotalMinutes;
+                return ResponseRules.ColorFor(elapsedMinutes);
+            }
+        }
     }
 }

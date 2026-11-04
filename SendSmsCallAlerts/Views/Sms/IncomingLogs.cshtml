@@ -247,6 +247,22 @@
         "bServerSide": false,
         "bProcessing": true,
         "order": [],
+        // Intercept the raw response to capture isAdmin before DataTables processes aaData.
+        "fnServerData": function (sSource, aoData, fnCallback, oSettings) {
+            oSettings.jqXHR = $.ajax({
+                url:      sSource,
+                type:     "POST",
+                data:     aoData,
+                dataType: "json",
+                success:  function (json) {
+                    _isAdmin = json.isAdmin === true;
+                    fnCallback(json);
+                },
+                error: function (xhr, error, thrown) {
+                    oSettings.oApi._fnLog(oSettings, 0, "DataTables request error: " + thrown);
+                }
+            });
+        },
         "columnDefs": [
             { "orderable": false, "targets": 18 }  // Actions
         ],
@@ -254,13 +270,23 @@
             "emptyTable": "@(ViewBag.StaffEmptyMessage ?? "No record found.")",
             "processing": '<i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>'
         },
-        // Task 4: color incoming rows based on waiting time — text only, no background change
+        // Color incoming rows based on elapsed time (current time – incoming time).
+        // Responded messages always use the default colour for staff.
+        // For admin, responded messages keep the colour they had at reply time (respondedColor).
         "createdRow": function (row, data) {
-            if (data.smsDirection === "Incoming" && data.waitingColor) {
-                var textColorMap = { gold: '#B8860B', orange: '#b35a00', red: '#cc0000' };
-                var color = textColorMap[data.waitingColor];
-                if (color) {
-                    $('td', row).css({ 'color': color, 'font-weight': '600' });
+            if (data.smsDirection === "Incoming") {
+                // Tag the row so the minute-timer can find and update it
+                $(row).attr('data-incoming-utc-ms', data.createdOnUtcMs || 0);
+                $(row).attr('data-is-responded',    data.isResponded ? '1' : '0');
+                $(row).attr('data-responded-color', data.respondedColor || '');
+                $(row).attr('data-row-id',          data.id || '');
+
+                if (data.waitingColor) {
+                    var textColorMap = { gold: '#B8860B', orange: '#b35a00', red: '#cc0000' };
+                    var color = textColorMap[data.waitingColor];
+                    if (color) {
+                        $('td', row).css({ 'color': color, 'font-weight': '600' });
+                    }
                 }
             }
         },
@@ -440,6 +466,80 @@
             }
         });
     }
+
+    // -------------------------------------------------------------------------
+    // Per-minute color refresh for pending (non-responded) incoming rows.
+    //
+    // Staff:
+    //   - Pending rows    → colour grows with elapsed time (gold/orange/red).
+    //   - Responded rows  → always reset to default (no colour).
+    //
+    // Admin:
+    //   - Pending rows    → same as staff (grows with elapsed time).
+    //   - Responded rows  → locked to the colour the message held at reply time
+    //                       (respondedColor). If staff replied before 10 min → no colour.
+    //
+    // The timer fires every 60 seconds and updates rows in place (no network request).
+    // -------------------------------------------------------------------------
+
+    // isAdmin is set once from the first DataTables AJAX response via fnServerData.
+    var _isAdmin = false;
+    var _colorTextMap = { gold: '#B8860B', orange: '#b35a00', red: '#cc0000' };
+
+    function _bucketForMs(elapsedMs) {
+        var minutes = elapsedMs / 60000;
+        if (minutes >= 20) return 'red';
+        if (minutes >= 15) return 'orange';
+        if (minutes >= 10) return 'gold';
+        return '';
+    }
+
+    function _applyRowColor(row, color) {
+        if (color) {
+            $('td', row).css({ 'color': _colorTextMap[color], 'font-weight': '600' });
+        } else {
+            // Reset to default
+            $('td', row).css({ 'color': '', 'font-weight': '' });
+        }
+    }
+
+    function _refreshPendingColors() {
+        var now = Date.now();
+        $('#tblRPM tbody tr').each(function () {
+            var $row = $(this);
+            var incomingUtcMs = parseInt($row.attr('data-incoming-utc-ms'), 10);
+            if (isNaN(incomingUtcMs) || incomingUtcMs === 0) return;
+
+            var isResponded    = $row.attr('data-is-responded') === '1';
+            var respondedColor = $row.attr('data-responded-color') || '';
+
+            if (isResponded) {
+                // Admin: lock to the colour the message had when staff replied.
+                // Staff: always reset to default.
+                _applyRowColor(this, _isAdmin ? respondedColor : '');
+                return;
+            }
+
+            // Pending (both roles): recalculate based on current elapsed time
+            var elapsed = now - incomingUtcMs;
+            var color   = _bucketForMs(elapsed);
+            _applyRowColor(this, color);
+
+            // Also update the Waiting Time cell text (column index 17)
+            var minutes = Math.floor(elapsed / 60000);
+            var seconds = Math.floor((elapsed % 60000) / 1000);
+            var display = minutes + 'm ' + seconds + 's';
+            var weight  = color ? 'bold' : 'normal';
+            var hex     = color ? (_colorTextMap[color] || '#555') : '#555';
+            $('td:eq(17)', $row).html('<span style="color:' + hex + '; font-weight:' + weight + ';">' + display + '</span>');
+        });
+    }
+
+    // Run once after the table draws, then every 60 seconds
+    RpmDatatable.on('draw', function () {
+        _refreshPendingColors();
+    });
+    setInterval(_refreshPendingColors, 60000);
 
 </script>
 @await Html.PartialAsync("_IncomingEditScripts")
