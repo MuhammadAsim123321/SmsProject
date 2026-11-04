@@ -50,7 +50,7 @@ namespace SendSmsCallAlerts.Services
         public static string FormatWaiting(double totalMinutes)
         {
             var t = TimeSpan.FromMinutes(totalMinutes);
-            return $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}";
+            return $"{t.Hours}h:{t.Minutes:00}m:{t.Seconds:00}s";
         }
     }
 
