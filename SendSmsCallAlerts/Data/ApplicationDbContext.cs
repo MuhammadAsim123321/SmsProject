@@ -107,6 +107,12 @@ namespace SendSmsCallAlerts.Data
                 e.HasIndex(s => s.ScheduledJobId);
                 e.HasIndex(s => s.createdOn).HasDatabaseName("IX_SmsDetails_CreatedOn");
                 e.HasIndex(s => s.SentByUserId).HasDatabaseName("IX_SmsDetails_SentByUserId");
+
+                // Self-referential FK: outgoing reply -> the incoming message it was sent for.
+                // NoAction: deleting an incoming message does NOT cascade-delete the reply.
+                e.HasOne<SmsDetail>().WithMany()
+                 .HasForeignKey(s => s.ReplyToSmsId).OnDelete(DeleteBehavior.NoAction);
+                e.HasIndex(s => s.ReplyToSmsId).HasDatabaseName("IX_SmsDetails_ReplyToSmsId");
             });
 
             // ---------------- technician ----------------
