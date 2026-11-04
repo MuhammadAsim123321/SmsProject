@@ -684,6 +684,9 @@ namespace SendSmsCallAlerts.Migrations
                     b.Property<string>("IsReadYesOrNo")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ReplyToSmsId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("ScheduledJobId")
                         .HasColumnType("int");
 
@@ -718,6 +721,9 @@ namespace SendSmsCallAlerts.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ContactDetailId");
+
+                    b.HasIndex("ReplyToSmsId")
+                        .HasDatabaseName("IX_SmsDetails_ReplyToSmsId");
 
                     b.HasIndex("ScheduledJobId");
 
@@ -1306,6 +1312,11 @@ namespace SendSmsCallAlerts.Migrations
                     b.HasOne("SendSmsCallAlerts.Models.ContactDetail", "ContactDetail")
                         .WithMany()
                         .HasForeignKey("ContactDetailId");
+
+                    b.HasOne("SendSmsCallAlerts.Models.SmsDetail", null)
+                        .WithMany()
+                        .HasForeignKey("ReplyToSmsId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("SendSmsCallAlerts.Models.AllScheduledJob", null)
                         .WithMany()

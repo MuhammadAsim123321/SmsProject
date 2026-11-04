@@ -40,7 +40,7 @@ namespace SendSmsCallAlerts.Controllers
 
         }
 
-        public async Task<IActionResult> SMS(string num = "")
+        public async Task<IActionResult> SMS(string num = "", int? replyToSmsId = null)
         {
             // Staff access control: Staff can only view conversations for customer numbers
             // that have messages tied to their Twilio#. This prevents URL manipulation.
@@ -71,6 +71,7 @@ namespace SendSmsCallAlerts.Controllers
 
             var isReply = !string.IsNullOrWhiteSpace(num);
             ViewBag.IsReply = isReply;
+            ViewBag.ReplyToSmsId = replyToSmsId;
             ViewBag.ContactDetail = isReply
                 ? await _context.ContactDetail.FirstOrDefaultAsync(
                     contact => contact.PhoneNumber == NormaliseToE164(num))
@@ -297,7 +298,10 @@ namespace SendSmsCallAlerts.Controllers
                     smsDirection = send.Simulated ? "OutgoingTest" : "Outgoing",
                     smsBody = conversation.smsBody ?? "",
                     createdOn = DateTime.UtcNow,
-                    SentByUserId = int.TryParse(HttpContext.Session.GetString("UserId"), out var senderId) ? senderId : (int?)null
+                    SentByUserId = int.TryParse(HttpContext.Session.GetString("UserId"), out var senderId) ? senderId : (int?)null,
+                    // Link this reply back to the specific incoming message it was sent for.
+                    // Null for messages sent from the compose page (no replyToSmsId in the form).
+                    ReplyToSmsId = conversation.ReplyToSmsId > 0 ? conversation.ReplyToSmsId : null
                 };
                 _context.SmsDetails.Add(smsDetail);
                 await _context.SaveChangesAsync();

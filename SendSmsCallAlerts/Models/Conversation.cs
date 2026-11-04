@@ -14,5 +14,7 @@ namespace SendSmsCallAlerts.Models
         public DateTime createdOn { get; set; }
         public FileStreamResult fl { get; set; }
 
+        /// <summary>The incoming SmsDetail.Id this reply is responding to. Passed via hidden form field.</summary>
+        public int? ReplyToSmsId { get; set; }
     }
 }

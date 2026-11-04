@@ -24,7 +24,15 @@ namespace SendSmsCallAlerts.Models
 
         // the message plan (AllScheduledJob) that sent this outgoing message; FK is set up in ApplicationDbContext
         public int? ScheduledJobId { get; set; }
+
         /// <summary>User (staff or admin) who sent this reply from Conversations. Null = old row / automated.</summary>
         public int? SentByUserId { get; set; }
+
+        /// <summary>
+        /// For outgoing (reply) messages only: the Id of the incoming SmsDetail this message
+        /// was sent in response to. Null for automated messages and old rows without the link.
+        /// Self-referential FK within the same table.
+        /// </summary>
+        public int? ReplyToSmsId { get; set; }
     }
 }

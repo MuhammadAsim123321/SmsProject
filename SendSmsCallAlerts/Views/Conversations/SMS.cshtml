@@ -119,6 +119,8 @@
         @using (Html.BeginForm("SendSms", "Conversations", FormMethod.Post,
             new { enctype = "multipart/form-data", id = "sendForm" }))
         {
+            @* Pass the incoming message ID so the reply is linked back to the exact message *@
+            <input type="hidden" name="ReplyToSmsId" value="@ViewBag.ReplyToSmsId" />
             <div class="row g-3 mt-1">
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">From Number</label>

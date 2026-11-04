@@ -790,12 +790,20 @@ namespace SendSmsCallAlerts.Controllers
             var jobs = await _jobService.LoadJobsForContactsAsync(contactIds);
             var jobsByContact = jobs.GroupBy(j => j.ContactDetailId).ToDictionary(g => g.Key, g => g.ToList());
 
-            // response-time matching: first outgoing reply to the same customer after the incoming message
+            // response-time matching: find the outgoing reply explicitly linked to each incoming message
+            // via ReplyToSmsId. Falls back to the old phone+time heuristic only for legacy rows
+            // that pre-date the ReplyToSmsId column (ReplyToSmsId == null on the outgoing row).
             var allOutgoing = await _context.SmsDetails
                 .Where(s => s.smsDirection == "Outgoing")
                 .Where(ResponseRules.IsReply)
-                .Select(s => new { s.toNum, s.createdOn })
+                .Select(s => new { s.toNum, s.createdOn, s.ReplyToSmsId })
                 .ToListAsync();
+
+            // Build a lookup: incomingSmsId -> first outgoing reply that explicitly targets it
+            var repliesByIncomingId = allOutgoing
+                .Where(o => o.ReplyToSmsId.HasValue)
+                .GroupBy(o => o.ReplyToSmsId!.Value)
+                .ToDictionary(g => g.Key, g => g.OrderBy(o => o.createdOn).First());
 
             var result = new List<SmsDetailsVm>();
 
@@ -812,15 +820,27 @@ namespace SendSmsCallAlerts.Controllers
                 {
                     var customerNum = item.sms.fromNum;
                     var incomingTime = item.sms.createdOn;
-                    var reply = allOutgoing
-                        .Where(o => o.toNum == customerNum && o.createdOn > incomingTime)
-                        .OrderBy(o => o.createdOn)
-                        .FirstOrDefault();
 
-                    if (reply != null)
+                    // Primary: explicit link via ReplyToSmsId (new replies)
+                    if (repliesByIncomingId.TryGetValue(item.sms.Id, out var linkedReply))
                     {
-                        respondedOn = reply.createdOn;
-                        waitingMinutes = (reply.createdOn - incomingTime).TotalMinutes;
+                        respondedOn    = linkedReply.createdOn;
+                        waitingMinutes = (linkedReply.createdOn - incomingTime).TotalMinutes;
+                    }
+                    else
+                    {
+                        // Fallback: legacy rows without ReplyToSmsId — use the old phone+time heuristic
+                        // so that messages sent before this change was deployed are still marked responded.
+                        var legacyReply = allOutgoing
+                            .Where(o => o.ReplyToSmsId == null && o.toNum == customerNum && o.createdOn > incomingTime)
+                            .OrderBy(o => o.createdOn)
+                            .FirstOrDefault();
+
+                        if (legacyReply != null)
+                        {
+                            respondedOn    = legacyReply.createdOn;
+                            waitingMinutes = (legacyReply.createdOn - incomingTime).TotalMinutes;
+                        }
                     }
                 }
 

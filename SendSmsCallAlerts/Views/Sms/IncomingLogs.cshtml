@@ -390,7 +390,7 @@
                 "orderable": false,
                 "render": function (data, type, row) {
                     return '<div class="action-btns">' +
-                        '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); EditRecord(\'' + (row.smsDirection === "Incoming" ? row.fromNum : row.toNum) + '\')">Reply</button>' +
+                        '<button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); EditRecord(\'' + (row.smsDirection === "Incoming" ? row.fromNum : row.toNum) + '\', ' + row.id + ')">Reply</button>' +
                         '<button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); DeleteRecord(' + row.id + ')">Delete</button>' +
                         '</div>';
                 }
@@ -458,7 +458,11 @@
     });
 
     function openAttachments(id) { window.open("@Url.Action("OpenAttachments", "Sms")?id=" + id, '_blank'); }
-    function EditRecord(num)     { window.location.href = '@Url.Action("SMS", "Conversations")?num=' + num; }
+    function EditRecord(num, smsId) {
+        var url = '@Url.Action("SMS", "Conversations")?num=' + num;
+        if (smsId) url += '&replyToSmsId=' + smsId;
+        window.location.href = url;
+    }
     function DeleteRecord(id) {
         $.post('/Sms/DeleteMsg', { id: id }, function (response) {
             if (response == "success") {
