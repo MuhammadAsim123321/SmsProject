@@ -208,12 +208,12 @@ namespace SendSmsCallAlerts.Services
                 timely, buckets, series, await BuildAttentionAsync(rows));
         }
 
-        /// <summary>Up to 10 messages that need a look: oldest pending first, then slowest replies.</summary>
+        /// <summary>All messages that need a look: oldest pending first, then slowest replies. Paged on the dashboard.</summary>
         private async Task<List<AttentionRow>> BuildAttentionAsync(List<DashboardRow> rows)
         {
             var pending = rows.Where(r => r.Bucket == ResponseRules.Pending).OrderBy(r => r.CreatedUtc);
             var slow = rows.Where(r => r.Minutes >= ResponseRules.GoldFromMinutes).OrderByDescending(r => r.Minutes);
-            var top = pending.Concat(slow).Take(10).ToList();
+            var top = pending.Concat(slow).ToList();
             if (top.Count == 0) return new List<AttentionRow>();
 
             var phones = top.Select(r => r.From).Distinct().ToList();

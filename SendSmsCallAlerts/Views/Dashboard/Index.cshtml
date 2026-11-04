@@ -3,6 +3,107 @@
 }
 
 <style>
+
+    .dash-tools {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 12px 16px 8px;
+        font-size: .85rem;
+        color: #475569;
+    }
+
+        .dash-tools label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .dash-tools .dash-search {
+            display: flex !important;
+            flex: 1 1 260px;
+            min-width: 0;
+        }
+
+            .dash-tools .dash-search input {
+                flex: 1 1 auto;
+                width: 100% !important;
+                min-width: 0;
+            }
+
+        .dash-tools select,
+        .dash-tools input {
+            height: 38px !important;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 4px 10px;
+            margin: 0 !important;
+            box-sizing: border-box;
+        }
+
+        .dash-tools select {
+            width: auto !important;
+        }
+
+        .dash-tools #attType {
+            min-width: 180px;
+        }
+
+        .dash-tools #attSize {
+            min-width: 76px;
+        }
+
+    .dash-foot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        padding: 10px 16px 14px;
+        font-size: .85rem;
+        color: #64748b;
+    }
+
+    .dash-pager {
+        display: flex;
+        gap: 4px;
+    }
+
+        .dash-pager button {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            border-radius: 8px;
+            padding: 5px 11px;
+            font-size: .82rem;
+            font-weight: 600;
+            color: #2c5b7a;
+            cursor: pointer;
+        }
+
+            .dash-pager button:hover:not(:disabled) {
+                background: #eef6fb;
+                border-color: #70b3db;
+            }
+
+            .dash-pager button.active {
+                background: #70b3db;
+                border-color: #70b3db;
+                color: #fff;
+            }
+
+            .dash-pager button:disabled {
+                opacity: .45;
+                cursor: default;
+            }
+
+        .dash-pager span {
+            padding: 5px 4px;
+        }
+
     .dash-filter {
         display: flex;
         flex-wrap: wrap;
@@ -253,9 +354,25 @@
             <span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-exclamation-circle"></i></span>
             <div>
                 <h2>Needs attention</h2>
-                <p>Unanswered messages first, then the slowest replies. Click a row to open the conversation.</p>
+                <p>Unanswered messages plus replies that took 10+ minutes. Use the filter to narrow it.</p>
             </div>
         </div>
+    </div>
+    <div class="dash-tools">
+        <label class="dash-search">Search: <input type="search" id="attSearch" placeholder="Customer, phone or message" /></label>
+        <label>
+            Filter
+            <select id="attType">
+                <option value="pending" selected>Pending (no reply)</option>
+                <option value="slow">Slow replies (10+ min)</option>
+                <option value="">All (pending + slow)</option>
+            </select>
+        </label>
+        <label>
+            Show
+            <select id="attSize"><option>10</option><option>25</option><option>50</option><option>100</option></select>
+            entries
+        </label>
     </div>
     <div class="dash-table-wrap">
         <table class="dash-table">
@@ -264,6 +381,10 @@
             </thead>
             <tbody id="attentionBody"></tbody>
         </table>
+    </div>
+    <div class="dash-foot">
+        <span id="attInfo"></span>
+        <div class="dash-pager" id="attPager"></div>
     </div>
 </section>
 
@@ -387,26 +508,78 @@
             }
 
             // ---------------------------------------------------------------- table
-            function renderAttention(d) {
-                var body = el('attentionBody');
-                if (!d.attention.length) {
-                    body.innerHTML = '<tr><td colspan="4" class="dash-empty">Nothing needs attention for this period.</td></tr>';
-                    return;
-                }
-                body.innerHTML = d.attention.map(function (r) {
-                    return '<tr data-phone="' + esc(encodeURIComponent(r.phone)) + '">'
-                        + '<td>' + esc(r.received) + '</td>'
-                        + '<td>' + esc(r.customer) + '</td>'
-                        + '<td>' + esc(r.body) + '</td>'
-                        + '<td style="font-weight:600;color:' + (COLORS[r.bucket] || '#64748b') + '">' + esc(r.waiting) + '</td>'
-                        + '</tr>';
-                }).join('');
+            var att = { rows: [], page: 1, size: 10, q: '', type: 'pending' };
+
+            function attFiltered() {
+                var q = att.q.toLowerCase();
+                return att.rows.filter(function (r) {
+                    if (att.type === 'pending' && r.bucket !== 'pending') return false;
+                    if (att.type === 'slow' && r.bucket === 'pending') return false;
+                    if (!q) return true;
+                    return (r.customer + ' ' + r.phone + ' ' + r.body + ' ' + r.received + ' ' + r.waiting).toLowerCase().indexOf(q) > -1;
+                });
             }
 
-            el('attentionBody').addEventListener('click', function (e) {
-                var tr = e.target.closest('tr[data-phone]');
-                if (tr) window.location.href = '/Conversations/SMS?num=' + tr.getAttribute('data-phone');
+            function pageButtons(cur, pages) {
+                var out = [], last = 0;
+                for (var p = 1; p <= pages; p++) {
+                    if (p === 1 || p === pages || Math.abs(p - cur) <= 1) {
+                        if (last && p - last > 1) out.push('<span>…</span>');
+                        out.push('<button type="button" data-page="' + p + '"' + (p === cur ? ' class="active"' : '') + '>' + p + '</button>');
+                        last = p;
+                    }
+                }
+                return out.join('');
+            }
+
+            function drawAttention() {
+                var rows = attFiltered(), total = rows.length;
+                var pages = Math.max(1, Math.ceil(total / att.size));
+                if (att.page > pages) att.page = pages;
+                var start = (att.page - 1) * att.size;
+                var slice = rows.slice(start, start + att.size);
+                var body = el('attentionBody');
+
+                if (!slice.length) {
+                    body.innerHTML = '<tr><td colspan="4" class="dash-empty">'
+                        + (att.rows.length ? 'No matching messages.' : 'Nothing needs attention for this period.') + '</td></tr>';
+                } else {
+                    body.innerHTML = slice.map(function (r) {
+                        return '<tr data-phone="' + esc(encodeURIComponent(r.phone)) + '">'
+                            + '<td>' + esc(r.received) + '</td>'
+                            + '<td>' + esc(r.customer) + '</td>'
+                            + '<td>' + esc(r.body) + '</td>'
+                            + '<td style="font-weight:600;color:' + (COLORS[r.bucket] || '#64748b') + '">' + esc(r.waiting) + '</td>'
+                            + '</tr>';
+                    }).join('');
+                }
+
+                el('attInfo').textContent = total
+                    ? 'Showing ' + (start + 1) + ' to ' + (start + slice.length) + ' of ' + total + ' entries'
+                    + (total !== att.rows.length ? ' (filtered from ' + att.rows.length + ')' : '')
+                    : 'Showing 0 entries';
+
+                el('attPager').innerHTML =
+                    '<button type="button" data-page="' + (att.page - 1) + '"' + (att.page === 1 ? ' disabled' : '') + '>Previous</button>'
+                    + pageButtons(att.page, pages)
+                    + '<button type="button" data-page="' + (att.page + 1) + '"' + (att.page === pages ? ' disabled' : '') + '>Next</button>';
+            }
+
+            function renderAttention(d) {
+                att.rows = d.attention || [];
+                att.page = 1;
+                drawAttention();
+            }
+
+            el('attPager').addEventListener('click', function (e) {
+                var b = e.target.closest('button[data-page]');
+                if (!b || b.disabled) return;
+                att.page = +b.getAttribute('data-page');
+                drawAttention();
             });
+            el('attSize').addEventListener('change', function () { att.size = +this.value; att.page = 1; drawAttention(); });
+            el('attSearch').addEventListener('input', function () { att.q = this.value.trim(); att.page = 1; drawAttention(); });
+            el('attType').addEventListener('change', function () { att.type = this.value; att.page = 1; drawAttention(); });
 
             // ---------------------------------------------------------------- load
             function showError(msg) {
