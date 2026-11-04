@@ -151,7 +151,7 @@ namespace SendSmsCallAlerts.Data
                         RecipientType = RecipientTypes.Technician,
                         Frequency = SmsFrequencies.Daily,
                         SendTime = new TimeSpan(17, 0, 0),
-                        TemplateBody = "Hi {technicianFirstName}, Please confirm tomorrow's jobs:\n{jobsList}\nReply '{replyExample}' to confirm or call {officePhone}",
+                        TemplateBody = "Hi {technicianFirstName}, please confirm tomorrow's jobs ({jobDate}):\r\n{jobsList}\r\n{jobConfirmationCode}\r\nCall {officePhone} with questions.",
                         IsActive = true,
                         CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
                     },

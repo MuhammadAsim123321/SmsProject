@@ -138,12 +138,36 @@ namespace SendSmsCallAlerts.Services
                 .Select(value => value!.Trim()));
         }
 
+        private static readonly HashSet<string> CountryIndicators = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "usa", "united states", "us", "pakistan", "india", "uk", "united kingdom", "canada",
+            "australia", "germany", "france", "uae", "united arab emirates", "saudi arabia",
+            "qatar", "kuwait", "oman", "bahrain", "malaysia", "singapore", "philippines",
+            "indonesia", "thailand", "vietnam", "bangladesh", "sri lanka", "nepal",
+            "nigeria", "kenya", "ghana", "south africa", "egypt", "morocco", "brazil",
+            "mexico", "argentina", "chile", "colombia", "peru", "spain", "italy",
+            "netherlands", "switzerland", "austria", "sweden", "norway", "denmark",
+            "finland", "poland", "ireland", "portugal", "greece", "turkey", "russia",
+            "china", "japan", "south korea", "israel", "jordan", "lebanon", "iraq",
+            "iran", "afghanistan", "uzbekistan", "kazakhstan", "azerbaijan", "armenia",
+            "georgia", "ukraine", "romania", "bulgaria", "czech republic", "slovakia",
+            "hungary", "croatia", "serbia", "slovenia", "lithuania", "latvia", "estonia"
+        };
+
         private static string NormalizeLocation(string location)
         {
             if (string.IsNullOrWhiteSpace(location)) return null;
             location = string.Join(" ", location.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
             if (location.Length > 250) return null;
-            return ZipRegex.IsMatch(location) ? location + ", USA" : location;
+
+            var lower = location.ToLowerInvariant();
+            // If the location already names a country, do not force ", USA".
+            if (CountryIndicators.Any(c => lower.Contains(", " + c) || lower.EndsWith(" " + c) || lower == c))
+                return location;
+
+            // Backward compatible: bare US-style ZIP codes get ", USA".
+            if (ZipRegex.IsMatch(location)) return location + ", USA";
+            return location;
         }
 
         private static string Truncate(string s, int max) => string.IsNullOrEmpty(s) || s.Length <= max ? s : s.Substring(0, max);
