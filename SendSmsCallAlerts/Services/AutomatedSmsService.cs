@@ -353,7 +353,7 @@ namespace SendSmsCallAlerts.Services
                     ["jobCount"] = shown.ToString(),
                     ["jobDate"] = tomorrow.ToString("dd-MMM-yyyy"),
                     ["jobsList"] = jobsText,
-                    ["replyExample"] = ReplyExample(shown),
+                    ["replyExample"] = ReplyExample(shown),                    // backward compatibility for old templates
                     ["officePhone"] = officePhone,
                     ["companyName"] = companyName,
                     ["jobConfirmationCode"] = GenerateJobConfirmationCode(shown)
@@ -493,6 +493,14 @@ namespace SendSmsCallAlerts.Services
         private static string Render(string template, Dictionary<string, string> vars)
         {
             foreach (var kv in vars) template = template.Replace("{" + kv.Key + "}", kv.Value ?? "");
+            
+            // Backward compatibility: {replyExample} is now {jobConfirmationCode}
+            // If template still uses old name, map it to the new one
+            if (template.Contains("{replyExample}") && vars.ContainsKey("jobConfirmationCode"))
+            {
+                template = template.Replace("{replyExample}", vars["jobConfirmationCode"] ?? "");
+            }
+            
             return template;
         }
 
