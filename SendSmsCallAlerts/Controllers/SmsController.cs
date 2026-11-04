@@ -905,6 +905,11 @@ namespace SendSmsCallAlerts.Controllers
                 }
             }
 
+            var isAdmin = string.Equals(
+                HttpContext.Session.GetString("UserRole"),
+                AppRoles.Admin,
+                StringComparison.OrdinalIgnoreCase);
+
             var serializedStats = stats.Select(conversation => new
             {
                 conversation.Id,
@@ -937,14 +942,29 @@ namespace SendSmsCallAlerts.Controllers
                     ? conversation.RespondedOn.Value.ToString("MM-dd-yyyy") : "",
                 respondedTime = conversation.RespondedOn.HasValue
                     ? conversation.RespondedOn.Value.ToString("hh:mm:ss tt") : "",
-                waitingDisplay = conversation.WaitingMinutes.HasValue
-                    ? FormatWaitingTime(conversation.WaitingMinutes.Value) : (conversation.smsDirection == "Incoming" ? "Pending" : ""),
-                waitingColor = conversation.WaitingColor
+                waitingDisplay = conversation.smsDirection == "Incoming"
+                    ? (conversation.IsResponded
+                        ? FormatWaitingTime(conversation.WaitingMinutes ?? 0)
+                        : "Pending")
+                    : "",
+                // Role-aware colour:
+                //   Admin  → pending: live elapsed; responded: locked to the colour held at reply time.
+                //   Staff  → pending: live elapsed; responded: always "" (default).
+                waitingColor = isAdmin ? conversation.AdminWaitingColor : conversation.WaitingColor,
+                // Passed to the JS timer so it knows how to handle responded rows per role.
+                respondedColor = conversation.RespondedColor,
+                // Epoch ms of the incoming message (UTC) — used by the client-side minute timer
+                // to recompute the live elapsed time without a server round-trip.
+                createdOnUtcMs = conversation.smsDirection == "Incoming"
+                    ? (long)(conversation.createdOn - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds
+                    : (long)0,
+                isResponded = conversation.IsResponded
             });
 
             return Json(new
             {
-                aaData = serializedStats
+                aaData = serializedStats,
+                isAdmin
             });
         }
 
