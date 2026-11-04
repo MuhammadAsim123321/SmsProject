@@ -47,6 +47,10 @@ namespace SendSmsCallAlerts.Data
         public DbSet<SmsLog> SmsLogs { get; set; }
         public DbSet<TechnicianJobList> TechnicianJobLists { get; set; }
 
+        // Staff activity tracking
+        public DbSet<UserLoginSession> UserLoginSessions { get; set; }
+        public DbSet<UserActivityLog> UserActivityLogs { get; set; }
+
         // REMOVED: DbSet<JobSchedule> JobSchedule (legacy table, 0 rows)
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -102,6 +106,7 @@ namespace SendSmsCallAlerts.Data
                  .HasForeignKey(s => s.ScheduledJobId).OnDelete(DeleteBehavior.SetNull);
                 e.HasIndex(s => s.ScheduledJobId);
                 e.HasIndex(s => s.createdOn).HasDatabaseName("IX_SmsDetails_CreatedOn");
+                e.HasIndex(s => s.SentByUserId).HasDatabaseName("IX_SmsDetails_SentByUserId");
             });
 
             // ---------------- technician ----------------
@@ -140,7 +145,7 @@ namespace SendSmsCallAlerts.Data
                         RecipientType = RecipientTypes.Technician,
                         Frequency = SmsFrequencies.Daily,
                         SendTime = new TimeSpan(17, 0, 0),
-                        TemplateBody = "Hi {technicianFirstName}, please confirm tomorrow's jobs ({jobDate}):\n{jobsList}\nReply 'C 123' to confirm or call {officePhone}.",
+                        TemplateBody = "Hi {technicianFirstName}, Please confirm tomorrow's jobs:\n{jobsList}\nReply '{replyExample}' to confirm or call {officePhone}",
                         IsActive = true,
                         CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
                     },
@@ -152,7 +157,7 @@ namespace SendSmsCallAlerts.Data
                         RecipientType = RecipientTypes.Customer,
                         Frequency = SmsFrequencies.Daily,
                         SendTime = new TimeSpan(19, 0, 0),
-                        TemplateBody = "Hi {customerName}, reminder from {companyName}: your {category} appointment is tomorrow, {jobDate}, at {jobTime}. Technician: {technicianName}. Reply STOP to opt out.",
+                        TemplateBody = "Hi {customerName}, this is {companyName}. Your {category} appointment is confirmed for tomorrow, {jobDate}, at {jobTime} with {technicianName}. Questions? Call {officePhone}. Reply STOP to opt out.",
                         IsActive = true,
                         CreatedOn = new DateTime(2026, 10, 21, 0, 0, 0, DateTimeKind.Utc)
                     });
@@ -204,6 +209,17 @@ namespace SendSmsCallAlerts.Data
                  .HasDatabaseName("UQ_TechnicianJobLists_Tech_Position");
                 e.HasIndex(l => l.JobDate).HasDatabaseName("IX_TechnicianJobLists_JobDate");
             });
+
+            // ---------------- staff activity ----------------
+            modelBuilder.Entity<UserLoginSession>(e =>
+            {
+                e.HasIndex(s => new { s.UserId, s.LoginAt }).HasDatabaseName("IX_UserLoginSessions_User_Login");
+            });
+            modelBuilder.Entity<UserActivityLog>(e =>
+            {
+                e.HasIndex(a => new { a.UserId, a.CreatedOn }).HasDatabaseName("IX_UserActivityLogs_User_Created");
+                e.HasIndex(a => a.LoginSessionId).HasDatabaseName("IX_UserActivityLogs_Session");
+            });
             // ---------------- lookup seeds ----------------
             modelBuilder.Entity<TimeToRun>().HasData(
                 new TimeToRun { Id = 1, Name = "Now", HourCount = 0 },
@@ -226,6 +242,7 @@ namespace SendSmsCallAlerts.Data
                 new RunFrom { Id = 3, RunFromName = "Job Book Date" },
                 new RunFrom { Id = 4, RunFromName = "Job End Date" }   // was "Job Created Date" (code always used the end date)
             );
+
 
             //modelBuilder.Entity<IvrOptions>().HasData(
             //    new IvrOptions { Id = 1, Num = 1, keyword = "HVAC Services", UserId = 0, TwilioNum = "" },

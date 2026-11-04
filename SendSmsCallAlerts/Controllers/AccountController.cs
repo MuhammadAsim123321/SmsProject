@@ -16,12 +16,14 @@ namespace SendSmsCallAlerts.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IPasswordService _passwords;
         private readonly IMemoryCache _cache;
+        private readonly ActivityTracker _activity;
 
-        public AccountController(ApplicationDbContext dbContext, IPasswordService passwords, IMemoryCache cache)
+        public AccountController(ApplicationDbContext dbContext, IPasswordService passwords, IMemoryCache cache, ActivityTracker activity)
         {
             _context = dbContext;
             _passwords = passwords;
             _cache = cache;
+            _activity = activity;
         }
 
         public IActionResult LogIn(int id = 0)
@@ -40,7 +42,7 @@ namespace SendSmsCallAlerts.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Login(LogInViewModel model, string storedurl)
+        public async Task<IActionResult> Login(LogInViewModel model, string storedurl)
         {
             var returnUrl = storedurl;
             ViewBag.ReturnUrl = string.IsNullOrEmpty(returnUrl) ? null : returnUrl;
@@ -96,6 +98,8 @@ namespace SendSmsCallAlerts.Controllers
                 HttpContext.Session.SetString("UserName", usr.Username);
                 HttpContext.Session.SetString("UserId", usr.Id.ToString());
 
+                if (ActivityTracker.IsStaff(usr.Role)) await _activity.StartSessionAsync(HttpContext, usr.Id);   // STAFF only
+
                 return RedirectToAction("IncomingLogs", "Sms");
                 //}
 
@@ -111,12 +115,17 @@ namespace SendSmsCallAlerts.Controllers
             }
 
             _cache.Set(throttleKey, failedAttempts + 1, LockoutWindow);
+            await _activity.LoginFailedAsync(HttpContext, username);
             ViewBag.ErrMsg = "Invalid Username Or Password!";
             return View("LogIn", model);
         }
 
-        public IActionResult Logout(int id = 0, string returnUrl = "")
+        public async Task<IActionResult> Logout(int id = 0, string returnUrl = "")
         {
+            if (ActivityTracker.IsStaff(HttpContext.Session.GetString("UserRole"))
+                && int.TryParse(HttpContext.Session.GetString("UserId"), out var trackedUserId))
+                await _activity.EndSessionAsync(HttpContext, trackedUserId, id == -2 ? LogoutTypes.System : LogoutTypes.Manual);
+
             HttpContext.Session.Remove("UserRole");
             HttpContext.Session.Remove("UserName");
             HttpContext.Session.Remove("UserId");

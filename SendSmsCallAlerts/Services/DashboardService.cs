@@ -49,9 +49,8 @@ namespace SendSmsCallAlerts.Services
 
         public static string FormatWaiting(double totalMinutes)
         {
-            int minutes = (int)Math.Floor(totalMinutes);
-            int seconds = (int)Math.Round((totalMinutes - minutes) * 60);
-            return $"{minutes}m {seconds}s";
+            var t = TimeSpan.FromMinutes(totalMinutes);
+            return $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}";
         }
     }
 

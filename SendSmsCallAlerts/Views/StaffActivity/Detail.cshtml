@@ -1,0 +1,336 @@
+﻿@using SendSmsCallAlerts.Services
+@model StaffDetail
+@{
+    ViewData["Title"] = "Staff Activity";
+    var r = Model.Row;
+    string from = ViewBag.From, to = ViewBag.To, today = ViewBag.Today, group = ViewBag.Group;
+    string Drill(string kind) => $"/Sms/IncomingLogs?from={from}&to={to}&staffId={r.UserId}&kind={kind}";
+    string P(int n) => StaffActivityService.Pct(n, r.Answered);
+    var pieJson = System.Text.Json.JsonSerializer.Serialize(new[] { r.OnTime, r.Gold, r.Orange, r.Red, r.Pending });
+    string qs(string g) => $"?from={from}&to={to}&group={g}";
+}
+@await Html.PartialAsync("_StaffActivityStyles")
+
+<a href="/StaffActivity?from=@from&to=@to">&larr; All staff</a>
+<section class="nova-page-head" aria-label="Page heading" style="margin-top:8px">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-user"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">STAFF MEMBER</span>
+            <h1>@r.Name <span class="sa-badge @(r.Online ? "sa-on" : "sa-off")" style="vertical-align:middle">@(r.Online ? "Online" : "Offline")</span></h1>
+            <p>@r.Username · @r.Phone</p>
+        </div>
+    </div>
+</section>
+
+<form method="get" class="sa-filter">
+    <div class="sa-quick">
+        <button type="button" data-from="@today" data-to="@today" data-group="day">Today</button>
+        <button type="button" data-from="@ViewBag.Last7" data-to="@today" data-group="day">Last 7 days</button>
+        <button type="button" data-from="@ViewBag.MonthStart" data-to="@today" data-group="week">This month</button>
+        <button type="button" data-from="@ViewBag.Last30" data-to="@today" data-group="week">Last 30 days</button>
+    </div>
+    <label>From <input type="date" name="from" value="@from" max="@today" /></label>
+    <label>To <input type="date" name="to" value="@to" max="@today" /></label>
+    <label>
+        Group by
+        <select name="group">
+            <option value="day" selected="@(group == "day")">Day</option>
+            <option value="week" selected="@(group == "week")">Week</option>
+            <option value="month" selected="@(group == "month")">Month</option>
+        </select>
+    </label>
+    <button class="btn btn-primary btn-sm">Apply</button>
+</form>
+
+<div class="sa-kpis">
+    <div class="sa-kpi"><span class="sa-kpi-label">Inbound</span><strong class="sa-kpi-value">@r.Inbound</strong><span class="sa-kpi-sub">texts to their number</span></div>
+    <div class="sa-kpi"><span class="sa-kpi-label">Outbound</span><strong class="sa-kpi-value">@r.Outbound</strong><span class="sa-kpi-sub">replies sent</span></div>
+    <div class="sa-kpi"><span class="sa-kpi-label">Answered</span><strong class="sa-kpi-value">@r.Answered</strong><span class="sa-kpi-sub">first reply by them</span></div>
+    <div class="sa-kpi"><span class="sa-kpi-label">Pending</span><strong class="sa-kpi-value" style="color:@(r.Pending > 0 ? "#cc0000" : "#1e293b")">@r.Pending</strong><span class="sa-kpi-sub">no reply yet</span></div>
+    <div class="sa-kpi"><span class="sa-kpi-label">Avg response</span><strong class="sa-kpi-value">@r.AvgText</strong><span class="sa-kpi-sub">answered messages</span></div>
+    <div class="sa-kpi"><span class="sa-kpi-label">Logged in</span><strong class="sa-kpi-value">@StaffActivityService.Duration(r.LoggedInSeconds)</strong><span class="sa-kpi-sub">@r.Sessions session(s)</span></div>
+    <div class="sa-kpi"><span class="sa-kpi-label">Active</span><strong class="sa-kpi-value">@StaffActivityService.Duration(r.ActiveSeconds)</strong><span class="sa-kpi-sub">@r.PageViews pages · @r.Actions actions</span></div>
+</div>
+
+<div class="sa-tabs">
+    <button type="button" class="active" data-tab="sms">SMS</button>
+    <button type="button" data-tab="calls">Phone calls</button>
+    <button type="button" data-tab="period">By @group</button>
+    <button type="button" data-tab="sessions">Sessions</button>
+    <button type="button" data-tab="log">Activity log</button>
+</div>
+
+<div class="sa-pane active" id="pane-sms">
+    <div class="sa-two">
+        <div class="sa-card">
+            <h2>Response time mix</h2>
+            <p>Messages this person answered, plus their pending messages</p>
+            <div class="sa-chart-box"><canvas id="pie"></canvas></div>
+        </div>
+        <div class="sa-card">
+            <h2>Response classes</h2>
+            <p>Percentages are of answered messages</p>
+            <table class="sa-table">
+                <thead><tr><th>Class</th><th>Count</th><th>%</th></tr></thead>
+                <tbody>
+                    <tr><td style="color:#15803d;font-weight:700">On time (under 10 min)</td><td><a href="@Drill("ontime")">@r.OnTime</a></td><td>@P(r.OnTime)</td></tr>
+                    <tr><td style="color:#B8860B;font-weight:700">Gold (10–15 min)</td><td><a href="@Drill("gold")">@r.Gold</a></td><td>@P(r.Gold)</td></tr>
+                    <tr><td style="color:#b35a00;font-weight:700">Orange (15–20 min)</td><td><a href="@Drill("orange")">@r.Orange</a></td><td>@P(r.Orange)</td></tr>
+                    <tr><td style="color:#cc0000;font-weight:700">Red (20+ min)</td><td><a href="@Drill("red")">@r.Red</a></td><td>@P(r.Red)</td></tr>
+                    <tr><td style="color:#64748b;font-weight:700">Pending (no reply)</td><td><a href="@Drill("pending")">@r.Pending</a></td><td>—</td></tr>
+                </tbody>
+            </table>
+            <p class="sa-sub" style="margin-top:10px">
+                Also: @r.ReplyUnknown inbound message(s) were answered before sender tracking started. @r.TechnicianMessages technician message(s) are not counted.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="sa-pane" id="pane-calls">
+    <div class="sa-card">
+        <div class="sa-empty">
+            <strong>Call log tracking is not implemented yet</strong>
+            Call statistics and the call performance pie chart will appear here once call logging is added.
+        </div>
+    </div>
+</div>
+
+<div class="sa-pane" id="pane-period">
+    <div class="sa-card sa-wrap" style="padding:0">
+        <table class="sa-table">
+            <thead><tr><th>Period</th><th>Inbound</th><th>Answered</th><th>Sessions</th><th>Logged in</th><th>Active</th><th></th><th>Pages</th><th>Actions</th></tr></thead>
+            <tbody>
+                @{
+                    int maxActive = Math.Max(1, Model.Periods.Count == 0 ? 1 : Model.Periods.Max(d => d.ActiveSeconds));
+                }
+                @foreach (var d in Model.Periods)
+                {
+                    <tr>
+                        <td><strong>@d.Label</strong></td>
+                        <td>@d.Inbound</td>
+                        <td>@d.Answered</td>
+                        <td>@d.Sessions</td>
+                        <td>@StaffActivityService.Duration(d.LoggedInSeconds)</td>
+                        <td>@StaffActivityService.Duration(d.ActiveSeconds)</td>
+                        <td style="width:160px"><div style="background:#70b3db;height:10px;border-radius:5px;width:@(d.ActiveSeconds * 100 / maxActive)%"></div></td>
+                        <td>@d.PageViews</td>
+                        <td>@d.Actions</td>
+                    </tr>
+                }
+                @if (Model.Periods.Count == 0)
+                {
+                    <tr><td colspan="9" class="sa-empty">No activity in this period.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="sa-pane" id="pane-sessions">
+    <div class="sa-card sa-wrap" style="padding:0">
+        <table class="sa-table">
+            <thead><tr><th>Login</th><th>Logout</th><th>Result</th><th>Logged in</th><th>Active</th><th>IP</th><th>Browser</th></tr></thead>
+            <tbody>
+                @foreach (var s in Model.Sessions)
+                {
+                    <tr>
+                        <td>@s.LoginLocal</td>
+                        <td>@(s.LogoutLocal ?? "—")</td>
+                        <td>@s.State</td>
+                        <td>@StaffActivityService.Duration(s.LoggedInSeconds)</td>
+                        <td>@StaffActivityService.Duration(s.ActiveSeconds)</td>
+                        <td>@s.Ip</td>
+                        <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis" title="@s.Agent">@s.Agent</td>
+                    </tr>
+                }
+                @if (Model.Sessions.Count == 0)
+                {
+                    <tr><td colspan="7" class="sa-empty">No sessions in this period.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="sa-pane" id="pane-log">
+    <div class="sa-two">
+        <div class="sa-card sa-wrap">
+            <h2>What they did</h2>
+            <table class="sa-table">
+                <thead><tr><th>Action</th><th>Times</th></tr></thead>
+                <tbody>
+                    @foreach (var b in Model.Breakdown)
+                    {
+                        <tr><td>@b.Description</td><td>@b.Count</td></tr>
+                    }
+                    @if (Model.Breakdown.Count == 0)
+                    {
+                        <tr><td colspan="2" class="sa-empty">No actions yet.</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="sa-card sa-wrap">
+            <h2>Latest activity (up to 300)</h2>
+            <table class="sa-table">
+                <thead><tr><th>Time</th><th>Type</th><th>Description</th><th>Customer / record</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Activities)
+                    {
+                        <tr>
+                            <td>@a.TimeLocal</td>
+                            <td>@a.Type</td>
+                            <td>@a.Description @if (!a.Success) {
+                                <span class="sa-badge" style="background:#db4d65">failed</span>
+                            }
+                        </td>
+                        <td>@a.Target</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // Restore the previously selected tab
+            const tabButtons = document.querySelectorAll('.sa-tabs button');
+            const panes = document.querySelectorAll('.sa-pane');
+            const storageKey = 'saTab-detail';
+
+            function activateTab(tabName) {
+                tabButtons.forEach(function (button) {
+                    const active = button.dataset.tab === tabName;
+                    button.classList.toggle('active', active);
+                    button.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+
+                panes.forEach(function (pane) {
+                    pane.style.display =
+                        pane.id === 'pane-' + tabName ? '' : 'none';
+                });
+
+                try {
+                    sessionStorage.setItem(storageKey, tabName);
+                } catch (e) {
+                    // Continue if sessionStorage is unavailable
+                }
+            }
+
+            tabButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    activateTab(button.dataset.tab);
+                });
+            });
+
+            let savedTab = 'sms';
+
+            try {
+                savedTab = sessionStorage.getItem(storageKey) || 'sms';
+            } catch (e) {
+                // Use default tab
+            }
+
+            if (!document.getElementById('pane-' + savedTab)) {
+                savedTab = 'sms';
+            }
+
+            activateTab(savedTab);
+
+
+            // Date preset buttons
+            document.querySelectorAll('.sa-quick button[data-days]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    const days = parseInt(button.dataset.days, 10);
+                    if (!Number.isFinite(days)) return;
+
+                    const to = new Date();
+                    const from = new Date();
+
+                    from.setDate(from.getDate() - (days - 1));
+
+                    function formatDate(date) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        return year + '-' + month + '-' + day;
+                    }
+
+                    const fromInput = document.querySelector('input[name="from"]');
+                    const toInput = document.querySelector('input[name="to"]');
+
+                    if (fromInput) fromInput.value = formatDate(from);
+                    if (toInput) toInput.value = formatDate(to);
+
+                    const form = button.closest('form');
+                    if (form) form.submit();
+                });
+            });
+
+
+            // Group selection
+            const groupSelect = document.querySelector('select[name="group"]');
+
+            if (groupSelect) {
+                groupSelect.addEventListener('change', function () {
+                    const form = groupSelect.closest('form');
+                    if (form) form.submit();
+                });
+            }
+
+
+            // Response-time pie chart
+            const canvas = document.getElementById('pie');
+
+            if (canvas && typeof Chart !== 'undefined') {
+                let chartData = [];
+
+                try {
+                    chartData = @Html.Raw(pieJson);
+                } catch (e) {
+                    chartData = [];
+                }
+
+                if (Array.isArray(chartData) && chartData.some(value => Number(value) > 0)) {
+                    new Chart(canvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['On Time', 'Gold', 'Orange', 'Red', 'Pending'],
+                            datasets: [{
+                                data: chartData,
+                                backgroundColor: [
+                                    '#16a34a',
+                                    '#eab308',
+                                    '#f97316',
+                                    '#dc2626',
+                                    '#94a3b8'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    const parent = canvas.parentElement;
+                    if (parent) {
+                        parent.innerHTML = '<p class="text-muted">No messages in this period.</p>';
+                    }
+                }
+            }
+        });
+    </script>
+}

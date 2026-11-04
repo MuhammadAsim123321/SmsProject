@@ -252,8 +252,32 @@ namespace SendSmsCallAlerts.Controllers
             return File(path, "application/octet-stream", "TempFileName");
         }
 
-        public IActionResult DownloadMMSFileDirect(string fileName)
+        public async Task<IActionResult> DownloadMMSFileDirect(string fileName)
         {
+            // If an absolute remote Location was supplied, proxy it server-side so the
+            // browser downloads it with Content-Disposition: attachment instead of
+            // navigating away from the attachments page.
+            if (!string.IsNullOrWhiteSpace(fileName)
+                && Uri.TryCreate(fileName, UriKind.Absolute, out var uri)
+                && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                try
+                {
+                    using var response = await _httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+                    response.EnsureSuccessStatusCode();
+
+                    var bytes = await response.Content.ReadAsByteArrayAsync();
+                    var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
+                    var suggestedName = Path.GetFileName(uri.LocalPath) ?? "downloaded_file";
+
+                    return File(bytes, contentType, suggestedName);
+                }
+                catch
+                {
+                    return NotFound();
+                }
+            }
+
             string filePath = Path.Combine(_hostingEnvironment.WebRootPath, fileName);
 
             if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
@@ -849,7 +873,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // public async Task<JsonResult> GetData()
-        public async Task<JsonResult> GetData(string? from = null, string? to = null, string? bucket = null, int? hour = null)
+        public async Task<JsonResult> GetData(string? from = null, string? to = null, string? bucket = null, int? hour = null, int? staffId = null, string? kind = null)
         {
             string accountSid = _configuration["AppSettings:AccountSid"];
             string authToken = _configuration["AppSettings:AuthToken"];
@@ -872,6 +896,13 @@ namespace SendSmsCallAlerts.Controllers
                 var dash = HttpContext.RequestServices.GetRequiredService<DashboardService>();
                 var ids = await dash.DrillDownIdsAsync(fromDay, toDay, bucket, hour);
                 stats = stats.Where(s => ids.Contains(s.Id)).ToList();
+
+                if (staffId.HasValue)
+                {
+                    var staffSvc = HttpContext.RequestServices.GetRequiredService<StaffActivityService>();
+                    var staffIds = await staffSvc.DrillDownIdsAsync(fromDay, toDay, staffId.Value, kind);
+                    stats = stats.Where(s => staffIds.Contains(s.Id)).ToList();
+                }
             }
 
             var isAdmin = string.Equals(

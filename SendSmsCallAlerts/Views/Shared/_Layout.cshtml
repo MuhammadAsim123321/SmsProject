@@ -22,6 +22,7 @@
         "Technicians" => "Team",
         "Users" => "Administration",
         "RingCentralCalls" => "Calls",
+        "StaffActivity" => "Administration",
         "Profile" => "Account",
         _ => "Workspace"
     };
@@ -44,6 +45,7 @@
         "Technicians" => "Technicians",
         "Users" => "Users",
         "RingCentralCalls" => "Outgoing calls",
+        "StaffActivity" => "Staff activity",
         "Profile" => "My profile",
         _ => routeController
     };
@@ -198,6 +200,22 @@
             });
         });
     </script>
+    @if (isLoggedIn && SendSmsCallAlerts.Services.ActivityTracker.IsStaff(role))
+    {
+        <script>
+            (function () {
+                var touched = false;
+                ['click', 'keydown', 'touchstart', 'wheel'].forEach(function (e) {
+                    document.addEventListener(e, function () { touched = true; }, { passive: true });
+                });
+                setInterval(function () {
+                    if (!touched || document.hidden) return;
+                    touched = false;
+                    fetch('/Activity/Ping', { method: 'POST', credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } }).catch(function () { });
+                }, 60000);
+            })();
+        </script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

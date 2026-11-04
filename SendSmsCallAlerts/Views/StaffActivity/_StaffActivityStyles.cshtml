@@ -1,0 +1,273 @@
+﻿<style>
+    .sa-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 16px;
+        align-items: flex-end;
+        background: #fff;
+        border: 1px solid #dbe7f1;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+    }
+
+        .sa-filter label {
+            display: flex;
+            flex-direction: column;
+            font-size: .8rem;
+            font-weight: 600;
+            color: #475569;
+            margin: 0;
+            gap: 4px;
+        }
+
+        .sa-filter input[type=date], .sa-filter select {
+            min-height: 38px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-weight: 400;
+        }
+
+    .sa-quick {
+        display: flex;
+        gap: 6px;
+        margin-right: auto;
+        flex-wrap: wrap;
+    }
+
+        .sa-quick button {
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            border-radius: 8px;
+            padding: 7px 14px;
+            font-size: .85rem;
+            font-weight: 600;
+            color: #2c5b7a;
+            cursor: pointer;
+        }
+
+            .sa-quick button:hover, .sa-quick button.active {
+                background: #eef6fb;
+                border-color: #70b3db;
+            }
+
+       
+    .sa-legend {
+        font-size: .8rem;
+        color: #64748b;
+        margin: 0 2px 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 16px;
+    }
+
+    .sa-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 5px;
+    }
+
+    .sa-kpis {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0,1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .sa-kpi {
+        background: #fff;
+        border: 1px solid #dbe7f1;
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .sa-kpi-label {
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+
+    .sa-kpi-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+        color: #1e293b;
+    }
+
+    .sa-kpi-sub {
+        font-size: .75rem;
+        color: #94a3b8;
+    }
+
+    .sa-card {
+        background: #fff;
+        border: 1px solid #dbe7f1;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 14px;
+    }
+
+        .sa-card h2 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #2c5b7a;
+            margin: 0 0 2px;
+        }
+
+        .sa-card p {
+            font-size: .8rem;
+            color: #94a3b8;
+            margin: 0 0 10px;
+        }
+
+    .sa-chart-box {
+        position: relative;
+        height: 300px;
+    }
+
+    .sa-two {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .sa-tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 2px solid #e3e9f2;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+    }
+
+        .sa-tabs button {
+            border: 0;
+            background: none;
+            padding: 10px 18px;
+            font-weight: 700;
+            font-size: .9rem;
+            color: #66748d;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            cursor: pointer;
+        }
+
+            .sa-tabs button.active {
+                color: #335ff4;
+                border-bottom-color: #335ff4;
+            }
+
+    .sa-pane {
+        display: none;
+    }
+
+        .sa-pane.active {
+            display: block;
+        }
+
+    .sa-wrap {
+        overflow-x: auto;
+    }
+
+    .sa-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .88rem;
+        background: #fff;
+    }
+
+        .sa-table th {
+            background: #70b3db;
+            color: #fff;
+            padding: 9px 10px;
+            text-align: left;
+            white-space: nowrap;
+            font-size: .8rem;
+        }
+
+        .sa-table td {
+            padding: 9px 10px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .sa-table tbody tr:hover {
+            background: #f0f9ff;
+        }
+
+        .sa-table tfoot td {
+            font-weight: 700;
+            background: #f8fafc;
+        }
+
+        .sa-table .sa-name {
+            min-width: 190px;
+            font-weight: 700;
+        }
+
+        .sa-table small {
+            color: #94a3b8;
+            font-weight: 400;
+        }
+
+    .sa-sub {
+        color: #94a3b8;
+        font-size: .78rem;
+    }
+
+    .sa-badge {
+        display: inline-block;
+        padding: 2px 9px;
+        border-radius: 20px;
+        font-size: .72rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .sa-on {
+        background: #189b75;
+    }
+
+    .sa-off {
+        background: #94a3b8;
+    }
+
+    .sa-empty {
+        text-align: center;
+        color: #64748b;
+        padding: 42px 10px;
+    }
+
+        .sa-empty strong {
+            display: block;
+            font-size: 1rem;
+            color: #2c5b7a;
+            margin-bottom: 4px;
+        }
+
+    @@media (max-width:1199px) {
+        .sa-kpis {
+            grid-template-columns: repeat(4, minmax(0,1fr));
+        }
+    }
+
+    @@media (max-width:991px) {
+        .sa-two {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width:575px) {
+        .sa-kpis {
+            grid-template-columns: repeat(2, minmax(0,1fr));
+        }
+    }
+</style>

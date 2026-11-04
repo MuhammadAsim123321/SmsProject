@@ -4,6 +4,7 @@ using SendSmsCallAlerts.Data;
 using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Jobs;
 using SendSmsCallAlerts.Models;
+using SendSmsCallAlerts.Services;
 
 namespace SendSmsCallAlerts.Controllers
 {
@@ -33,6 +34,7 @@ namespace SendSmsCallAlerts.Controllers
             RecurringJob.AddOrUpdate<SmsJob>("SmsJob.RegisterAllJobs", j => j.RegisterAllJobs(), Cron.Minutely);
             RecurringJob.AddOrUpdate<AutomatedSmsJob>("automated-sms-minutely", j => j.RunAsync(), Cron.Minutely);
             RecurringJob.AddOrUpdate<SmsDispatchJob>("sms-dispatcher", j => j.RunAsync(), Cron.Minutely);
+            RecurringJob.AddOrUpdate<ActivityRetentionJob>("activity-retention", j => j.RunAsync(), Cron.Daily(3));
 
         }
 
