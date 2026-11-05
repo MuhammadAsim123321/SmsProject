@@ -629,7 +629,10 @@ namespace SendSmsCallAlerts.Controllers
                         technicianName = j.Technician?.FullName ?? "Unassigned",
                         customerName  = j.ContactDetail?.Name ?? "N/A",
                         phoneNumber   = j.ContactDetail?.PhoneNumber ?? "N/A",
-                        address       = j.ContactDetail?.Address ?? "N/A",
+                        /* address = j.ContactDetail?.Address ?? "N/A", */
+                        streetAddress = j.ContactDetail?.StreetAddress ?? "",
+                        cityState     = j.ContactDetail?.CityState ?? "",
+                        zipCode       = j.ContactDetail?.ZipCode ?? "",
                         distanceMiles = j.DistanceMiles.HasValue
                                         ? Math.Round(j.DistanceMiles.Value, 1).ToString("F1") + " mi"
                                         : "N/A",
@@ -756,6 +759,12 @@ namespace SendSmsCallAlerts.Controllers
         // =====================================================================
         private async Task<List<SmsDetailsVm>> GetIncomingLogs(string num)
         {
+            // Validate Staff phone before query to prevent data leaks
+            if (string.IsNullOrEmpty(num) && HttpContext.Session.GetString("UserRole") != "ADMIN")
+            {
+                return new List<SmsDetailsVm>();
+            }
+
             // For Staff users, match messages where fromNum OR toNum equals their Twilio number.
             // This shows both outgoing messages (From = Twilio#) and incoming messages (To = Twilio#).
             // For Admin (num == null), no filter is applied.

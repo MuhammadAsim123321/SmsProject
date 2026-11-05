@@ -12,6 +12,7 @@ using SendSmsCallAlerts.Models;
 namespace SendSmsCallAlerts.Controllers
 {
     [SessionChecking]
+    [RoleAuthorize]
     public class IvrOptionsController : Controller
     {
         private readonly ApplicationDbContext _context;

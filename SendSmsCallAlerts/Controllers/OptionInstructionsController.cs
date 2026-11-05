@@ -12,6 +12,7 @@ using SendSmsCallAlerts.Models;
 namespace SendSmsCallAlerts.Controllers
 {
     [SessionChecking]
+    [RoleAuthorize]
     public class OptionInstructionsController : Controller
     {
         private readonly ApplicationDbContext _context;

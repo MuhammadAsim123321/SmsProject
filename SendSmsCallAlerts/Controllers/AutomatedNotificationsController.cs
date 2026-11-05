@@ -15,6 +15,7 @@ namespace SendSmsCallAlerts.Controllers
     }
 
     [SessionChecking]
+    [RoleAuthorize]
     public class AutomatedNotificationsController : Controller
     {
         private readonly ApplicationDbContext db;
@@ -103,6 +104,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         [HttpPost, ValidateAntiForgeryToken]
+        [RoleAuthorize(AppRoles.Admin)]
         public async Task<IActionResult> Delete(int id)
         {
             var s = await db.AutomatedSmsSettings.FindAsync(id);

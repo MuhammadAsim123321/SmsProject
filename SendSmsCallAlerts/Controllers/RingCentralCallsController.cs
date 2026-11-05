@@ -33,6 +33,7 @@ namespace SendSmsCallAlerts.Controllers
     // ── Controller ──────────────────────────────────────────────────────────────
 
     [SessionChecking]
+    [RoleAuthorize]
     public class RingCentralCallsController : Controller
     {
         private readonly RingCentralService _rc;

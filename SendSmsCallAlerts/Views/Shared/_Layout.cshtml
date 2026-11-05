@@ -29,6 +29,7 @@
     var displayPage = routeController switch
     {
         "Sms" when routeAction == "IncomingLogs" => "Incoming SMS",
+        "Sms" when routeAction == "TechnicianJobs" => "Technician jobs",
         "Sms" when routeAction == "ScheduledJobs" => "Scheduled jobs",
         "Sms" when routeAction == "OpenAttachments" => "Attachments",
         "Conversations" when routeAction == "SMS" => "Send SMS",
@@ -67,10 +68,75 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#101e35" />
     <title>@pageHeading · Carpet Repair & Cleaning</title>
+    
+    @* CSS Loading Order (CRITICAL): Signal UI must be render-blocking to prevent FOUC.
+       1. Legacy Bootstrap 4 + template CSS first (for existing plugins, modals, DataTables)
+       2. Signal UI (nova) system CSS next (layout-critical, applies before first paint)
+       3. Page-specific styles in @RenderSectionAsync("Styles", required: false) (allows overrides)
+       4. Never: inline <style> tags in page content (cause full reflow on render) *@
+    
     @* Keep the existing Bootstrap 4 assets: older AJAX modals, dropdowns and plugins rely on them. *@
     <link rel="stylesheet" href="~/assets/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/assets/css/font-awesome.min.css" />
     <link rel="stylesheet" href="~/assets/css/style.css" />
+    
+    @* Signal UI design system: render-blocking in <head> so nova styling applies before first paint *@
+    <link rel="stylesheet" href="~/css/signal-ui-next.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-list-tables.css" asp-append-version="true" />
+    
+    @* Page-specific styles: legacy views that inject <style> tags move content here via @section Styles *@
+    @await RenderSectionAsync("Styles", required: false)
+    
+    @* Sidebar collapsed state: apply via class on <html> before paint to prevent layout shift on reload *@
+    <script>
+        (function () {
+            var collapsed = sessionStorage.getItem('signal-sidebar-collapsed') === 'true';
+            if (collapsed && typeof document !== 'undefined') {
+                document.documentElement.classList.add('signal-sidebar-collapsed');
+            }
+        })();
+    </script>
+    
+    @* Fade-in animation for smooth page transitions (respects prefers-reduced-motion) *@
+    <style>
+        @@media (prefers-reduced-motion: no-preference) {
+            .signal-view-surface {
+                animation: signal-fade-in 120ms ease-out;
+            }
+        }
+
+        @@keyframes signal-fade-in {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* DataTables: hide until initialized to prevent layout thrashing */
+        .signal-view-surface .dataTables_wrapper {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 80ms ease-in 150ms;
+        }
+
+        .signal-view-surface .dataTables_wrapper.initialized {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        @@media (prefers-reduced-motion: reduce) {
+            .signal-view-surface .dataTables_wrapper {
+                transition: none;
+            }
+
+            .signal-view-surface .dataTables_wrapper.initialized {
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
 <body class="signal-app @(isLoggedIn ? "signal-authenticated" : "signal-guest")">
     <div class="main-wrapper @(isLoggedIn ? "has-sidebar" : "guest-shell")">
@@ -121,9 +187,8 @@
             }
         </div>
     </div>
-    @* This is intentionally after RenderBody: legacy pages inject their own style tags. *@
-    <link rel="stylesheet" href="~/css/signal-ui-next.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/css/signal-list-tables.css" asp-append-version="true" />
+    @* This is intentionally after RenderBody: legacy pages inject their own style tags ONLY via @section Styles in <head>.
+       Theme CSS (signal-ui-next.css, signal-list-tables.css) are now in <head> for render-blocking. *@
     @* Preserve the existing jquery/bootstrap plugin order and AJAX session-expiry behavior. *@
     <script src="~/assets/js/jquery-3.2.1.min.js"></script>
     <script src="~/assets/js/popper.min.js"></script>
@@ -145,7 +210,7 @@
                     var top = parseInt(saved, 10);
                     if (!isNaN(top)) {
                         sidebar.scrollTop = top;
-                        window.setTimeout(function () { sidebar.scrollTop = top; }, 100);
+                        @* Restore scroll synchronously before paint; no setTimeout (was: 100ms, caused visible jump) *@
                     }
                 }
             }
@@ -216,6 +281,16 @@
             })();
         </script>
     }
+    <script>
+            (function () {
+                function markReady() {
+                    document.querySelectorAll('.dataTables_wrapper').forEach(function (w) { w.classList.add('initialized'); });
+                }
+                if (window.jQuery) { jQuery(document).on('init.dt draw.dt', markReady); }
+                window.addEventListener('load', markReady);
+                setTimeout(markReady, 1500); // fallback so a table can never stay hidden
+            })();
+    </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -2,6 +2,7 @@ using Hangfire;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using SendSmsCallAlerts.Data;
+using SendSmsCallAlerts.Filters;
 using SendSmsCallAlerts.Jobs;
 using SendSmsCallAlerts.Services;
 using System.Text.Json;
@@ -183,7 +184,12 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
-app.UseHangfireDashboard();
+
+// HangFire dashboard authorization: Admin users only
+app.UseHangfireDashboard(options: new Hangfire.DashboardOptions
+{
+    Authorization = new[] { new HangfireAdminFilter() }
+});
 app.UseHangfireServer();
 
 app.MapControllerRoute(

@@ -11,21 +11,21 @@
 
 <div class="sg-content-stack">
     <section class="nova-page-head" aria-label="Page heading">
-    <div class="nova-heading-group">
-        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-bell-o"></i></span>
-        <div class="nova-heading-copy">
-            <span class="nova-eyebrow">SCHEDULE RULES</span>
-            <h1>Automated SMS</h1>
-            <p>Configure schedules and view delivery activity</p>
+        <div class="nova-heading-group">
+            <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-bell-o"></i></span>
+            <div class="nova-heading-copy">
+                <span class="nova-eyebrow">SCHEDULE RULES</span>
+                <h1>Automated SMS</h1>
+                <p>Configure schedules and view delivery activity</p>
+            </div>
         </div>
-    </div>
         <div class="nova-page-actions">
             <a asp-controller="SmsLogs" asp-action="Index" class="btn btn-outline-primary mr-2">SMS logs</a>
             <a asp-action="Create" class="btn btn-primary sg-primary-action">
                 <i class="fa fa-plus mr-1"></i> New setting
             </a>
         </div>
-</section>
+    </section>
 
     @if (TempData["Success"] != null)
     {
@@ -33,55 +33,194 @@
     }
 
     <section class="nova-list-card sg-fix-automation" aria-label="Automated settings">
-    <div class="nova-list-toolbar">
-        <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>Automated settings</h2><p>Scheduled messages and recipient rules</p></div></div>
-        <div class="nova-list-controls"><label class="nova-search" for="search-novaAutomatedTable"><i class="fa fa-search" aria-hidden="true"></i><span class="sr-only">Search Automated settings</span><input type="search" id="search-novaAutomatedTable" data-nova-search="novaAutomatedTable" placeholder="Search records..." autocomplete="off" /></label></div>
-    </div>
-    <div class="nova-table-viewport">
-<table id="novaAutomatedTable" class="table table-bordered table-striped">
-            <thead style="background: #70b3db; color: white;">
-                <tr>
-                    <th>Name</th>
-                    <th>Recipients</th>
-                    <th>Schedule</th>
-                    <th>Message</th>
-                    <th>Active</th>
-                    <th>Next run</th>
-                    <th style="width:330px">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var s in Model)
-                {
-                    var time = DateTime.Today.Add(s.SendTime).ToString("hh:mm tt");
-                    var schedule = s.Frequency == "Weekly"
-                        ? $"Every {days[s.DayOfWeek ?? 0]} at {time}"
-                        : $"Every day at {time}";
+        <div class="nova-list-toolbar">
+            <div class="nova-list-heading">
+                <span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span>
+                <div>
+                    <h2>Automated settings</h2>
+                    <p>Scheduled messages and recipient rules</p>
+                </div>
+            </div>
+            <div class="nova-list-controls">
+                <label class="nova-search" for="search-novaAutomatedTable">
+                    <i class="fa fa-search" aria-hidden="true"></i>
+                    <span class="sr-only">Search Automated settings</span>
+                    <input type="search" id="search-novaAutomatedTable" data-nova-search="novaAutomatedTable" placeholder="Search records..." autocomplete="off" />
+                </label>
+            </div>
+        </div>
+
+        <div class="nova-table-viewport">
+            <table id="novaAutomatedTable" class="table table-bordered table-striped">
+                <thead>
                     <tr>
-                        <td>@s.Name</td>
-                        <td>@s.RecipientType</td>
-                        <td>@schedule</td>
-                        <td style="white-space:pre-wrap">@s.TemplateBody</td>
-                        <td><span class="nova-status @(s.IsActive ? "nova-status--active" : "nova-status--muted")">@(s.IsActive ? "Active" : "Inactive")</span></td>
-                        <td>@(s.IsActive && nextOccurrences.TryGetValue(s.Id, out var nextRun) ? nextRun.ToString("dd-MMM-yyyy HH:mm") : "Inactive")</td>
-                        <td class="sg-automated-actions">
-                            <a asp-action="Edit" asp-route-id="@s.Id" class="btn btn-sm btn-primary">Edit</a>
-                            <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post" class="d-inline">
-                                <button class="btn btn-sm btn-warning">@(s.IsActive ? "Deactivate" : "Activate")</button>
-                            </form>
-                            <form asp-action="RunNow" asp-route-id="@s.Id" method="post" class="d-inline"
-                                  onsubmit="return confirm('Preview only: shows recipients and messages for this notification type. Nothing is sent. Continue?');">
-                                <button class="btn btn-sm btn-success">Run Now (test)</button>
-                            </form>
-                            <form asp-action="Delete" asp-route-id="@s.Id" method="post" class="d-inline"
-                                  onsubmit="return confirm('Delete this setting and its logs?');">
-                                <button class="btn btn-sm btn-danger">Delete</button>
-                            </form>
-                        </td>
+                        <th>Name</th>
+                        <th>Recipients</th>
+                        <th>Schedule</th>
+                        <th>Message</th>
+                        <th>Status</th>
+                        <th>Next run</th>
+                        <th>Actions</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</section>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        var time = DateTime.Today.Add(s.SendTime).ToString("hh:mm tt");
+                        var schedule = s.Frequency == "Weekly"
+                            ? $"Every {days[s.DayOfWeek ?? 0]} at {time}"
+                            : $"Every day at {time}";
+                        
+                        var nextRunText = "Inactive";
+                        var nextRunTitle = "";
+                        if (s.IsActive && nextOccurrences.TryGetValue(s.Id, out var nextRun))
+                        {
+                            var now = DateTime.UtcNow;
+                            var diff = nextRun.Subtract(now);
+                            
+                            if (diff.TotalDays >= 1)
+                            {
+                                nextRunText = nextRun.ToString("ddd h:mm tt");
+                            }
+                            else if (diff.TotalHours >= 1)
+                            {
+                                nextRunText = $"In {(int)diff.TotalHours}h {diff.Minutes}m";
+                            }
+                            else if (diff.TotalMinutes >= 0)
+                            {
+                                nextRunText = $"In {(int)diff.TotalMinutes}m";
+                            }
+                            else
+                            {
+                                nextRunText = "Soon";
+                            }
+                            nextRunTitle = nextRun.ToString("dddd, MMMM d, yyyy h:mm tt");
+                        }
+
+                        <tr>
+                            <td class="sg-automation-name">@s.Name</td>
+                            <td class="sg-automation-recipient">
+                                <span class="sg-recipient-badge">@s.RecipientType</span>
+                            </td>
+                            <td class="sg-automation-schedule">@schedule</td>
+                            <td class="sg-automation-message">
+                                <div class="sg-msg-clamp" title="@s.TemplateBody">@s.TemplateBody</div>
+                            </td>
+                            <td class="sg-automation-status">
+                                <span class="nova-status @(s.IsActive ? "nova-status--active" : "nova-status--muted")">
+                                    @(s.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </td>
+                            <td class="sg-automation-nextrun" title="@nextRunTitle">@nextRunText</td>
+                            <td class="sg-automation-actions">
+                                <div class="sg-action-buttons">
+                                    <a href="@Url.Action("Edit", new { id = s.Id })" class="btn btn-sm btn-primary">
+                                        <i class="fa fa-pencil"></i> Edit
+                                    </a>
+                                    <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm @(s.IsActive ? "btn-warning" : "btn-success")">
+                                            <i class="fa @(s.IsActive ? "fa-pause" : "fa-play")"></i>
+                                            @(s.IsActive ? "Deactivate" : "Activate")
+                                        </button>
+                                    </form>
+                                    <form asp-action="RunNow" asp-route-id="@s.Id" method="post" style="display: inline;"
+                                          onsubmit="return confirm('Preview only: shows recipients and messages for this notification type. Nothing is sent. Continue?');">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fa fa-play-circle"></i> Test
+                                        </button>
+                                    </form>
+                                    @if (Context.Session.IsAdmin())
+                                    {
+                                        <form asp-action="Delete" asp-route-id="@s.Id" method="post" style="display: inline;"
+                                              onsubmit="return confirm('Delete this setting and all its scheduled occurrences? This cannot be undone.');">
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fa fa-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
+
+<style>
+    /* Filters UI (future enhancement - placeholder for expandable filter UI) */
+    .sg-automation-filters {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+    }
+    .sg-automation-filters .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .sg-automation-filters label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #747b98;
+        margin: 0;
+    }
+    .sg-automation-filters select {
+        height: 32px;
+        padding: 6px 8px;
+        border: 1px solid #e4e6f2;
+        border-radius: 6px;
+        font-size: 12px;
+    }
+
+    /* One-line summary in card header subtitle position */
+    .sg-automation-summary {
+        padding: 0 20px 12px;
+        font-size: 13px;
+        color: #747b98;
+    }
+    .sg-summary-text {
+        font-weight: 500;
+    }
+
+    /* Visible action buttons in single row */
+    .sg-action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+    .sg-action-buttons form {
+        display: inline;
+        margin: 0;
+        padding: 0;
+    }
+    .sg-action-buttons button {
+        white-space: nowrap;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Update record count based on visible rows
+        function updateRecordCount() {
+            var table = document.getElementById('novaAutomatedTable');
+            var visibleRows = table.querySelectorAll('tbody tr:not([style*="display: none"])').length;
+            var countEl = document.getElementById('sg-automation-record-count');
+            if (countEl) {
+                countEl.textContent = visibleRows + ' record' + (visibleRows !== 1 ? 's' : '');
+            }
+        }
+
+        // Bind to data-nova-search input
+        var searchInput = document.getElementById('search-novaAutomatedTable');
+        if (searchInput) {
+            searchInput.addEventListener('input', updateRecordCount);
+        }
+
+        // Trigger on page load
+        updateRecordCount();
+    });
+</script>

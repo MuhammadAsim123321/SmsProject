@@ -13,6 +13,7 @@ using static System.Net.Mime.MediaTypeNames;
 namespace SendSmsCallAlerts.Controllers
 {
     [SessionChecking]
+    [RoleAuthorize]
     public class IntroSmsController : Controller
     {
         private readonly ApplicationDbContext _context;

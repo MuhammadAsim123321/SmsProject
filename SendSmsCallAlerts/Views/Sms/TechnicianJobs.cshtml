@@ -1,241 +1,137 @@
 @{
-    ViewData["Title"] = "Technician Scheduled Jobs";
+    ViewData["Title"] = "Technician Jobs";
 }
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
-<style>
-    /* ---- Page layout ---- */
-    .tj-page-card {
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        padding: 28px;
-        margin: 20px;
-    }
-
-    /* ---- Filters bar ---- */
-    .tj-filters {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-items: flex-end;
-        margin-bottom: 20px;
-        padding: 16px;
-        background: #f8fbff;
-        border: 1px solid #dbe7f1;
-        border-radius: 10px;
-    }
-
-    .tj-filters label {
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: #4a6785;
-        margin-bottom: 4px;
-        display: block;
-    }
-
-    .tj-filters .form-control,
-    .tj-filters .form-select {
-        font-size: 0.88rem;
-        border-radius: 8px;
-    }
-
-    /* ---- Stats ---- */
-    .tj-stat-card {
-        border-radius: 10px;
-        padding: 14px 18px;
-        text-align: center;
-    }
-
-    .tj-stat-number {
-        font-size: 1.6rem;
-        font-weight: 700;
-    }
-
-    .tj-stat-label {
-        font-size: 0.78rem;
-        color: #64748b;
-        margin-top: 2px;
-    }
-
-    /* ---- Table ---- */
-    #tblTechJobs {
-        width: 100% !important;
-        border-collapse: collapse;
-    }
-
-    #tblTechJobs thead th {
-        background-color: #70b3db;
-        color: white;
-        text-align: center;
-        padding: 12px 10px;
-        white-space: nowrap;
-        border: none;
-        font-size: 0.85rem;
-    }
-
-    #tblTechJobs tbody td {
-        padding: 10px 12px;
-        vertical-align: middle;
-        border-bottom: 1px solid #f0f0f0;
-        font-size: 0.88rem;
-    }
-
-    #tblTechJobs tbody tr:hover { background-color: #f7fbff; }
-    #tblTechJobs tbody tr:nth-child(even) { background-color: #fafafa; }
-
-    /* Technician group header row */
-    .tj-tech-group-row td {
-        background: #eef6fb !important;
-        padding: 8px 12px !important;
-        border-top: 2px solid #70b3db !important;
-        border-bottom: 1px solid #c9e0f0 !important;
-    }
-
-    /* ---- Status badges ---- */
-    .tj-status {
-        display: inline-block;
-        padding: 3px 10px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        white-space: nowrap;
-    }
-    .tj-status-scheduled  { background: #dbeafe; color: #1e40af; }
-    .tj-status-confirmed  { background: #dcfce7; color: #166534; }
-    .tj-status-cancelled  { background: #fee2e2; color: #991b1b; }
-    .tj-status-completed  { background: #f3f4f6; color: #374151; }
-
-    /* ---- Misc ---- */
-    .tj-amount       { font-weight: 600; color: #16a34a; }
-    .tj-amount-empty { color: #94a3b8; font-style: italic; font-size: 0.82rem; }
-    .tj-job-id       { font-weight: 700; color: #70b3db; font-size: 0.9rem; }
-    .tj-phone        { white-space: nowrap; }
-    .tj-dist {
-        font-size: 0.8rem;
-        background: #f1f5f9;
-        color: #475569;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        padding: 2px 8px;
-        white-space: nowrap;
-    }
-
-    /* DataTables tweaks */
-    .dataTables_wrapper .dataTables_filter input {
-        border-radius: 8px; border: 1px solid #ddd; padding: 4px 10px;
-    }
-    .dataTables_wrapper .dataTables_length select {
-        border-radius: 8px; border: 1px solid #ddd; padding: 3px 8px;
-    }
-    div.dataTables_wrapper div.dataTables_paginate ul.pagination { margin-top: 10px; }
-
-    .tj-page-title    { font-size: 1.6rem; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
-    .tj-page-subtitle { color: #888; font-size: 0.9rem; margin-bottom: 20px; }
-</style>
-
-<div class="tj-page-card">
-
-    @* Page heading *@
-    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
-        <div>
-            <span style="font-size:0.7rem; letter-spacing:.1em; text-transform:uppercase; color:#70b3db; font-weight:700;">OPERATIONS</span>
-            <h1 class="tj-page-title"><i class="fa fa-hard-hat me-2" aria-hidden="true"></i>Technician Scheduled Jobs</h1>
-            <p class="tj-page-subtitle">All jobs sorted by technician — customer info, quoted amount and timing at a glance.</p>
-        </div>
-        <div class="d-flex gap-2 align-items-center flex-wrap">
-            <button id="btnExportCsv" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;">
-                <i class="fa fa-download me-1"></i>Export CSV
-            </button>
-            <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
-                <i class="fa fa-arrow-left me-1"></i>Back to SMS Logs
-            </a>
+<section class="nova-page-head" aria-label="Page heading">
+    <div class="nova-heading-group">
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-hard-hat"></i></span>
+        <div class="nova-heading-copy">
+            <span class="nova-eyebrow">OPERATIONS</span>
+            <h1>Technician Jobs</h1>
+            <p>All jobs sorted by technician — customer info, quoted amount and timing</p>
         </div>
     </div>
+    <div class="nova-page-actions">
+        <button id="btnExportCsv" class="btn btn-outline-secondary btn-sm">
+            <i class="fa fa-download me-1"></i> Export CSV
+        </button>
+        <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm">
+            <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
+        </a>
+    </div>
+</section>
 
-    @* Stats row *@
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="tj-stat-card" style="background:#eff6ff; border:1px solid #bfdbfe;">
-                <div class="tj-stat-number" style="color:#1d4ed8;" id="statTotal">—</div>
-                <div class="tj-stat-label">Total Jobs</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="tj-stat-card" style="background:#f0fdf4; border:1px solid #bbf7d0;">
-                <div class="tj-stat-number" style="color:#16a34a;" id="statScheduled">—</div>
-                <div class="tj-stat-label">Scheduled / Confirmed</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="tj-stat-card" style="background:#fffbeb; border:1px solid #fde68a;">
-                <div class="tj-stat-number" style="color:#d97706;" id="statCompleted">—</div>
-                <div class="tj-stat-label">Completed</div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="tj-stat-card" style="background:#fef2f2; border:1px solid #fecaca;">
-                <div class="tj-stat-number" style="color:#dc2626;" id="statCancelled">—</div>
-                <div class="tj-stat-label">Cancelled</div>
+@* Stats row *@
+<div class="nova-stat-row tj-page">
+    <div class="nova-stat-card nova-stat--total">
+        <div class="nova-stat-number" id="statTotal">—</div>
+        <div class="nova-stat-label">Total Jobs</div>
+    </div>
+    <div class="nova-stat-card nova-stat--scheduled">
+        <div class="nova-stat-number" id="statScheduled">—</div>
+        <div class="nova-stat-label">Scheduled / Confirmed</div>
+    </div>
+    <div class="nova-stat-card nova-stat--completed">
+        <div class="nova-stat-number" id="statCompleted">—</div>
+        <div class="nova-stat-label">Completed</div>
+    </div>
+    <div class="nova-stat-card nova-stat--cancelled">
+        <div class="nova-stat-number" id="statCancelled">—</div>
+        <div class="nova-stat-label">Cancelled</div>
+    </div>
+</div>
+
+@* List card with toolbar *@
+<section class="nova-list-card sg-fix-tech-jobs tj-page" aria-label="Technician scheduled jobs">
+    <div class="nova-list-toolbar">
+        <div class="nova-list-heading">
+            <span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-calendar-o"></i></span>
+            <div>
+                <h2>Jobs List</h2>
+                <p>Filter by status, date range, or technician</p>
             </div>
         </div>
     </div>
 
     @* Filters *@
-    <div class="tj-filters">
-        <div>
-            <label for="filterStatus">Status</label>
-            <select id="filterStatus" class="form-select form-select-sm" style="min-width:160px;">
-                <option value="All">All Statuses</option>
+    <div class="nova-filter-bar">
+        <div class="nova-filter-group">
+            <label for="filterStatus" class="nova-filter-label">Status</label>
+            <select id="filterStatus" class="form-select form-select-sm">
+                <option value="">All Statuses</option>
                 <option value="Scheduled">Scheduled</option>
                 <option value="Confirmed">Confirmed</option>
                 <option value="Completed">Completed</option>
                 <option value="Cancelled">Cancelled</option>
             </select>
         </div>
-        <div>
-            <label for="filterDateFrom">Date From</label>
-            <input type="date" id="filterDateFrom" class="form-control form-control-sm" style="min-width:150px;" />
+        <div class="nova-filter-group">
+            <label for="filterTechnician" class="nova-filter-label">Technician</label>
+            <select id="filterTechnician" class="form-select form-select-sm">
+                <option value="">All Technicians</option>
+            </select>
         </div>
-        <div>
-            <label for="filterDateTo">Date To</label>
-            <input type="date" id="filterDateTo" class="form-control form-control-sm" style="min-width:150px;" />
+        <div class="nova-filter-group">
+            <label for="filterDateFrom" class="nova-filter-label">Date From</label>
+            <input type="date" id="filterDateFrom" class="form-control form-control-sm" />
         </div>
-        <div class="d-flex gap-2">
-            <button id="btnApplyFilter" class="btn btn-primary btn-sm" style="border-radius:8px;">
-                <i class="fa fa-filter me-1"></i>Apply
+        <div class="nova-filter-group">
+            <label for="filterDateTo" class="nova-filter-label">Date To</label>
+            <input type="date" id="filterDateTo" class="form-control form-control-sm" />
+        </div>
+        <div class="nova-filter-actions">
+            <button id="btnApplyFilter" class="btn btn-primary btn-sm">
+                <i class="fa fa-filter me-1"></i> Apply
             </button>
-            <button id="btnClearFilter" class="btn btn-outline-secondary btn-sm" style="border-radius:8px;">
-                <i class="fa fa-times me-1"></i>Clear
+            <button id="btnClearFilter" class="btn btn-outline-secondary btn-sm">
+                <i class="fa fa-times me-1"></i> Clear
             </button>
         </div>
     </div>
 
     @* Table *@
-    <div style="overflow-x:auto;">
-        <table id="tblTechJobs" class="table" aria-label="Technician scheduled jobs">
+    <!-- ROUND 5: Reverted fixed-width layout, using overflow-x auto for horizontal scroll -->
+    <div class="nova-table-viewport" style="overflow-x: auto; width: 100%;">
+        <!-- COMMENTED OUT (Round 4): table-layout:fixed;width:100%; -->
+        <!-- COMMENTED OUT (Round 4): <colgroup> with percentage widths -->
+        <table id="tblTechJobs" class="table table-bordered table-striped" aria-label="Technician scheduled jobs">
+            <!-- COMMENTED OUT Round 4 colgroup: Column widths (sum 100%): Technician 10% | Time 7% | Order# 6% | Customer 11% | Street 16% | City/State 11% | ZIP 6% | Distance 9% | Phone 10% | Quoted 7% | Status 7% -->
+            <!--
+            <colgroup>
+                <col style="width:10%;">
+                <col style="width:7%;">
+                <col style="width:6%;">
+                <col style="width:11%;">
+                <col style="width:16%;">
+                <col style="width:11%;">
+                <col style="width:6%;">
+                <col style="width:9%;">
+                <col style="width:10%;">
+                <col style="width:7%;">
+                <col style="width:7%;">
+            </colgroup>
+            -->
             <thead>
                 <tr>
-                    <th>Job Order #</th>
                     <th>Technician</th>
-                    <th>Customer Name</th>
-                    <th>Phone #</th>
-                    <th>Address</th>
+                    <th>Time</th>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Street</th>
+                    <!-- OLD: <th>City</th><th>State</th> -->
+                    <th>City / State</th>
+                    <th>ZIP</th>
                     <th>Distance</th>
-                    <th>Category</th>
-                    <th>Date</th>
-                    <th>Time of Job</th>
-                    <th>Quoted Amount</th>
+                    <th>Phone</th>
+                    <th>Quoted</th>
                     <th>Status</th>
                 </tr>
             </thead>
         </table>
     </div>
-
-</div>
+</section>
 
 @section Scripts {
     <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
@@ -244,7 +140,8 @@
     <script>
         (function () {
             var table;
-            var currentParams = { status: 'All', dateFrom: '', dateTo: '' };
+            var allTechnicians = [];
+            var currentParams = { status: '', technician: '', dateFrom: '', dateTo: '' };
 
             function esc(s) { return $('<div>').text(s == null ? '' : String(s)).html(); }
             function csvEsc(v) {
@@ -253,20 +150,35 @@
                 return /[",\r\n]/.test(s) ? '"' + s + '"' : s;
             }
 
+            // Parse CityState into City and State
+            /* COMMENTED OUT: No longer needed - City/State is combined in one column */
+            /*
+            function parseCity(cityState) {
+                if (!cityState) return '';
+                var parts = cityState.split(',').map(function(p) { return p.trim(); });
+                return parts.length > 0 ? parts[0] : '';
+            }
+
+            function parseState(cityState) {
+                if (!cityState) return '';
+                var parts = cityState.split(',').map(function(p) { return p.trim(); });
+                return parts.length > 1 ? parts[1] : '';
+            }
+            */
+
             // ---- Build / reload the DataTable ----
             function loadTable(params) {
                 var url = '/Sms/GetTechnicianJobsData'
-                    + '?status='   + encodeURIComponent(params.status   || 'All')
-                    + '&dateFrom=' + encodeURIComponent(params.dateFrom || '')
-                    + '&dateTo='   + encodeURIComponent(params.dateTo   || '');
+                    + '?status='     + encodeURIComponent(params.status     || '')
+                    + '&dateFrom='   + encodeURIComponent(params.dateFrom   || '')
+                    + '&dateTo='     + encodeURIComponent(params.dateTo     || '');
 
                 if (table) {
                     table.destroy();
                     $('#tblTechJobs thead tr').html(
-                        '<th>Job Order #</th><th>Technician</th><th>Customer Name</th>' +
-                        '<th>Phone #</th><th>Address</th><th>Distance</th>' +
-                        '<th>Category</th><th>Date</th><th>Time of Job</th>' +
-                        '<th>Quoted Amount</th><th>Status</th>');
+                        '<th>Technician</th><th>Time</th><th>Order #</th>' +
+                        '<th>Customer</th><th>Street</th><th>City / State</th><th>ZIP</th>' +
+                        '<th>Distance</th><th>Phone</th><th>Quoted</th><th>Status</th>');
                 }
 
                 table = $('#tblTechJobs').DataTable({
@@ -276,86 +188,93 @@
                         dataSrc: function (json) {
                             if (json.error) { alert('Error: ' + json.error); return []; }
                             updateStats(json.aaData || []);
+                            populateTechnicianFilter(json.aaData || []);
                             return json.aaData || [];
                         }
                     },
                     processing: true,
-                    scrollX: true,
-                    // Sort by technician name first, then date
-                    order: [[1, 'asc'], [7, 'asc']],
+                    paging: true,
+                    pageLength: 25,
                     language: {
                         emptyTable: 'No jobs found.',
                         processing: '<div class="text-center py-3"><i class="fa fa-spinner fa-spin fa-2x" style="color:#70b3db;"></i></div>'
                     },
+                    // Sort by technician name first, then job start time
+                    order: [[0, 'asc'], [1, 'asc']],
                     columns: [
-                        // 0: Job Order #
-                        {
-                            data: 'jobId', width: '90px',
-                            render: function (d) {
-                                return '<span class="tj-job-id">#' + d + '</span>';
-                            }
-                        },
-                        // 1: Technician
+                        // 0: Technician
                         {
                             data: 'technicianName',
                             render: function (d) {
                                 return '<span style="font-weight:600;">' + esc(d) + '</span>';
                             }
                         },
-                        // 2: Customer Name
-                        { data: 'customerName', render: function (d) { return esc(d); } },
-                        // 3: Phone #
+                        // 1: Time (startTime in HH:MM AM/PM format - hh:mm tt from controller)
                         {
-                            data: 'phoneNumber', className: 'tj-phone',
-                            render: function (d) {
-                                if (!d || d === 'N/A') return 'N/A';
-                                return '<a href="tel:' + esc(d) + '" style="white-space:nowrap;">' + esc(d) + '</a>';
+                            data: 'startTime',
+                            render: function (d, type, row) {
+                                if (type === 'sort') {
+                                    /* Sort by 24-hour time from startAt field (MM/dd/yyyy hh:mm tt) */
+                                    if (row.startAt) {
+                                        var parts = row.startAt.split(' ');
+                                        var time = parts[1]; // hh:mm
+                                        var ampm = parts[2]; // AM/PM
+                                        var hours = parseInt(time.split(':')[0], 10);
+                                        if (ampm === 'PM' && hours !== 12) hours += 12;
+                                        if (ampm === 'AM' && hours === 12) hours = 0;
+                                        return ('0' + hours).slice(-2) + time.split(':')[1];
+                                    }
+                                    return d;
+                                }
+                                return '<span style="white-space:nowrap;">' + esc(d) + '</span>';
                             }
                         },
-                        // 4: Address
-                        { data: 'address', render: function (d) { return esc(d || 'N/A'); } },
-                        // 5: Distance
+                        // 2: Order # (monospace badge)
+                        {
+                            data: 'jobId', width: '80px',
+                            render: function (d) {
+                                return '<span class="tj-order-badge">#' + d + '</span>';
+                            }
+                        },
+                        // 3: Customer Name
+                        { data: 'customerName', render: function (d) { return esc(d); } },
+                        // 4: Street Address
+                        { data: 'streetAddress', render: function (d) { return esc(d || '—'); } },
+                        // 5: City / State (combined, exactly as stored)
+                        {
+                            data: 'cityState',
+                            render: function (d) { return esc(d || '—'); }
+                        },
+                        // 6: ZIP Code (was column 7, now 6)
+                        { data: 'zipCode', render: function (d) { return esc(d || '—'); } },
+                        // 7: Distance (was column 8, now 7)
                         {
                             data: 'distanceMiles',
                             render: function (d, type, row) {
                                 if (type === 'sort') return row.distanceRaw != null ? row.distanceRaw : 99999;
-                                if (!d || d === 'N/A') return '<span class="tj-amount-empty">N/A</span>';
-                                return '<span class="tj-dist"><i class="fa fa-route me-1"></i>' + esc(d) + '</span>';
+                                if (!d || d === 'N/A') return '<span class="tj-dist-badge"><i class="fa fa-map-marker-alt me-1"></i>N/A</span>';
+                                return '<span class="tj-dist-badge"><i class="fa fa-map-marker-alt me-1"></i>' + esc(d) + '</span>';
                             }
                         },
-                        // 6: Category
-                        { data: 'category', render: function (d) { return esc(d || 'N/A'); } },
-                        // 7: Date (sortable as a date string MM/dd/yyyy)
+                        // 8: Phone # (tel: link) (was column 9, now 8)
                         {
-                            data: 'startDate',
-                            render: function (d, type) {
-                                if (type === 'sort') {
-                                    // Convert MM/dd/yyyy to yyyyMMdd for correct numeric sort
-                                    if (!d) return '00000000';
-                                    var p = d.split('/');
-                                    return (p[2] || '0000') + (p[0] || '00') + (p[1] || '00');
-                                }
-                                return esc(d || '—');
+                            data: 'phoneNumber',
+                            render: function (d) {
+                                if (!d || d === 'N/A') return 'N/A';
+                                return '<a href="tel:' + esc(d) + '" style="white-space:nowrap; font-weight:600; color:#4338ca;">' + esc(d) + '</a>';
                             }
                         },
-                        // 8: Time of Job
-                        {
-                            data: 'startTime', orderable: false,
-                            render: function (d, type, row) {
-                                return '<span style="white-space:nowrap;">' + esc(d) + ' &ndash; ' + esc(row.endAt) + '</span>';
-                            }
-                        },
-                        // 9: Quoted Amount
+                        // 9: Quoted Amount (right-aligned currency) (was column 10, now 9)
                         {
                             data: 'quotedAmount',
                             render: function (d, type) {
                                 if (type === 'sort') return (d !== '' && d != null) ? parseFloat(d) : -1;
                                 if (d === '' || d == null)
-                                    return '<span class="tj-amount-empty">Not set</span>';
+                                    return '<span class="tj-amount-empty">—</span>';
                                 return '<span class="tj-amount">$' + esc(d) + '</span>';
                             }
                         },
-                        // 10: Status
+                        // 10: Status (was column 11, now 10)
                         {
                             data: 'effectiveStatus',
                             render: function (d) {
@@ -366,23 +285,109 @@
                             }
                         }
                     ],
+                    /* Column alignment and sizing via columnDefs (applied to both th and td) */
+                    /* ROUND 5: Added min-width per column to prevent overlap. Total table min-width ≈ 1450px */
+                    columnDefs: [
+                        /* 0: Technician 190px (sticky left) */
+                        { targets: [0], className: 'dt-left', render: function(d, type, row) { if(type === 'display') return '<span class="tj-tech-col">' + (typeof d === 'function' ? d : d) + '</span>'; return d; }, width: '190px' },
+                        /* 1: Time 100px, left-aligned */
+                        { targets: [1], className: 'dt-left', width: '100px' },
+                        /* 2: Order# 85px, left-aligned */
+                        { targets: [2], className: 'dt-left', width: '85px' },
+                        /* 3: Customer 150px, left-aligned */
+                        { targets: [3], className: 'dt-left', width: '150px' },
+                        /* 4: Street 200px, left-aligned */
+                        { targets: [4], className: 'dt-left', width: '200px' },
+                        /* 5: City/State 150px, left-aligned */
+                        { targets: [5], className: 'dt-left', width: '150px' },
+                        /* 6: ZIP 80px, center-aligned */
+                        { targets: [6], className: 'dt-center', width: '80px' },
+                        /* 7: Distance 120px, center-aligned */
+                        { targets: [7], className: 'dt-center', width: '120px' },
+                        /* 8: Phone 150px, left-aligned */
+                        { targets: [8], className: 'dt-left', width: '150px' },
+                        /* 9: Quoted 100px, right-aligned */
+                        { targets: [9], className: 'dt-right', width: '100px' },
+                        /* 10: Status 130px, center-aligned */
+                        { targets: [10], className: 'dt-center', width: '130px' }
+                    ],
+                    rowCallback: function (row, data) {
+                        // Add data attributes for client-side filtering
+                        $(row).attr('data-status', data.effectiveStatus);
+                        $(row).attr('data-tech', data.technicianName);
+                        $(row).attr('data-date', data.startDate);
+                    },
                     drawCallback: function () {
                         // Insert technician group-header rows between technician blocks
-                        var api = this.api();
+                        var api = this.api();  /* CORRECT: Use this.api() inside DataTables callbacks */
                         var lastTech = null;
+                        var techCounts = {};
+                        var techQuoted = {};
+                        
+                        // Count jobs and total quoted per technician
+                        api.rows({ page: 'current' }).data().each(function (row) {
+                            if (!techCounts[row.technicianName]) {
+                                techCounts[row.technicianName] = 0;
+                                techQuoted[row.technicianName] = 0;
+                            }
+                            techCounts[row.technicianName]++;
+                            if (row.quotedAmount && row.quotedAmount !== '') {
+                                techQuoted[row.technicianName] += parseFloat(row.quotedAmount);
+                            }
+                        });
+
                         var domRows = api.rows({ page: 'current' }).nodes();
                         api.rows({ page: 'current' }).data().each(function (row, i) {
                             var tech = row.technicianName;
                             if (tech !== lastTech) {
                                 var icon = (tech === 'Unassigned')
                                     ? '<i class="fa fa-question-circle me-2 text-muted"></i>'
-                                    : '<i class="fa fa-hard-hat me-2" style="color:#70b3db;"></i>';
-                                $('<tr class="tj-tech-group-row"><td colspan="11" style="font-weight:700; color:#2c5b7a; font-size:0.95rem;">'
-                                    + icon + esc(tech) + '</td></tr>').insertBefore(domRows[i]);
+                                    : '<i class="fa fa-hard-hat me-2" style="color:#2563eb;"></i>';
+                                var jobCount = techCounts[tech];
+                                var totalQuoted = techQuoted[tech] > 0 ? '$' + techQuoted[tech].toFixed(2) : '—';
+                                /* ROUND 5: Added sticky positioning to group band header */
+                                $('<tr class="tj-tech-group-row"><td colspan="11" style="position:sticky; left:0; font-weight:700; color:#1e3a8a; font-size:0.95rem; background:#f8fafc;">'
+                                    + icon + esc(tech) + ' <span style="font-weight:500; color:#666;">(' + jobCount + ' job' + (jobCount !== 1 ? 's' : '') + ', Total: ' + totalQuoted + ')</span></td></tr>')
+                                    .insertBefore(domRows[i]);
                                 lastTech = tech;
                             }
                         });
                     }
+                });
+
+                // Add custom search function for client-side filtering
+                $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                    if (settings.nTable.id !== 'tblTechJobs') return true;
+
+                    var $row = $(settings.aoData[dataIndex].nTr);
+                    var rowStatus = $row.attr('data-status') || '';
+                    var rowTech = $row.attr('data-tech') || '';
+                    var rowDate = $row.attr('data-date') || '';
+
+                    var statusVal = $('#filterStatus').val();
+                    var techVal = $('#filterTechnician').val();
+                    var dateFromVal = $('#filterDateFrom').val();
+                    var dateToVal = $('#filterDateTo').val();
+
+                    // Status filter
+                    if (statusVal && rowStatus !== statusVal) return false;
+
+                    // Technician filter
+                    if (techVal && rowTech !== techVal) return false;
+
+                    // Date From filter
+                    if (dateFromVal) {
+                        var cellDate = rowDate ? rowDate.split('/').reverse().join('-') : '';
+                        if (cellDate < dateFromVal) return false;
+                    }
+
+                    // Date To filter
+                    if (dateToVal) {
+                        var cellDate = rowDate ? rowDate.split('/').reverse().join('-') : '';
+                        if (cellDate > dateToVal) return false;
+                    }
+
+                    return true;
                 });
             }
 
@@ -396,41 +401,88 @@
                 $('#statCancelled').text(data.filter(function (r) { return r.effectiveStatus === 'Cancelled'; }).length);
             }
 
-            // ---- Filters ----
-            $('#btnApplyFilter').on('click', function () {
+            // ---- Populate Technician Filter ----
+            function populateTechnicianFilter(data) {
+                var techs = {};
+                data.forEach(function (row) {
+                    techs[row.technicianName] = true;
+                });
+                var techList = Object.keys(techs).sort();
+                
+                var currentVal = $('#filterTechnician').val();
+                $('#filterTechnician').html('<option value="">All Technicians</option>');
+                techList.forEach(function (tech) {
+                    $('#filterTechnician').append('<option value="' + esc(tech) + '">' + esc(tech) + '</option>');
+                });
+                
+                if (currentVal && techList.indexOf(currentVal) >= 0) {
+                    $('#filterTechnician').val(currentVal);
+                }
+            }
+
+            // ---- Filters: Instant filtering on change/input ----
+            function applyFilter() {
                 currentParams = {
-                    status:   $('#filterStatus').val(),
-                    dateFrom: $('#filterDateFrom').val(),
-                    dateTo:   $('#filterDateTo').val()
+                    status:     $('#filterStatus').val(),
+                    technician: $('#filterTechnician').val(),
+                    dateFrom:   $('#filterDateFrom').val(),
+                    dateTo:     $('#filterDateTo').val()
                 };
-                loadTable(currentParams);
+                table.draw();
+                updateLiveStats();
+            }
+
+            // Instant filter on any input change (Status, Technician, Date From, Date To)
+            $('#filterStatus, #filterTechnician, #filterDateFrom, #filterDateTo').on('change input', function () {
+                applyFilter();
             });
 
+            // Apply button: manual re-run (for explicit apply if needed)
+            $('#btnApplyFilter').on('click', function () {
+                applyFilter();
+            });
+
+            // Clear button: reset all filters
             $('#btnClearFilter').on('click', function () {
-                $('#filterStatus').val('All');
+                $('#filterStatus').val('');
+                $('#filterTechnician').val('');
                 $('#filterDateFrom').val('');
                 $('#filterDateTo').val('');
-                currentParams = { status: 'All', dateFrom: '', dateTo: '' };
-                loadTable(currentParams);
+                $('#tblTechJobs_filter input').val('');
+                currentParams = { status: '', technician: '', dateFrom: '', dateTo: '' };
+                table.draw();
+                updateLiveStats();
             });
+
+            // ---- Live stats update after filtering ----
+            function updateLiveStats() {
+                /* OLD: var api = table.api(); */
+                var visibleData = table.rows({ search: 'applied' }).data().toArray();  /* Use table directly */
+                $('#statTotal').text(visibleData.length);
+                $('#statScheduled').text(visibleData.filter(function (r) {
+                    return r.effectiveStatus === 'Scheduled' || r.effectiveStatus === 'Confirmed';
+                }).length);
+                $('#statCompleted').text(visibleData.filter(function (r) { return r.effectiveStatus === 'Completed'; }).length);
+                $('#statCancelled').text(visibleData.filter(function (r) { return r.effectiveStatus === 'Cancelled'; }).length);
+            }
 
             // ---- CSV Export (respects current search/filter) ----
             $('#btnExportCsv').on('click', function () {
                 if (!table) return;
                 var rows = table.rows({ search: 'applied' }).data().toArray();
-                var headers = ['Job Order #', 'Technician', 'Customer Name', 'Phone #', 'Address', 'Distance (mi)', 'Category', 'Date', 'Time', 'Quoted Amount', 'Status'];
+                var headers = ['Technician', 'Time', 'Order #', 'Customer', 'Street', 'City / State', 'ZIP', 'Distance', 'Phone', 'Quoted', 'Status'];
                 var lines = [headers.join(',')];
                 rows.forEach(function (r) {
                     lines.push([
-                        r.jobId,
                         csvEsc(r.technicianName),
+                        csvEsc(r.startTime),
+                        r.jobId,
                         csvEsc(r.customerName),
-                        csvEsc(r.phoneNumber),
-                        csvEsc(r.address),
+                        csvEsc(r.streetAddress),
+                        csvEsc(r.cityState),  /* Combined City / State, not parsed */
+                        csvEsc(r.zipCode),
                         csvEsc(r.distanceMiles),
-                        csvEsc(r.category),
-                        csvEsc(r.startDate),
-                        csvEsc(r.startTime + ' - ' + r.endAt),
+                        csvEsc(r.phoneNumber),
                         r.quotedAmount !== '' && r.quotedAmount != null ? '$' + r.quotedAmount : '',
                         csvEsc(r.effectiveStatus)
                     ].join(','));

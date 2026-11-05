@@ -2,68 +2,222 @@
 
 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<div class="mb-3">
-    <label asp-for="Name" class="form-label"></label>
-    <input asp-for="Name" class="form-control" />
-    <span asp-validation-for="Name" class="text-danger"></span>
-</div>
-
-<div class="mb-3">
-    <label asp-for="NotificationType" class="form-label">Notification type</label>
-    <select asp-for="NotificationType" class="form-select">
-        <option value="">-- select --</option>
-        <option value="TechnicianAvailabilityRequest">Technician weekly availability request</option>
-        <option value="TechnicianDailyJobSummary">Technician daily job summary</option>
-        <option value="CustomerJobReminder">Customer next-day job reminder</option>
-    </select>
-    <span asp-validation-for="NotificationType" class="text-danger"></span>
-</div>
-
-<div class="row">
-    <div class="col-md-4 mb-3">
-        <label asp-for="Frequency" class="form-label"></label>
-        <select asp-for="Frequency" class="form-select">
-            <option value="Daily">Daily</option>
-            <option value="Weekly">Weekly</option>
-        </select>
-        <span asp-validation-for="Frequency" class="text-danger"></span>
+<div class="sg-form-card">
+    <div class="sg-form-card-header">
+        <h3>Setting details</h3>
     </div>
-    <div class="col-md-4 mb-3">
-        <label asp-for="DayOfWeek" class="form-label">Day (weekly only)</label>
-        <select asp-for="DayOfWeek" class="form-select">
-            <option value="">--</option>
-            <option value="0">Sunday</option>
-            <option value="1">Monday</option>
-            <option value="2">Tuesday</option>
-            <option value="3">Wednesday</option>
-            <option value="4">Thursday</option>
-            <option value="5">Friday</option>
-            <option value="6">Saturday</option>
-        </select>
-        <span asp-validation-for="DayOfWeek" class="text-danger"></span>
+    <div class="sg-form-card-body">
+        <div class="form-group">
+            <label asp-for="Name" class="form-label"></label>
+            <input asp-for="Name" class="form-control" placeholder="e.g., Weekly tech availability" />
+            <span asp-validation-for="Name" class="text-danger small"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="NotificationType" class="form-label">Notification type</label>
+            <select asp-for="NotificationType" class="custom-select">
+                <option value="">-- select --</option>
+                <option value="TechnicianAvailabilityRequest">Technician weekly availability request</option>
+                <option value="TechnicianDailyJobSummary">Technician daily job summary</option>
+                <option value="CustomerJobReminder">Customer next-day job reminder</option>
+            </select>
+            <span asp-validation-for="NotificationType" class="text-danger small d-block"></span>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="Frequency" class="form-label"></label>
+                <select asp-for="Frequency" class="custom-select" id="FrequencySelect">
+                    <option value="Daily">Daily</option>
+                    <option value="Weekly">Weekly</option>
+                </select>
+                <span asp-validation-for="Frequency" class="text-danger small d-block"></span>
+            </div>
+
+            <div class="form-group col-md-4" id="DayOfWeekField" style="display: none;">
+                <label asp-for="DayOfWeek" class="form-label">Day (weekly only)</label>
+                <select asp-for="DayOfWeek" class="custom-select">
+                    <option value="">--</option>
+                    <option value="0">Sunday</option>
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                </select>
+                <span asp-validation-for="DayOfWeek" class="text-danger small d-block"></span>
+            </div>
+
+            <div class="form-group col-md-4">
+                <label for="SendTime" class="form-label">Send time (business TZ)</label>
+                <input type="time" id="SendTime" name="SendTime" class="form-control"
+                       value="@Model.SendTime.ToString(@"hh\:mm")" />
+                <span asp-validation-for="SendTime" class="text-danger small d-block"></span>
+            </div>
+        </div>
     </div>
-    <div class="col-md-4 mb-3">
-        <label for="SendTime" class="form-label">Send time (business timezone)</label>
-        <input type="time" id="SendTime" name="SendTime" class="form-control"
-               value="@Model.SendTime.ToString(@"hh\:mm")" />
-        <span asp-validation-for="SendTime" class="text-danger"></span>
+</div>
+
+<div class="sg-form-card">
+    <div class="sg-form-card-header">
+        <h3>Message content</h3>
+    </div>
+    <div class="sg-form-card-body">
+        <div class="form-group">
+            <label asp-for="TemplateBody" class="form-label">Message text</label>
+            <textarea asp-for="TemplateBody" class="form-control" rows="5" id="TemplateBody" placeholder="Enter message with optional placeholders..."></textarea>
+            <span asp-validation-for="TemplateBody" class="text-danger small d-block"></span>
+            <small class="form-text text-muted mt-2">
+                Use placeholders like <code>{technicianName}</code>, <code>{customerName}</code>, <code>{jobDate}</code> — unknown placeholders are left as typed.
+            </small>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Placeholder chips</label>
+            <div class="sg-placeholder-chips">
+                <button type="button" class="sg-chip-btn" onclick="insertPlaceholder('{technicianFirstName}')">Technician first name</button>
+                <button type="button" class="sg-chip-btn" onclick="insertPlaceholder('{technicianName}')">Technician last name</button>
+                <button type="button" class="sg-chip-btn" onclick="insertPlaceholder('{customerName}')">Customer name</button>
+                <button type="button" class="sg-chip-btn" onclick="insertPlaceholder('{jobDate}')">Job date</button>
+                <button type="button" class="sg-chip-btn" onclick="insertPlaceholder('{jobTime}')">Job time</button>
+                <button type="button" class="sg-chip-btn" onclick="insertPlaceholder('{companyName}')">Company name</button>
+                <button type="button" class="sg-chip-btn" onclick="insertPlaceholder('{officePhone}')">Office phone</button>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="mb-3">
-    <label asp-for="TemplateBody" class="form-label">Message text</label>
-    <textarea asp-for="TemplateBody" class="form-control" rows="4"></textarea>
-    <span asp-validation-for="TemplateBody" class="text-danger"></span>
+<div class="sg-form-card">
+    <div class="sg-form-card-header">
+        <h3>Status</h3>
+    </div>
+    <div class="sg-form-card-body">
+        <div class="custom-control custom-switch">
+            <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="IsActiveSwitch" />
+            <label asp-for="IsActive" class="custom-control-label">
+                Active (setting will run on schedule)
+            </label>
+        </div>
+    </div>
 </div>
 
-<div class="form-check mb-3">
-    <input asp-for="IsActive" class="form-check-input" />
-    <label asp-for="IsActive" class="form-check-label">Active</label>
+<div class="alert alert-info small mt-4">
+    <strong>Placeholders reference:</strong>
+    <br /><b>Technician weekly request:</b> {technicianFirstName} {technicianName} {weekStart} {weekEnd} {companyName}
+    <br /><b>Technician daily summary:</b> {technicianFirstName} {technicianName} {jobCount} {jobDate} {jobsList} {jobConfirmationCode} {officePhone} {companyName}
+    <br /><b>Customer reminder:</b> {customerName} {category} {jobDate} {jobTime} {technicianName} {companyName} {officePhone}
 </div>
 
-<div class="alert alert-info small">
-    <strong>Placeholders</strong> (unknown ones are left as typed)<br />
-    <b>Technician weekly request:</b> {technicianFirstName} {technicianName} {weekStart} {weekEnd} {companyName}<br />
-    <b>Technician daily summary:</b> {technicianFirstName} {technicianName} {jobCount} {jobDate} {jobsList} {jobConfirmationCode} {officePhone} {companyName}<br />
-    <b>Customer reminder:</b> {customerName} {category} {jobDate} {jobTime} {technicianName} {companyName} {officePhone}
-</div>
+<style>
+    .sg-form-card {
+        border: 1px solid #e8e8f3;
+        border-radius: 10px;
+        background: #fff;
+        margin-bottom: 20px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(49, 55, 92, .06);
+    }
+    .sg-form-card-header {
+        padding: 16px 20px;
+        background: #f5f5fd;
+        border-bottom: 1px solid #e8e8f3;
+    }
+    .sg-form-card-header h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #343a56;
+    }
+    .sg-form-card-body {
+        padding: 20px;
+    }
+    .form-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #444b65;
+        margin-bottom: 8px;
+    }
+    .form-control,
+    .custom-select {
+        font-size: 13px;
+        border: 1px solid #dfe4f0;
+        border-radius: 8px;
+        height: auto;
+        min-height: 38px;
+        padding: 8px 12px;
+    }
+    .form-control:focus,
+    .custom-select:focus {
+        border-color: #70b3db;
+        box-shadow: 0 0 0 3px rgba(112, 179, 219, .1);
+    }
+    .custom-control-label {
+        font-size: 13px;
+        color: #444b65;
+        margin-bottom: 0;
+        user-select: none;
+    }
+    .sg-placeholder-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+    }
+    .sg-chip-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border: 1px solid #dfe4f0;
+        border-radius: 6px;
+        background: #f9f9fd;
+        color: #444b65;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 150ms ease;
+    }
+    .sg-chip-btn:hover {
+        background: #eef3ff;
+        border-color: #70b3db;
+    }
+    /* Unused preview box CSS - kept for future enhancement */
+    .sg-preview-box {
+        border: 1px dashed #dfe4f0;
+        border-radius: 8px;
+        padding: 16px;
+        background: #fafbff;
+        min-height: 80px;
+    }
+    .sg-preview-text {
+        font-size: 13px;
+        line-height: 1.6;
+        color: #444b65;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+</style>
+
+<script>
+    function insertPlaceholder(placeholder) {
+        var textarea = document.getElementById('TemplateBody');
+        var start = textarea.selectionStart;
+        var end = textarea.selectionEnd;
+        var before = textarea.value.substring(0, start);
+        var after = textarea.value.substring(end);
+        textarea.value = before + ' ' + placeholder + ' ' + after;
+        textarea.selectionStart = textarea.selectionEnd = start + placeholder.length + 2;
+        textarea.focus();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var frequencySelect = document.getElementById('FrequencySelect');
+        var dayOfWeekField = document.getElementById('DayOfWeekField');
+
+        function toggleDayField() {
+            dayOfWeekField.style.display = frequencySelect.value === 'Weekly' ? 'block' : 'none';
+        }
+
+        frequencySelect.addEventListener('change', toggleDayField);
+        toggleDayField();
+    });
+</script>

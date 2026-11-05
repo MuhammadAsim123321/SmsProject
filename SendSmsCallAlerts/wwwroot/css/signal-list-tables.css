@@ -81,6 +81,7 @@ body.signal-app .signal-view-surface .nova-status--skipped { background: #d8dce2
 body.signal-app .signal-view-surface .nova-status--test { background: #b9dff2; color: #16445d; margin-left: 4px; }
 body.signal-app .signal-view-surface .nova-status--automated { background: #e2d7f5; color: #4b2d73; }
 
+/* COMMENTED OUT: old stat card styling with white bg and uppercase labels. Replaced by signal-ui-next.css with proper scoping under .tj-page
 body.signal-app .signal-view-surface .nova-stat-card {
   min-height: 92px;
   padding: 18px 20px;
@@ -105,6 +106,7 @@ body.signal-app .signal-view-surface .nova-stat-card strong {
   color: #343a56;
   font-size: 25px;
 }
+*/
 body.signal-app .signal-view-surface .nova-list-card table.table tbody td.sms-log-error-cell {
   min-width: 220px;
   max-width: 360px;
@@ -414,4 +416,802 @@ body.signal-app .signal-view-surface .users-form-grid .text-danger:not(:empty) {
   body.signal-app .signal-view-surface .users-modal .modal-body { padding: 15px; }
   body.signal-app .signal-view-surface .users-modal .modal-footer { flex-wrap: nowrap; }
   body.signal-app .signal-view-surface .users-modal .modal-footer .btn { flex: 1 1 0; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Automated Notifications table and layout improvements
+   ═════════════════════════════════════════════════════════════════════════ */
+
+body.signal-app .signal-view-surface .sg-fix-automation {
+  width: 100%;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable {
+  width: 100%;
+}
+body.signal-app .signal-view-surface .sg-fix-automation table thead th {
+  background: #f5f5fd !important;
+  color: #62638b !important;
+  border-bottom: 1px solid #e8e8f3 !important;
+}
+
+/* Column sizing for automated notifications table */
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable th:nth-child(1),
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td:nth-child(1) {
+  min-width: 140px !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable th:nth-child(2),
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td:nth-child(2) {
+  min-width: 80px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable th:nth-child(3),
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td:nth-child(3) {
+  min-width: 140px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable th:nth-child(4),
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td:nth-child(4) {
+  white-space: normal !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td.sg-automation-message {
+  background-color: transparent !important;
+  vertical-align: middle !important;
+  padding: 8px 10px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-msg-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  max-width: 320px;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable th:nth-child(5),
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td:nth-child(5) {
+  min-width: 80px !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable th:nth-child(6),
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td:nth-child(6) {
+  min-width: 100px !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable th:nth-child(7),
+body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td:nth-child(7) {
+  width: 1% !important;
+  white-space: nowrap !important;
+}
+
+/* Recipient badge styling */
+body.signal-app .signal-view-surface .sg-fix-automation .sg-recipient-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #e8f0fb;
+  color: #0d5ba3;
+  white-space: nowrap;
+}
+
+/* Nova status styling with nowrap */
+body.signal-app .signal-view-surface .sg-fix-automation .nova-status {
+  white-space: nowrap !important;
+}
+
+/* Visible action buttons in single row */
+body.signal-app .signal-view-surface .sg-fix-automation .sg-action-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-action-buttons form {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-action-buttons button {
+  white-space: nowrap;
+}
+
+/* Empty state styling */
+body.signal-app .signal-view-surface .sg-fix-automation .nova-list-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #747b98;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .nova-list-empty i {
+  font-size: 36px;
+  color: #d8dce2;
+  margin-bottom: 16px;
+}
+
+/* Form card styling */
+.sg-form-card {
+  border: 1px solid #e8e8f3;
+  border-radius: 10px;
+  background: #fff;
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(49, 55, 92, .06);
+}
+.sg-form-card-header {
+  padding: 16px 20px;
+  background: #f5f5fd;
+  border-bottom: 1px solid #e8e8f3;
+}
+.sg-form-card-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #343a56;
+}
+.sg-form-card-body {
+  padding: 20px;
+}
+
+/* Form styling */
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #444b65;
+  margin-bottom: 8px;
+}
+.form-control,
+.custom-select {
+  font-size: 13px;
+  border: 1px solid #dfe4f0;
+  border-radius: 8px;
+  min-height: 38px;
+}
+.form-control:focus,
+.custom-select:focus {
+  border-color: #70b3db;
+  box-shadow: 0 0 0 3px rgba(112, 179, 219, .1);
+}
+.custom-control-label {
+  font-size: 13px;
+  color: #444b65;
+  margin-bottom: 0;
+  user-select: none;
+}
+
+/* Placeholder chips */
+.sg-placeholder-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.sg-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border: 1px solid #dfe4f0;
+  border-radius: 6px;
+  background: #f9f9fd;
+  color: #444b65;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+.sg-chip-btn:hover {
+  background: #eef3ff;
+  border-color: #70b3db;
+}
+
+/* Message preview */
+.sg-preview-box {
+  border: 1px dashed #dfe4f0;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fafbff;
+  min-height: 80px;
+}
+.sg-preview-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #444b65;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Form actions */
+.sg-form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #eeeff7;
+}
+.sg-form-actions .btn {
+  min-height: 40px;
+  padding: 9px 18px;
+}
+
+/* Run result table styling */
+body.signal-app .signal-view-surface .sg-fix-automation #novaRunResultTable {
+  min-width: 1050px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-result-type {
+  min-width: 120px;
+  white-space: nowrap;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-result-name {
+  min-width: 140px;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-result-phone {
+  min-width: 100px;
+  white-space: nowrap;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-result-message {
+  max-width: 350px;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+body.signal-app .signal-view-surface .sg-fix-automation .sg-result-status {
+  min-width: 80px;
+  white-space: nowrap;
+}
+
+/* Responsive design */
+@media (max-width: 1199.98px) {
+  body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable th:nth-child(4),
+  body.signal-app .signal-view-surface .sg-fix-automation #novaAutomatedTable td:nth-child(4) {
+    max-width: 140px !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  body.signal-app .signal-view-surface .sg-fix-automation .sg-automation-summary {
+    padding: 0 20px 8px;
+    font-size: 12px;
+  }
+  .sg-placeholder-chips {
+    gap: 6px;
+  }
+  .sg-chip-btn {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+}
+
+
+/* ═════════════════════════════════════════════════════════════════════════
+   Technicians table and form styling
+   ═════════════════════════════════════════════════════════════════════════ */
+
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians {
+  width: 100%;
+}
+
+/* Column sizing */
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:nth-child(1),
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td:nth-child(1) {
+  min-width: 140px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:nth-child(2),
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td:nth-child(2) {
+  min-width: 110px !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:nth-child(3),
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td.sg-tech-location {
+  min-width: 130px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:nth-child(4),
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td.sg-tech-categories {
+  min-width: 120px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:nth-child(5),
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td.sg-tech-availability {
+  min-width: 140px !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:nth-child(6),
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td.sg-tech-jobs {
+  min-width: 60px !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:nth-child(7),
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td.sg-tech-today {
+  min-width: 90px !important;
+  white-space: nowrap !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians th:nth-child(8),
+body.signal-app .signal-view-surface .sg-fix-tech #tblTechnicians td.sg-tech-actions {
+  width: 1% !important;
+  white-space: nowrap !important;
+}
+
+/* Location cell styling */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-tech-location div:last-child {
+  font-size: 11px !important;
+  margin-top: 2px;
+}
+
+/* Category badges */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-tech-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  background: #e8f0fb;
+  color: #0d5ba3;
+  border-radius: 4px;
+  font-size: 11px !important;
+  font-weight: 500;
+  white-space: nowrap;
+}
+body.signal-app .signal-view-surface .sg-fix-tech .sg-tech-badge--more {
+  background: #f0f0f0;
+  color: #666;
+}
+
+/* Availability summary */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-tech-availability {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Action buttons */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-action-buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+  white-space: nowrap;
+}
+body.signal-app .signal-view-surface .sg-fix-tech .sg-action-buttons form {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+/* Form styling */
+.sg-category-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.sg-category-list .form-check {
+  margin-bottom: 0;
+}
+
+.sg-availability-table {
+  margin-bottom: 0;
+}
+.sg-availability-table th,
+.sg-availability-table td {
+  padding: 10px 12px !important;
+  font-size: 13px;
+}
+.sg-availability-table .form-control-sm {
+  font-size: 12px;
+  height: 32px;
+}
+
+@media (max-width: 992px) {
+  body.signal-app .signal-view-surface .nova-list-card .nova-table-viewport {
+    overflow-x: auto;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   TECHNICIANS FILTERS & SORTING (sg-fix-tech enhancements)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Filter bar container */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-tech-filters {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+/* Filter group styling */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 130px;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech .sg-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech .sg-filter-select {
+  font-size: 13px;
+  height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background-color: #fff;
+  color: #212529;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech .sg-filter-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+  outline: none;
+}
+
+/* Clear filters button */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-clear-filters {
+  font-size: 13px;
+  height: 34px;
+  padding: 6px 12px;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+/* Sortable column headers */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+  font-weight: 600;
+  position: relative;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech .sg-sortable:hover {
+  background-color: #f0f0f0;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech .sg-sortable i {
+  margin-right: 6px;
+  font-size: 11px;
+  color: #adb5bd;
+  opacity: 0.5;
+  transition: opacity 0.15s ease;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech .sg-sortable.sg-sort-active i {
+  opacity: 1;
+  color: #0d6efd;
+}
+
+/* Page size styling */
+body.signal-app .signal-view-surface .sg-fix-tech .sg-filter-group #pageSize {
+  min-width: 70px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  body.signal-app .signal-view-surface .sg-fix-tech .sg-tech-filters {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  body.signal-app .signal-view-surface .sg-fix-tech .sg-filter-group {
+    min-width: 100%;
+  }
+
+  body.signal-app .signal-view-surface .sg-fix-tech .sg-clear-filters {
+    width: 100%;
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   TECHNICIAN JOBS TABLE (sg-fix-tech-jobs)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs {
+  width: 100% !important;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs thead th {
+  background-color: #70b3db;
+  color: white;
+  text-align: left;
+  padding: 12px 10px;
+  white-space: nowrap;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs tbody td {
+  padding: 10px 12px;
+  vertical-align: middle;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs tbody tr:hover {
+  background-color: #f7fbff;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+/* Technician group header row */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-tech-group-row td {
+  background: #eef5fb !important;
+  padding: 8px 12px !important;
+  border-top: 2px solid #2563eb !important;
+  border-bottom: 1px solid #c9e0f0 !important;
+  white-space: normal !important;
+}
+
+/* Order # badge (monospace, blue) */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-order-badge {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-weight: 700;
+  color: #2563eb;
+  font-size: 0.9rem;
+}
+
+/* Distance badge */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-dist-badge {
+  font-size: 0.8rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 2px 8px;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+/* Amount (right-aligned, green) */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-amount {
+  font-weight: 600;
+  color: #16a34a;
+  text-align: right;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-amount-empty {
+  color: #94a3b8;
+  text-align: right;
+}
+
+/* Status badges */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-status {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-status-scheduled {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-status-confirmed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-status-cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-status-completed {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* DataTables footer */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .dataTables_wrapper .dataTables_info {
+  padding: 10px 0;
+  font-size: 0.85rem;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .dataTables_wrapper .dataTables_paginate {
+  margin-top: 10px;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .dataTables_wrapper .dataTables_processing {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 999;
+}
+
+/* Column-specific styling */
+/* /* 4: Street, 5: City, 6: State, 7: ZIP - allow wrapping for addresses */ */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs tbody td:nth-child(5),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs tbody td:nth-child(6),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs tbody td:nth-child(7),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs #tblTechJobs tbody td:nth-child(8) {
+  white-space: normal;
+  word-break: break-word;
+}
+
+
+/* ========== TECHNICIAN JOBS TABLE STYLING ========== */
+
+/* COMMENTED OUT: Technician column now visible (brought back for Round 3) */
+/*
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody tr td:nth-child(1) {
+  display: none;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table thead tr th:nth-child(1) {
+  display: none;
+}
+*/
+
+/* Distance badge with map marker icon */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .tj-dist-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 3px 10px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+/* Table cell padding and font sizing */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td,
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table thead th {
+  padding: 10px 10px;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+/* Right-align Quoted column (column 10) */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(10),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table thead th:nth-child(10) {
+  text-align: right;
+}
+
+/* Center-align Distance and Status columns */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(8),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(11),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table thead th:nth-child(8),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table thead th:nth-child(11) {
+  text-align: center;
+}
+
+/* Column wrapping: Time, Order #, Phone, Quoted, Distance, Status no-wrap */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(2),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(3),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(9),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(10),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(11) {
+  white-space: nowrap;
+}
+
+/* Street address can wrap */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(5) {
+  word-break: break-word;
+  min-width: 100px;
+}
+
+/* City / State and ZIP: clear separation */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(6),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(7) {
+  min-width: 60px;
+}
+
+
+/* ========== ROUND 4: Updated column alignment and wrapping for 11-column layout ========== */
+
+/* ROUND 5: Reverted fixed-width layout. Table now uses overflow-x:auto for horizontal scroll */
+
+/* DataTables alignment classes (apply to both th and td) */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .dt-left {
+  text-align: left !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .dt-center {
+  text-align: center !important;
+}
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .dt-right {
+  text-align: right !important;
+}
+
+/* ROUND 5: Header padding for sort arrow (prevent text cut-off on "ORDER #", "CITY / STATE", "DISTANCE") */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table thead th {
+  padding: 10px 22px 10px 10px;  /* Right padding for sort arrow */
+  font-size: 0.85rem;
+  white-space: nowrap;  /* Header labels never wrap */
+  background: #fff;  /* Solid background so row data doesn't show through */
+}
+
+/* ROUND 5: Sticky header (thead) */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* ROUND 5: Sticky first column (Technician) with row alternation background */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  min-width: 190px;
+  white-space: nowrap;
+  background: #fff;  /* Default row background */
+  border-right: 1px solid #dee2e6;
+}
+
+/* Alternate row background for sticky Technician column */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody tr:nth-child(odd) td:nth-child(1) {
+  background: #f8fafc;
+}
+
+/* ROUND 5: All cells white-space: nowrap (no wrapping, no ellipsis) */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td {
+  white-space: nowrap;
+}
+
+/* COMMENTED OUT Round 4 (fixed-width layout rules):
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(2),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(3),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(7),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(8),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(9),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(10),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(11) {
+  white-space: nowrap;
+}
+
+/* Street (5) and Customer (4) can wrap to 2 lines */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(4),
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(5) {
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* City / State (6) can wrap if needed */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(6) {
+  min-width: 80px;
+  overflow-wrap: anywhere;
+}
+
+/* ZIP column min-width for clarity */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td:nth-child(7) {
+  min-width: 50px;
+}
+*/
+
+/* Table cell padding and font sizing */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs table tbody td {
+  padding: 10px 10px;
+  font-size: 0.85rem;
+}
+
+/* ROUND 5: Fix "Search:" label visibility in DataTables filter */
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .dataTables_filter {
+  margin-bottom: 12px;
+  margin-top: 10px;
+}
+
+body.signal-app .signal-view-surface .sg-fix-tech-jobs .dataTables_filter label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
 }

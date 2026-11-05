@@ -3,18 +3,17 @@
 @using SendSmsCallAlerts.Services
 @{
     var fullNames = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" };
-    var order = TechnicianAvailabilityService.DisplayOrder; // Monday first, Sunday last
+    var order = TechnicianAvailabilityService.DisplayOrder;
     var rows = Model ?? TechnicianAvailabilityService.DefaultWeek();
 }
 
-<h5 class="mb-2">Weekly Availability</h5>
-<table class="table table-sm table-bordered align-middle" id="availabilityTable">
+<table class="table table-sm table-bordered align-middle sg-availability-table" id="availabilityTable">
     <thead class="table-light">
         <tr>
             <th>Day</th>
-            <th class="text-center">Available</th>
-            <th>Start</th>
-            <th>End</th>
+            <th class="text-center" style="width: 80px;">Available</th>
+            <th style="width: 100px;">Start</th>
+            <th style="width: 100px;">End</th>
         </tr>
     </thead>
     <tbody>
@@ -30,7 +29,7 @@
                     <input type="hidden" name="availability[@i].DayOfWeek" value="@d" />
                 </td>
                 <td class="text-center">
-                    <input type="checkbox" class="av-toggle" name="availability[@i].IsAvailable" value="true"
+                    <input type="checkbox" class="form-check-input av-toggle" name="availability[@i].IsAvailable" value="true"
                            aria-label="@fullNames[d] available" @(row.IsAvailable ? "checked" : "") />
                     <input type="hidden" name="availability[@i].IsAvailable" value="false" />
                 </td>
@@ -60,18 +59,3 @@
         });
     })();
 </script>
-
-@* Usage in Create.cshtml / Edit.cshtml (inside the <form>, before the submit button):
-
-
-
-
-
-
-
-
-   <partial name="_AvailabilityEditor" model="(List<SendSmsCallAlerts.Models.TechnicianAvailability>)ViewBag.Availability" />
-
-   Also show validation errors near the top of the form:
-   <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-*@

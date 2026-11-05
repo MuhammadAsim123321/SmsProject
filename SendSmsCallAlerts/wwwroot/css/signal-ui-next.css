@@ -203,6 +203,18 @@ body.signal-app { color: var(--sg-ink); background: var(--sg-base); font-family:
 .signal-app .signal-view-surface .rounded { border-radius: 8px !important; }
 /* Sidebar collapse JS retains body.mini-sidebar, body.expand-menu. */
 @media (min-width: 992px) {
+    @* Sidebar collapsed state applied via html.signal-sidebar-collapsed class set in <head> to prevent layout shift on reload *@
+    html.signal-sidebar-collapsed body.signal-app .signal-sidebar { width: 76px; }
+    html.signal-sidebar-collapsed body.signal-app .signal-page-wrapper { margin-left: 76px; }
+    html.signal-sidebar-collapsed body.signal-app .signal-header .signal-brand { flex-basis: 76px; width: 76px; padding-left: 17px; }
+    html.signal-sidebar-collapsed body.signal-app .signal-brand-text { display: none; }
+    html.signal-sidebar-collapsed body.signal-app .signal-sidebar .signal-sidebar-intro,
+    html.signal-sidebar-collapsed body.signal-app .signal-sidebar .sidebar-menu .menu-title,
+    html.signal-sidebar-collapsed body.signal-app .signal-sidebar .sidebar-menu ul li a span,
+    html.signal-sidebar-collapsed body.signal-app .signal-sidebar .signal-sidebar-footer { display: none; }
+    html.signal-sidebar-collapsed body.signal-app .signal-sidebar .sidebar-menu ul { padding: 0 9px; }
+    html.signal-sidebar-collapsed body.signal-app .signal-sidebar .sidebar-menu ul li a { justify-content: center; padding: 11px 6px; }
+    
     body.signal-app.mini-sidebar .signal-sidebar { width: 76px; }
     body.signal-app.mini-sidebar .signal-page-wrapper { margin-left: 76px; }
     body.signal-app.mini-sidebar .signal-header .signal-brand { flex-basis: 76px; width: 76px; padding-left: 17px; }
@@ -1898,3 +1910,304 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
   .password-toggle-button:focus-visible { outline: 2px solid rgba(90,85,217,.35); outline-offset: 2px; }
   .signal-login-input .password-toggle-wrap { flex: 1 1 auto; min-width: 0; width: auto; }
   .signal-login-input .password-toggle-wrap > input { padding-right: 42px !important; }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   STAT CARDS & FILTER BAR (shared nova components)
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Stat row: 4-column grid layout */
+.signal-app .signal-view-surface .nova-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* Below 768px: 2 columns */
+@media (max-width: 767.98px) {
+  .signal-app .signal-view-surface .nova-stat-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+}
+
+/* Stat card: white background, consistent styling */
+.signal-app .signal-view-surface .nova-stat-card {
+  background: #fff;
+  border: 1px solid #e8e8f3;
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.signal-app .signal-view-surface .nova-stat-card:hover {
+  border-color: #70b3db;
+}
+
+/* Stat card colored variants */
+.signal-app .signal-view-surface .nova-stat-card.nova-stat--total {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.signal-app .signal-view-surface .nova-stat-card.nova-stat--total .nova-stat-number {
+  color: #2563eb;
+}
+
+.signal-app .signal-view-surface .nova-stat-card.nova-stat--scheduled {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.signal-app .signal-view-surface .nova-stat-card.nova-stat--scheduled .nova-stat-number {
+  color: #16a34a;
+}
+
+.signal-app .signal-view-surface .nova-stat-card.nova-stat--completed {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.signal-app .signal-view-surface .nova-stat-card.nova-stat--completed .nova-stat-number {
+  color: #d97706;
+}
+
+.signal-app .signal-view-surface .nova-stat-card.nova-stat--cancelled {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.signal-app .signal-view-surface .nova-stat-card.nova-stat--cancelled .nova-stat-number {
+  color: #dc2626;
+}
+
+/* Default stat number and label styling (used when no variant) */
+.signal-app .signal-view-surface .nova-stat-card .nova-stat-number {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #343a56;
+  margin-bottom: 6px;
+}
+
+.signal-app .signal-view-surface .nova-stat-card .nova-stat-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8991a3;
+}
+
+/* Filter bar: horizontal flex layout, wraps on narrow screens */
+.signal-app .signal-view-surface .nova-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  padding: 14px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f7;
+}
+
+/* Filter group: vertical stack (label on top, input below) */
+.signal-app .signal-view-surface .nova-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+
+.signal-app .signal-view-surface .nova-filter-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #495057;
+  margin: 0;
+}
+
+.signal-app .signal-view-surface .nova-filter-group .form-select,
+.signal-app .signal-view-surface .nova-filter-group .form-control {
+  font-size: 0.875rem;
+  height: 34px;
+  padding: 6px 10px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+}
+
+.signal-app .signal-view-surface .nova-filter-group .form-select:focus,
+.signal-app .signal-view-surface .nova-filter-group .form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Button group within filter bar */
+.signal-app .signal-view-surface .nova-filter-bar .nova-filter-group[style*="flex"] {
+  align-self: flex-end;
+}
+
+/* Filter actions wrapper: side-by-side buttons */
+.signal-app .signal-view-surface .nova-filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  align-self: flex-end;
+}
+
+.signal-app .signal-view-surface .nova-filter-bar .btn {
+  font-size: 0.875rem;
+  height: 34px;
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+/* Below 768px: stack filters vertically */
+@media (max-width: 767.98px) {
+  .signal-app .signal-view-surface .nova-filter-bar {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .signal-app .signal-view-surface .nova-filter-group {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .signal-app .signal-view-surface .nova-filter-bar .nova-filter-group[style*="flex"] {
+    width: 100%;
+  }
+
+  /* Filter actions full width on mobile */
+  .signal-app .signal-view-surface .nova-filter-actions {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .signal-app .signal-view-surface .nova-filter-actions .btn {
+    flex: 1;
+  }
+}
+
+
+/* ========== TECHNICIAN JOBS PAGE SCOPING (.tj-page) ========== */
+/* Higher specificity to override signal-list-tables.css rules (which have body selector) */
+
+/* Stat cards: centered, colored backgrounds, proper sizing */
+.signal-app .signal-view-surface .tj-page .nova-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 92px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  border: 1px solid #e8e8f3;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card:hover {
+  border-color: #70b3db;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card .nova-stat-number {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card .nova-stat-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* Stat card color variants */
+.signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--total {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--total .nova-stat-number {
+  color: #2563eb;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--scheduled {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--scheduled .nova-stat-number {
+  color: #16a34a;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--completed {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--completed .nova-stat-number {
+  color: #d97706;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--cancelled {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--cancelled .nova-stat-number {
+  color: #dc2626;
+}
+
+/* Apply/Clear buttons: side-by-side, 34px height, no focus ring */
+.signal-app .signal-view-surface .tj-page .nova-filter-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 8px;
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-filter-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 34px;
+  padding: 0 14px;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-filter-actions .btn + .btn {
+  margin-left: 0;
+}
+
+.signal-app .signal-view-surface .tj-page .nova-filter-actions .btn:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Mobile: buttons stay side-by-side */
+@media (max-width: 767.98px) {
+  .signal-app .signal-view-surface .tj-page .nova-filter-actions {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .signal-app .signal-view-surface .tj-page .nova-filter-actions .btn {
+    flex: 1;
+  }
+}

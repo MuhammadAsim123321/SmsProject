@@ -1,15 +1,30 @@
 @model SendSmsCallAlerts.Models.AutomatedSmsSetting
 @{
-    ViewData["Title"] = "New Automated SMS";
+    ViewData["Title"] = "Create Automated SMS";
 }
 
 <partial name="_AutoSmsHead" />
 
 <div class="sg-content-stack">
-    <h1>New Automated SMS</h1>
+    <section class="nova-page-head" aria-label="Page heading">
+        <div class="nova-heading-group">
+            <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-plus-circle"></i></span>
+            <div class="nova-heading-copy">
+                <span class="nova-eyebrow">CREATE NEW</span>
+                <h1>New Automated SMS</h1>
+                <p>Configure a new scheduled notification</p>
+            </div>
+        </div>
+    </section>
+
     <form asp-action="Create" method="post">
         <partial name="_Form" model="Model" />
-        <div class="sg-form-actions"><button type="submit" class="btn btn-primary">Save</button>
-        <a asp-action="Index" class="btn btn-secondary">Cancel</a></div>
+        
+        <div class="sg-form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-save mr-1"></i> Create setting
+            </button>
+            <a asp-action="Index" class="btn btn-secondary">Cancel</a>
+        </div>
     </form>
 </div>

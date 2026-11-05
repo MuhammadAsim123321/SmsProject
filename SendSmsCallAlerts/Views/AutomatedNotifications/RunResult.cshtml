@@ -1,31 +1,93 @@
 @model SendSmsCallAlerts.Controllers.RunNowVm
 @{
-    ViewData["Title"] = "Test run";
+    ViewData["Title"] = "Test run result";
 }
 
 <partial name="_AutoSmsHead" />
 
-<div class="sg-content-stack sg-results-page">
-    <h1>Test run: @Model.SettingName</h1>
-    <p class="text-muted">Preview only: @Model.PreviewDescription. Nothing was sent. This is a live preview; final text is built at run time.</p>
+<div class="sg-content-stack">
+    <section class="nova-page-head" aria-label="Page heading">
+        <div class="nova-heading-group">
+            <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-play-circle"></i></span>
+            <div class="nova-heading-copy">
+                <span class="nova-eyebrow">DRY RUN</span>
+                <h1>@Model.SettingName</h1>
+                <p>@Model.PreviewDescription</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="alert alert-info">
+        <strong>Preview only:</strong> Nothing was sent. This is a live preview; final text is built at run time.
+    </div>
 
     @if (!Model.Items.Any())
     {
-        <div class="alert alert-warning">No matching recipients or records were found for this notification type and preview period.</div>
+        <section class="nova-list-card" aria-label="Test run results">
+            <div class="nova-list-empty">
+                <i class="fa fa-inbox" aria-hidden="true"></i>
+                <p>No matching recipients or records were found for this notification type and preview period.</p>
+            </div>
+        </section>
     }
     else
     {
-        <table class="table table-bordered table-striped">
-            <thead style="background: #70b3db; color: white;">
-                <tr><th>Recipient type</th><th>Recipient</th><th>Phone</th><th>Message preview</th><th>Result</th></tr>
-            </thead>
-            <tbody>
-                @foreach (var i in Model.Items)
-                {
-                    <tr><td>@i.RecipientType</td><td>@i.RecipientName</td><td>@i.Phone</td><td style="white-space:pre-wrap">@i.Body</td><td>@i.Status</td></tr>
-                }
-            </tbody>
-        </table>
+        <section class="nova-list-card sg-fix-automation" aria-label="Test run results">
+            <div class="nova-list-toolbar">
+                <div class="nova-list-heading">
+                    <span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-envelope-o"></i></span>
+                    <div>
+                        <h2>Preview recipients</h2>
+                        <p>@Model.Items.Count() recipient@(Model.Items.Count() != 1 ? "s" : "") will receive this message</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nova-table-viewport">
+                <table id="novaRunResultTable" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Recipient type</th>
+                            <th>Recipient</th>
+                            <th>Phone</th>
+                            <th>Message preview</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var i in Model.Items)
+                        {
+                            <tr>
+                                <td class="sg-result-type">@i.RecipientType</td>
+                                <td class="sg-result-name">@i.RecipientName</td>
+                                <td class="sg-result-phone">@i.Phone</td>
+                                <td class="sg-result-message">@i.Body</td>
+                                <td class="sg-result-status">
+                                    <span class="nova-status nova-status--test">@i.Status</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="nova-list-footer">
+                <span>@Model.Items.Count() preview@(Model.Items.Count() != 1 ? "s" : "")</span>
+            </div>
+        </section>
     }
-    <a asp-action="Index" class="btn btn-secondary">Back</a>
+
+    <div class="sg-form-actions mt-4">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fa fa-arrow-left mr-1"></i> Back to settings
+        </a>
+    </div>
 </div>
+
+<style>
+    .sg-result-type { min-width: 120px; white-space: nowrap; }
+    .sg-result-name { min-width: 140px; }
+    .sg-result-phone { min-width: 100px; white-space: nowrap; }
+    .sg-result-message { max-width: 350px; white-space: pre-wrap; overflow-wrap: break-word; }
+    .sg-result-status { min-width: 80px; white-space: nowrap; }
+</style>

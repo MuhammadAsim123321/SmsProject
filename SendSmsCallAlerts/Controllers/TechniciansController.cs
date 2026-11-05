@@ -14,15 +14,18 @@ namespace SendSmsCallAlerts.Controllers
         private readonly ApplicationDbContext _context;
         private readonly GoogleDistanceService _distanceService;
         private readonly TechnicianAvailabilityService _availabilityService;
+        private readonly IAppClock _appClock;
 
         public TechniciansController(
             ApplicationDbContext context,
             GoogleDistanceService distanceService,
-            TechnicianAvailabilityService availabilityService)
+            TechnicianAvailabilityService availabilityService,
+            IAppClock appClock)
         {
             _context = context;
             _distanceService = distanceService;
             _availabilityService = availabilityService;
+            _appClock = appClock;
         }
 
         // GET: Technicians
@@ -38,8 +41,28 @@ namespace SendSmsCallAlerts.Controllers
 
                 var categories = await _context.IvrOption.ToListAsync();
 
+                // Get upcoming jobs count per technician (non-cancelled, EndAt > business now)
+                var businessNow = _appClock.BusinessNow;
+                var jobCounts = await _context.Jobs
+                    .AsNoTracking()
+                    .Where(j => j.TechnicianId != null 
+                             && j.Status != JobStatus.Cancelled 
+                             && j.EndAt > businessNow)
+                    .GroupBy(j => j.TechnicianId!.Value)
+                    .Select(g => new { TechnicianId = g.Key, Count = g.Count() })
+                    .ToDictionaryAsync(x => x.TechnicianId, x => x.Count);
+
+                // Check availability for today (business date)
+                var today = businessNow.Date;
+                var todayAvailable = await Task.FromResult(technicians.ToDictionary(
+                    t => t.Id,
+                    t => TechnicianAvailabilityService.Check(t.Availabilities, today).Allowed
+                ));
+
                 var technicianViewModels = new List<dynamic>();
                 var summaries = new Dictionary<int, string>();
+                var cities = new HashSet<string>();
+
                 foreach (var t in technicians)
                 {
                     technicianViewModels.Add(new
@@ -48,12 +71,17 @@ namespace SendSmsCallAlerts.Controllers
                         CategoryNames = GetCategoryNames(t.SelectedCategoryIds, categories)
                     });
                     summaries[t.Id] = TechnicianAvailabilityService.BuildSummary(t.Availabilities);
+                    if (!string.IsNullOrEmpty(t.CityState))
+                        cities.Add(t.CityState);
                 }
 
                 ViewBag.Categories = categories;
                 ViewBag.TechnicianViewModels = technicianViewModels;
                 ViewBag.TechnicianCount = technicians.Count;
-                ViewBag.AvailabilitySummaries = summaries;   // use in Index view: summaries[item.Id]
+                ViewBag.AvailabilitySummaries = summaries;
+                ViewBag.JobCounts = jobCounts;
+                ViewBag.TodayAvailable = todayAvailable;
+                ViewBag.Cities = cities.OrderBy(c => c).ToList();
 
                 return View(technicians);
             }

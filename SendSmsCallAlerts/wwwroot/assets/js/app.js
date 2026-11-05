@@ -238,14 +238,18 @@ $(document).ready(function($) {
 		};
 	}
 	
-	// Small Sidebar
+	// Small Sidebar — persist collapsed state via sessionStorage to avoid layout shift on page reload
 	if(screen.width >= 992) {
 		$(document).on('click', '#toggle_btn', function() {
 			if($('body').hasClass('mini-sidebar')) {
 				$('body').removeClass('mini-sidebar');
+				document.documentElement.classList.remove('signal-sidebar-collapsed');
+				sessionStorage.setItem('signal-sidebar-collapsed', 'false');
 				$('.subdrop + ul').slideDown();
 			} else {
 				$('body').addClass('mini-sidebar');
+				document.documentElement.classList.add('signal-sidebar-collapsed');
+				sessionStorage.setItem('signal-sidebar-collapsed', 'true');
 				$('.subdrop + ul').slideUp();
 			}
 			return false;
