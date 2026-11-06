@@ -20,7 +20,7 @@
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Create">
+        <form asp-action="Create" onsubmit="return confirmAction(event, 'Create Intro SMS', 'Are you sure you want to create this intro SMS?', this);">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" name="TwNum" value="@ViewBag.TwilioNum" />
             <div class="form-group">

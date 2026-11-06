@@ -232,26 +232,28 @@ namespace SendSmsCallAlerts.Controllers
             {
                 var technician = await _context.Technicians.FindAsync(id);
                 if (technician == null)
-                    return Json(new { success = false, message = "Technician not found." });
+                {
+                    TempData["ErrMsg"] = "Technician not found.";
+                    return RedirectToAction(nameof(Index));
+                }
 
                 var jobCount = await _context.Jobs.CountAsync(j => j.TechnicianId == id);
                 if (jobCount > 0)
                 {
-                    return Json(new
-                    {
-                        success = false,
-                        message = $"Cannot delete technician. They are assigned to {jobCount} job(s)."
-                    });
+                    TempData["ErrMsg"] = $"Cannot delete technician. They are assigned to {jobCount} job(s).";
+                    return RedirectToAction(nameof(Index));
                 }
 
                 _context.Technicians.Remove(technician);
                 await _context.SaveChangesAsync();
 
-                return Json(new { success = true, message = "Technician deleted successfully." });
+                TempData["SuccessMessage"] = "Technician deleted successfully.";
+                return RedirectToAction(nameof(Index));
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = "Error deleting technician: " + ex.Message });
+                TempData["ErrMsg"] = "Error deleting technician: " + ex.Message;
+                return RedirectToAction(nameof(Index));
             }
         }
 

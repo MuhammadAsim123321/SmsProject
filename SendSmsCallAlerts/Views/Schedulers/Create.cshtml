@@ -21,7 +21,7 @@
 }
 <div class="row">
     <div class="col-md-4 sg-wide-editor">
-        @using (Html.BeginForm("Create", "Schedulers", FormMethod.Post, new { enctype = "multipart/form-data", @role = "form", @id = "registerForm", @class = "form-horizontal" }))
+        @using (Html.BeginForm("Create", "Schedulers", FormMethod.Post, new { enctype = "multipart/form-data", @role = "form", @id = "registerForm", @class = "form-horizontal", onsubmit = "return confirmAction(event, 'Create Scheduler', 'Are you sure you want to create this scheduler?', this);" }))
         {
             @* <form asp-action="Create">*@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>

@@ -20,18 +20,6 @@
         <a href="#" class="btn btn-primary sg-primary-action" id="create-user-button"><i class="fa fa-plus"></i> Create New</a>
     </div>
 </section>
-@if (TempData["StMsg"] != null)
-{
-    <div class="alert alert-success">
-        <b>@TempData["StMsg"]</b>
-    </div>
-}
-@if (TempData["ErMsg"] != null)
-{
-    <div class="alert alert-danger">
-        <b>@TempData["ErMsg"]</b>
-    </div>
-}
 
 <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
 
@@ -129,8 +117,8 @@
             $('#create-user-button').on('click', function (e) { e.preventDefault(); showForm('@Url.Action("CreateForm", "Users")', 'Create user'); });
             window.EditRecord = function (id) { showForm('@Url.Action("EditForm", "Users")?id=' + id, 'Edit user'); };
             window.DeleteRecord = function (id, username, name) { $('#confirm-delete-user').data('id', id); $('#delete-user-name').text((username || '') + (name ? ' - ' + name : '')); $('#delete-user-error').hide().empty(); $('#delete-user-modal').modal('show'); };
-            $('#confirm-delete-user').on('click', function () { var button = $(this); button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin fa-3x fa-fw users-button-spinner" aria-hidden="true"></i><span class="sr-only">Loading...</span>'); $.post('@Url.Action("Delete", "Users")', { id: button.data('id'), __RequestVerificationToken: $('#user-form-body input[name="__RequestVerificationToken"]').val() || $('input[name="__RequestVerificationToken"]').first().val() }).done(function (response) { if (!response.success) { $('#delete-user-error').text(response.message).show(); return; } $('#delete-user-modal').modal('hide'); $('.signal-view-surface').prepend('<div class="alert alert-success ajax-user-message">' + response.message + '</div>'); table.ajax.reload(null, false); }).fail(function (xhr) { var message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Unable to complete the request.'; $('#delete-user-error').text(message).show(); }).always(function () { button.prop('disabled', false).html('<i class="fa fa-trash" aria-hidden="true"></i> Delete'); }); });
-            $(document).on('submit', '.user-modal-form', function (e) { e.preventDefault(); var form = $(this); var title = $('#user-form-title').text(); setSaveButton(true, title); $.ajax({ url: form.attr('action'), method: 'POST', data: form.serialize(), headers: { 'X-Requested-With': 'XMLHttpRequest' } }).done(function (response) { if (response.success) { $('#user-form-modal').modal('hide'); $('.signal-view-surface').prepend('<div class="alert alert-success ajax-user-message">' + response.message + '</div>'); table.ajax.reload(null, false); } else { $('#user-form-body').html(response); window.initPasswordToggles($('#user-form-body')[0]); setSaveButton(false, title); } }).fail(function (xhr) { if (xhr.status === 403 && xhr.responseJSON) { $('#user-form-body').html('<div class="alert alert-danger">' + xhr.responseJSON.message + '</div>'); } else { showAjaxError(xhr); } }); });
+            $('#confirm-delete-user').on('click', function () { var button = $(this); button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin fa-3x fa-fw users-button-spinner" aria-hidden="true"></i><span class="sr-only">Loading...</span>'); $.post('@Url.Action("Delete", "Users")', { id: button.data('id'), __RequestVerificationToken: $('#user-form-body input[name="__RequestVerificationToken"]').val() || $('input[name="__RequestVerificationToken"]').first().val() }).done(function (response) { if (!response.success) { $('#delete-user-error').text(response.message).show(); return; } $('#delete-user-modal').modal('hide'); showToast(response.message, 'success'); table.ajax.reload(null, false); }).fail(function (xhr) { var message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Unable to complete the request.'; $('#delete-user-error').text(message).show(); }).always(function () { button.prop('disabled', false).html('<i class="fa fa-trash" aria-hidden="true"></i> Delete'); }); });
+            $(document).on('submit', '.user-modal-form', function (e) { e.preventDefault(); var form = $(this); var title = $('#user-form-title').text(); setSaveButton(true, title); $.ajax({ url: form.attr('action'), method: 'POST', data: form.serialize(), headers: { 'X-Requested-With': 'XMLHttpRequest' } }).done(function (response) { if (response.success) { $('#user-form-modal').modal('hide'); showToast(response.message, 'success'); table.ajax.reload(null, false); } else { $('#user-form-body').html(response); window.initPasswordToggles($('#user-form-body')[0]); setSaveButton(false, title); } }).fail(function (xhr) { if (xhr.status === 403 && xhr.responseJSON) { $('#user-form-body').html('<div class="alert alert-danger">' + xhr.responseJSON.message + '</div>'); } else { showAjaxError(xhr); } }); });
         })(jQuery);
     </script>
 

@@ -13,15 +13,6 @@
         <a asp-controller="Sms" asp-action="IncomingLogs" class="btn btn-outline-secondary btn-sm"><i class="fa fa-arrow-left me-1" aria-hidden="true"></i> Back to inbox</a>
     </div>
 
-    @if (TempData["StMsg"] != null)
-    {
-        <div class="alert alert-success" role="status"><b>@TempData["StMsg"]</b></div>
-    }
-    @if (TempData["ErMsg"] != null)
-    {
-        <div class="alert alert-danger" role="alert"><b>@TempData["ErMsg"]</b></div>
-    }
-
     <section class="signal-thread" aria-label="SMS conversation">
         <header class="signal-thread-header">
             <div class="signal-thread-avatar"><i class="fa fa-user-o" aria-hidden="true"></i></div>

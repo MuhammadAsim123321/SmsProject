@@ -16,14 +16,6 @@
     <div class="nova-page-actions">@if (Context.Session.IsAdmin()) { <a asp-action="Create" class="signal-create-link sg-primary-action"><i class="fa fa-plus" aria-hidden="true"></i> Create template</a> }</div>
 </section>
 
-@if (TempData["StMsg"] != null)
-{
-    <div class="alert alert-success">
-        <b>@TempData["StMsg"]</b>
-    </div>
-}
-
-
 <section class="nova-list-card" aria-label="All SMS templates">
     <div class="nova-list-toolbar">
         <div class="nova-list-heading"><span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span><div><h2>All SMS templates</h2><p>Reusable message content in one place</p></div></div>

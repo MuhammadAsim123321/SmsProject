@@ -19,7 +19,7 @@
         </div>
     </section>
 
-    <form asp-action="Edit" method="post">
+    <form asp-action="Edit" method="post" onsubmit="return confirmAction(event, 'Edit Technician', 'Are you sure you want to save changes to this technician?', this);">
         <input type="hidden" asp-for="Id" />
         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 

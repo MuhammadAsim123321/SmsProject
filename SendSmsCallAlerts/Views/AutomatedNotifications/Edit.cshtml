@@ -17,7 +17,7 @@
         </div>
     </section>
 
-    <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" onsubmit="return confirmAction(event, 'Edit Automated SMS', 'Are you sure you want to save changes to this automated SMS setting?', this);">
         <input type="hidden" asp-for="Id" />
         <partial name="_Form" model="Model" />
         

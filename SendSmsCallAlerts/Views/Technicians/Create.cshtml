@@ -18,7 +18,7 @@
         </div>
     </section>
 
-    <form asp-action="Create" method="post">
+    <form asp-action="Create" method="post" onsubmit="return confirmAction(event, 'Create Technician', 'Are you sure you want to create this technician?', this);">
         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
         <div class="sg-form-card">

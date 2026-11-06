@@ -134,7 +134,7 @@
         }
         else if (Model.Tab == "Test runs")
         {
-            <div class="p-3 text-right"><form asp-action="ClearTestRuns" method="post" onsubmit="return confirm('Clear all test runs?');"><button class="btn btn-outline-danger">Clear test runs</button></form></div>
+            <div class="p-3 text-right"><form asp-action="ClearTestRuns" method="post" onsubmit="return confirmDelete(event, 'Clear all test runs?', this);"><button class="btn btn-outline-danger">Clear test runs</button></form></div>
             <div class="nova-table-viewport"><table class="table table-bordered table-striped"><thead style="background:#70b3db;color:white;"><tr><th>When</th><th>Setting</th><th>Recipients</th><th></th></tr></thead><tbody>
             @foreach (var test in Model.TestRuns)
             {

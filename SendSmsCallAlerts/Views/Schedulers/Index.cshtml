@@ -23,15 +23,6 @@
         }
     </div>
 </section>
-@if (TempData["ErrMsg"] != null)
-{
-    <div class="alert alert-danger"><b>@TempData["ErrMsg"]</b></div>
-}
-@if (TempData["SucMsg"] != null)
-{
-    <div class="alert alert-success"><b>@TempData["SucMsg"]</b></div>
-}
-
 
 <section class="nova-list-card sg-fix-schedulers" aria-label="All Schedulers">
     <div class="nova-list-toolbar">
@@ -104,7 +95,7 @@
                     @if (Context.Session.IsAdmin())
                     {
                     <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-info">Edit</a>
-                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this scheduler template?');">
+                    <form asp-action="Delete" asp-route-id="@item.Id" method="post" style="display:inline;" onsubmit="return confirmDelete(event, 'Are you sure you want to delete this scheduler template?', this);">
                         @* <a asp-action="Details" asp-route-id="@item.Id">Details</a> |*@
                         <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                     </form>

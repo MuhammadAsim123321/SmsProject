@@ -61,22 +61,6 @@
         var contact = ViewBag.ContactDetail as ContactDetail;
     }
 
-    @* ── Alerts ── *@
-    @if (TempData["StMsg"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fa fa-check-circle me-1"></i> <b>@TempData["StMsg"]</b>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    @if (TempData["ErMsg"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fa fa-exclamation-circle me-1"></i> <b>@TempData["ErMsg"]</b>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
     @* ── Back link ── *@
     <div class="mb-3">
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-outline-secondary btn-sm">

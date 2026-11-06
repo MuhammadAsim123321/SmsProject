@@ -17,7 +17,7 @@
         </div>
     </section>
 
-    <form asp-action="Create" method="post">
+    <form asp-action="Create" method="post" onsubmit="return confirmAction(event, 'Create Automated SMS', 'Are you sure you want to create this automated SMS setting?', this);">
         <partial name="_Form" model="Model" />
         
         <div class="sg-form-actions">

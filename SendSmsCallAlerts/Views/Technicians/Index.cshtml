@@ -27,11 +27,6 @@
         </div>
     </section>
 
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show"><b>@TempData["SuccessMessage"]</b><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-    }
-
     <section class="nova-list-card sg-fix-tech" aria-label="All Technicians">
         <div class="nova-list-toolbar">
             <div class="nova-list-heading">
@@ -155,7 +150,7 @@
                                             <i class="fa fa-pencil"></i> Edit
                                         </a>
                                         <form asp-action="Delete" asp-route-id="@tech.Id" method="post" style="display: inline;"
-                                              onsubmit="return confirm('Delete this technician? This cannot be undone.');">
+                                              onsubmit="return confirmDelete(event, 'Delete this technician? This cannot be undone.', this);">
                                             <button type="submit" class="btn btn-sm btn-danger">
                                                 <i class="fa fa-trash"></i> Delete
                                             </button>

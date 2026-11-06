@@ -20,20 +20,6 @@
 
 <h1>Data History</h1>
 
-@if (TempData["SucMsg"] != null)
-{
-    <div class="alert alert-success">
-        <b>@TempData["SucMsg"]</b>
-    </div>
-}
-
-@if (TempData["ErrMsg"] != null)
-{
-    <div class="alert alert-danger">
-        <b>@TempData["ErrMsg"]</b>
-    </div>
-}
-
 <div style="display: flex; justify-content: flex-end;">
 
     <a asp-action="Create" style="padding: 8px;

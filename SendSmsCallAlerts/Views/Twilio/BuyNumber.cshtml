@@ -7,13 +7,6 @@
     <div class="nova-page-actions"><a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-secondary btn-sm sg-secondary-action"><i class="fa fa-arrow-left me-1"></i> Back to SMS Logs</a></div>
 </section>
 
-@if (TempData["StMsg"] != null)
-{
-    <div class="alert alert-success">
-        <b>@TempData["StMsg"]</b>
-    </div>
-}
-
 <link href="~/css/bootstrapcopyfromlive.min.css" rel="stylesheet" />
 <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
 

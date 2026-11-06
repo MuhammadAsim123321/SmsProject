@@ -27,11 +27,6 @@
         </div>
     </section>
 
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success"><b>@TempData["Success"]</b></div>
-    }
-
     <section class="nova-list-card sg-fix-automation" aria-label="Automated settings">
         <div class="nova-list-toolbar">
             <div class="nova-list-heading">
@@ -124,7 +119,7 @@
                                         </button>
                                     </form>
                                     <form asp-action="RunNow" asp-route-id="@s.Id" method="post" style="display: inline;"
-                                          onsubmit="return confirm('Preview only: shows recipients and messages for this notification type. Nothing is sent. Continue?');">
+                                          onsubmit="return confirmDelete(event, 'Preview only: shows recipients and messages for this notification type. Nothing is sent. Continue?', this);">
                                         <button type="submit" class="btn btn-sm btn-success">
                                             <i class="fa fa-play-circle"></i> Test
                                         </button>
@@ -132,7 +127,7 @@
                                     @if (Context.Session.IsAdmin())
                                     {
                                         <form asp-action="Delete" asp-route-id="@s.Id" method="post" style="display: inline;"
-                                              onsubmit="return confirm('Delete this setting and all its scheduled occurrences? This cannot be undone.');">
+                                              onsubmit="return confirmDelete(event, 'Delete this setting and all its scheduled occurrences? This cannot be undone.', this);">
                                             <button type="submit" class="btn btn-sm btn-danger">
                                                 <i class="fa fa-trash"></i> Delete
                                             </button>

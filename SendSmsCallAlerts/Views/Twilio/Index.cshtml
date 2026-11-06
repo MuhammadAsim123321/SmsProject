@@ -2,19 +2,6 @@
     ViewData["Title"] = "Index";
 }
 
-@if (TempData["EMsg"] != null)
-{
-    <div class="alert alert-danger">
-        <b>@TempData["EMsg"]</b>
-    </div>
-}
-else if (TempData["SMsg"] != null)
-{
-    <div class="alert alert-success">
-        <b>@TempData["SMsg"]</b>
-    </div>
-}
-
 @if (ViewBag.TwilioNumber != null)
 {
     <div class="d-flex justify-content-between align-items-center mb-2 signal-heading-row">
