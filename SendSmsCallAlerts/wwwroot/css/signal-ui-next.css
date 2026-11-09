@@ -1193,6 +1193,14 @@ body.signal-app { background: var(--sg-base); color: var(--sg-ink); }
 .signal-app .signal-view-surface .custom-select:focus {
   border-color: #7f9fe5 !important; box-shadow: 0 0 0 3px rgba(39,93,222,.12) !important;
 }
+/* Invalid selects keep the red border/message only. Bootstrap 5 paints its error
+   icon as a background layer, but the `background: white` shorthand on .form-select
+   resets background-repeat to `repeat`, so that icon tiles across the whole field. */
+.signal-app .signal-view-surface .form-select.is-invalid,
+.signal-app .signal-view-surface .form-select.is-invalid:not([multiple]):not([size]) {
+  background-image: none;
+  background-repeat: no-repeat;
+}
 .signal-app .signal-view-surface input[readonly].form-control { background: #f6f8fc; color: #61728d; }
 .signal-app .signal-view-surface textarea.form-control { min-height: 108px; }
 .signal-app .signal-view-surface label { color: #41536f; font-size: 12px; font-weight: 650; }
