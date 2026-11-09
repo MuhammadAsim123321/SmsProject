@@ -35,7 +35,7 @@ namespace SendSmsCallAlerts.Controllers
                             o.Status == AutomatedSmsOccurrenceStatus.Running)
                 .GroupBy(o => o.SettingId)
                 .Select(g => g.OrderBy(o => o.ScheduledForUtc).First())
-                .ToDictionaryAsync(o => o.SettingId, o => svc.ToBusiness(o.ScheduledForUtc));
+                .ToDictionaryAsync(o => o.SettingId, o => o.ScheduledForUtc);
             ViewBag.NextOccurrences = next;
             return View(settings);
         }
