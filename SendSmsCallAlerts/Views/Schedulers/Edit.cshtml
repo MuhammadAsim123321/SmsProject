@@ -28,7 +28,7 @@
             <input type="hidden" asp-for="Id" />
             <div class="form-group">
                 <label asp-for="name" class="control-label">Name</label>
-                <input asp-for="name" class="form-control" required />
+                <input asp-for="name" class="form-control" />
                 <span asp-validation-for="name" class="text-danger"></span>
             </div>
 
@@ -50,7 +50,7 @@
             </div> *@
             <div class="form-group">
                 <label asp-for="smsBody" class="control-label">Body</label>
-                <input asp-for="smsBody" class="form-control" required />
+                <input asp-for="smsBody" class="form-control" />
 
             </div>
 
@@ -77,13 +77,13 @@
 
             <div class="form-group">
                 <label class="control-label">Run From</label>
-                <select class="form-control" name="RunFromId" id="RunFromId" required>
+                <select class="form-control" name="RunFromId" id="RunFromId">
                 </select>
             </div>
 
             <div class="form-group">
                 <label class="control-label">Time To Run</label>
-                <select class="form-control" name="TimeToRunId" id="TimeToRunId" required>
+                <select class="form-control" name="TimeToRunId" id="TimeToRunId">
                 </select>
             </div>
 

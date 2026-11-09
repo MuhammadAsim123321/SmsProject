@@ -877,13 +877,13 @@ namespace SendSmsCallAlerts.Controllers
 
                 if (contactJobs.Any())
                 {
-                    var first = contactJobs[0];
-                    vm.category = string.Join(", ", contactJobs.Select(j => j.Category?.keyword ?? "N/A"));
-                    vm.scheduler = string.Join(", ", contactJobs.Select(j => j.ScheduledJobs.FirstOrDefault()?.Scheduler?.name ?? "N/A"));
-                    vm.jobBookDatesList = string.Join(", ", contactJobs.Select(j => j.StartAt.ToString("dd/MM/yyyy")));
-                    vm.jobBookTimesList = string.Join(", ", contactJobs.Select(j => j.StartAt.ToString("hh:mm tt")));
-                    vm.JobBookDate = first.StartAt;
-                    vm.SchedulerId = first.ScheduledJobs.FirstOrDefault()?.SchedulerId ?? 0;
+                    var latest = contactJobs.OrderByDescending(j => j.StartAt).First();
+                    vm.category = latest.Category?.keyword ?? "N/A";
+                    vm.scheduler = latest.ScheduledJobs.FirstOrDefault()?.Scheduler?.name ?? "N/A";
+                    vm.jobBookDatesList = latest.StartAt.ToString("dd/MM/yyyy");
+                    vm.jobBookTimesList = latest.StartAt.ToString("hh:mm tt");
+                    vm.JobBookDate = latest.StartAt;
+                    vm.SchedulerId = latest.ScheduledJobs.FirstOrDefault()?.SchedulerId ?? 0;
                 }
                 else
                 {
