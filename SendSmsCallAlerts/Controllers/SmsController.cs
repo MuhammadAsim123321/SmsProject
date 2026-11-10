@@ -1146,9 +1146,34 @@ namespace SendSmsCallAlerts.Controllers
 
         private static string FormatWaitingTime(double totalMinutes)
         {
-            int minutes = (int)Math.Floor(totalMinutes);
-            int seconds = (int)Math.Round((totalMinutes - minutes) * 60);
-            return $"{minutes}m {seconds}s";
+            var totalSeconds = (int)Math.Round(totalMinutes * 60);
+
+            if (totalSeconds < 60)
+            {
+                // under 1 min → e.g. "45s"
+                return $"{totalSeconds}s";
+            }
+
+            if (totalMinutes < 60)
+            {
+                // under 1 hour → e.g. "28m 35s"
+                int m = (int)Math.Floor(totalMinutes);
+                int s = totalSeconds - m * 60;
+                return $"{m}m {s}s";
+            }
+
+            if (totalMinutes < 1440) // under 24 hours
+            {
+                // under 24 hours → e.g. "3h 12m"
+                int h = (int)Math.Floor(totalMinutes / 60);
+                int m = (int)Math.Floor(totalMinutes % 60);
+                return $"{h}h {m}m";
+            }
+
+            // 24 hours or more → e.g. "5d 20h"
+            int days  = (int)Math.Floor(totalMinutes / 1440);
+            int hours = (int)Math.Floor((totalMinutes % 1440) / 60);
+            return $"{days}d {hours}h";
         }
     }
 }

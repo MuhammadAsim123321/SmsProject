@@ -526,9 +526,27 @@
             _applyRowColor(this, color);
 
             // Also update the Waiting Time cell text (column index 17)
-            var minutes = Math.floor(elapsed / 60000);
-            var seconds = Math.floor((elapsed % 60000) / 1000);
-            var display = minutes + 'm ' + seconds + 's';
+            var totalSeconds = Math.floor(elapsed / 1000);
+            var display;
+            if (totalSeconds < 60) {
+                // under 1 min → e.g. "45s"
+                display = totalSeconds + 's';
+            } else if (elapsed < 3600000) {
+                // under 1 hour → e.g. "28m 35s"
+                var m = Math.floor(totalSeconds / 60);
+                var s = totalSeconds % 60;
+                display = m + 'm ' + s + 's';
+            } else if (elapsed < 86400000) {
+                // under 24 hours → e.g. "3h 12m"
+                var h = Math.floor(totalSeconds / 3600);
+                var m = Math.floor((totalSeconds % 3600) / 60);
+                display = h + 'h ' + m + 'm';
+            } else {
+                // 24 hours or more → e.g. "5d 20h"
+                var d = Math.floor(totalSeconds / 86400);
+                var h = Math.floor((totalSeconds % 86400) / 3600);
+                display = d + 'd ' + h + 'h';
+            }
             var weight  = color ? 'bold' : 'normal';
             var hex     = color ? (_colorTextMap[color] || '#555') : '#555';
             $('td:eq(17)', $row).html('<span style="color:' + hex + '; font-weight:' + weight + ';">' + display + '</span>');
