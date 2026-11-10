@@ -22,6 +22,9 @@ namespace SendSmsCallAlerts.Models
         [ForeignKey("ContactDetailId")]
         public virtual ContactDetail? ContactDetail { get; set; }
 
+        public int? TechnicianId { get; set; }
+        [ForeignKey(nameof(TechnicianId))]
+        public virtual Technician? Technician { get; set; }
         // the message plan (AllScheduledJob) that sent this outgoing message; FK is set up in ApplicationDbContext
         public int? ScheduledJobId { get; set; }
 

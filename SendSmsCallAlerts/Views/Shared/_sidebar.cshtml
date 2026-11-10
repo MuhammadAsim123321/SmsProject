@@ -28,6 +28,13 @@
                 @if (hasTwilio)
                 {
                     <li><a class="@(controller == "Sms" && action == "IncomingLogs" ? "active" : "")" asp-controller="Sms" asp-action="IncomingLogs"><i class="fa fa-inbox" aria-hidden="true"></i><span>Incoming SMS</span></a></li>
+                    <li>
+                        <a class="@(controller == "TechnicianMessages" ? "active" : "")"
+                           asp-controller="TechnicianMessages" asp-action="Index">
+                            <i class="fa fa-wrench" aria-hidden="true"></i>
+                            <span>Technician Messages</span>
+                        </a>
+                    </li>
                     <li><a class="@(controller == "Conversations" ? "active" : "")" asp-controller="Conversations" asp-action="SMS"><i class="fa fa-paper-plane-o" aria-hidden="true"></i><span>Send SMS</span></a></li>
                 }
                 <li><a class="@(controller == "Sms" && action == "ScheduledJobs" ? "active" : "")" asp-controller="Sms" asp-action="ScheduledJobs"><i class="fa fa-clock-o" aria-hidden="true"></i><span>Scheduled jobs</span></a></li>

@@ -484,6 +484,11 @@ namespace SendSmsCallAlerts.Controllers
                 var endOfToDate = toDate.Date.AddDays(1).AddTicks(-1);
                 var query = _context.SmsDetails
                     .Where(s => s.createdOn >= fromDate.Date && s.createdOn <= endOfToDate);
+                var technicianPhoneVariants = await GetTechnicianPhoneVariantsAsync();
+                query = query.Where(s => s.TechnicianId == null &&
+                    !(s.smsDirection == "Incoming"
+                        ? technicianPhoneVariants.Contains(s.fromNum)
+                        : technicianPhoneVariants.Contains(s.toNum)));
 
                 // Staff: restrict to their own messages
                 string staffPhone = GetTwilioNumber();
@@ -523,11 +528,16 @@ namespace SendSmsCallAlerts.Controllers
                 // Get Staff phone for filtering (Admin gets null, no filter)
                 string staffPhone = GetTwilioNumber();
                 var variants = PhoneMatch.Variants(staffPhone);
+                var technicianPhoneVariants = await GetTechnicianPhoneVariantsAsync();
 
                 var logs = await (from sms in _context.SmsDetails
                                   where sms.createdOn >= fromDate.Date && sms.createdOn <= endOfToDate
                                   // Staff: restrict to their own messages (fromNum OR toNum matches)
                                   && (string.IsNullOrEmpty(staffPhone) || variants.Contains(sms.fromNum) || variants.Contains(sms.toNum))
+                                  && sms.TechnicianId == null
+                                  && !(sms.smsDirection == "Incoming"
+                                      ? technicianPhoneVariants.Contains(sms.fromNum)
+                                      : technicianPhoneVariants.Contains(sms.toNum))
                                   let phoneNumber = sms.smsDirection == "Incoming" ? sms.fromNum : sms.toNum
                                   join contact in _context.ContactDetail on phoneNumber equals contact.PhoneNumber into contactJoin
                                   from c in contactJoin.DefaultIfEmpty()
@@ -757,6 +767,18 @@ namespace SendSmsCallAlerts.Controllers
         // =====================================================================
         // INCOMING SMS GRID
         // =====================================================================
+        private async Task<List<string>> GetTechnicianPhoneVariantsAsync()
+        {
+            var phoneNumbers = await _context.Technicians.AsNoTracking()
+                .Select(t => t.ContactNumber)
+                .ToListAsync();
+
+            return phoneNumbers
+                .SelectMany(PhoneMatch.Variants)
+                .Distinct()
+                .ToList();
+        }
+
         private async Task<List<SmsDetailsVm>> GetIncomingLogs(string num)
         {
             // Validate Staff phone before query to prevent data leaks
@@ -769,9 +791,14 @@ namespace SendSmsCallAlerts.Controllers
             // This shows both outgoing messages (From = Twilio#) and incoming messages (To = Twilio#).
             // For Admin (num == null), no filter is applied.
             var variants = PhoneMatch.Variants(num);
-            
+            var technicianPhoneVariants = await GetTechnicianPhoneVariantsAsync();
             var rawData = await (from sms in _context.SmsDetails
-                                 .Where(r => string.IsNullOrEmpty(num) || variants.Contains(r.fromNum) || variants.Contains(r.toNum))
+                                 .Where(r =>
+        (string.IsNullOrEmpty(num) || variants.Contains(r.fromNum) || variants.Contains(r.toNum))
+        && r.TechnicianId == null
+        && !(r.smsDirection == "Incoming"
+            ? technicianPhoneVariants.Contains(r.fromNum)
+            : technicianPhoneVariants.Contains(r.toNum)))
 
                                  join contact in _context.ContactDetail
                                      on (sms.ContactDetailId != null ? sms.ContactDetailId.Value : -1) equals contact.Id into contactByIdJoin

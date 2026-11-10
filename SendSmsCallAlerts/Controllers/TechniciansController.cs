@@ -110,6 +110,9 @@ namespace SendSmsCallAlerts.Controllers
             var availabilityError = TechnicianAvailabilityService.Validate(week);
             if (availabilityError != null)
                 ModelState.AddModelError(string.Empty, availabilityError);
+            if (await TechnicianPhoneAlreadyUsedAsync(technician.ContactNumber))
+                ModelState.AddModelError(nameof(technician.ContactNumber),
+                    "This phone number is already assigned to another technician.");
 
             if (ModelState.IsValid)
             {
@@ -167,6 +170,9 @@ namespace SendSmsCallAlerts.Controllers
             var availabilityError = TechnicianAvailabilityService.Validate(week);
             if (availabilityError != null)
                 ModelState.AddModelError(string.Empty, availabilityError);
+            if (await TechnicianPhoneAlreadyUsedAsync(technician.ContactNumber, id))
+                ModelState.AddModelError(nameof(technician.ContactNumber),
+                    "This phone number is already assigned to another technician.");
 
             if (ModelState.IsValid)
             {
@@ -243,7 +249,13 @@ namespace SendSmsCallAlerts.Controllers
                     TempData["ErrMsg"] = $"Cannot delete technician. They are assigned to {jobCount} job(s).";
                     return RedirectToAction(nameof(Index));
                 }
-
+                var linkedMessageCount = await _context.SmsDetails
+       .CountAsync(s => s.TechnicianId == id);
+                if (linkedMessageCount > 0)
+                {
+                    TempData["ErrMsg"] = $"Cannot delete technician. They have {linkedMessageCount} linked SMS message(s). Keep the record to preserve message history.";
+                    return RedirectToAction(nameof(Index));
+                }
                 _context.Technicians.Remove(technician);
                 await _context.SaveChangesAsync();
 
@@ -399,5 +411,20 @@ namespace SendSmsCallAlerts.Controllers
 
             return allCategories.Where(c => ids.Contains(c.Id)).Select(c => c.keyword).ToList();
         }
+
+        private async Task<bool> TechnicianPhoneAlreadyUsedAsync(string? phone, int? excludeTechnicianId = null)
+        {
+            var variants = PhoneMatch.Variants(phone);
+            if (variants.Count == 0) return false;
+
+            var existing = await _context.Technicians.AsNoTracking()
+                .Where(t => !excludeTechnicianId.HasValue || t.Id != excludeTechnicianId.Value)
+                .Select(t => new { t.Id, t.ContactNumber })
+                .ToListAsync();
+
+            return existing.Any(t => PhoneMatch.Variants(t.ContactNumber)
+                .Intersect(variants, StringComparer.Ordinal).Any());
+        }
+
     }
 }

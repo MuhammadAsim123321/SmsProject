@@ -1,0 +1,193 @@
+@model IReadOnlyList<SendSmsCallAlerts.Models.TechnicianMessageVm>
+@{
+    ViewData["Title"] = "Technician Messages";
+    var technicians = Model
+        .Where(x => x.TechnicianId.HasValue)
+        .GroupBy(x => new { x.TechnicianId, x.TechnicianName })
+        .Select(g => g.Key)
+        .OrderBy(x => x.TechnicianName)
+        .ToList();
+}
+
+@section Styles {
+    <style>
+        .tm-page { display:flex; flex-direction:column; gap:18px; }
+        .tm-card { background:#fff; border:1px solid #e5eaf0; border-radius:14px; box-shadow:0 5px 18px rgba(20,40,65,.045); overflow:hidden; }
+        .tm-toolbar { display:flex; flex-wrap:wrap; align-items:end; gap:12px; padding:16px; border-bottom:1px solid #edf1f5; }
+        .tm-toolbar .form-group { margin:0; min-width:190px; }
+        .tm-toolbar label { display:block; margin-bottom:5px; color:#5b6873; font-size:.78rem; font-weight:700; }
+        .tm-table-wrap { overflow-x:auto; }
+        .tm-table { width:100%; min-width:980px; margin:0; }
+        .tm-table thead th { background:#f5f8fb; color:#526171; font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; border-top:0; }
+        .tm-table td { vertical-align:middle; font-size:.86rem; }
+        .tm-message { min-width:260px; max-width:520px; white-space:pre-wrap; overflow-wrap:anywhere; }
+        .tm-person { font-weight:700; color:#17324d; }
+        .tm-meta { display:block; color:#7a8793; font-size:.74rem; margin-top:3px; }
+        .tm-badge { display:inline-block; padding:4px 8px; border-radius:999px; font-size:.72rem; font-weight:700; white-space:nowrap; }
+        .tm-in { background:#e8f5ee; color:#26734d; }
+        .tm-out { background:#eaf1fb; color:#315e96; }
+        .tm-linked { background:#e8f5ee; color:#26734d; }
+        .tm-review { background:#fff2d8; color:#8a5a00; }
+        .tm-heading { display:flex; align-items:center; gap:12px; }
+        .tm-heading-icon { width:42px; height:42px; border-radius:12px; display:grid; place-items:center; background:#eaf1f6; color:#285d83; font-size:18px; }
+        .tm-heading h1 { margin:0; color:#17324d; font-size:1.45rem; font-weight:750; }
+        .tm-heading p { margin:4px 0 0; color:#71808d; font-size:.86rem; }
+        .tm-count { color:#6e7c88; font-size:.82rem; margin-left:auto; }
+        .tm-empty { padding:28px; text-align:center; color:#74818d; }
+        @@media(max-width:700px) { .tm-heading { align-items:flex-start; } .tm-count { width:100%; margin-left:54px; } }
+    </style>
+}
+
+<div class="tm-page">
+    <section class="nova-page-head" aria-label="Page heading">
+        <div class="tm-heading">
+            <span class="tm-heading-icon" aria-hidden="true"><i class="fa fa-wrench"></i></span>
+            <div>
+                <span class="nova-eyebrow">TEAM COMMUNICATION</span>
+                <h1>Technician Messages</h1>
+                <p>Messages from registered technicians, linked to their technician records.</p>
+            </div>
+        </div>
+        <div class="tm-count">@(ViewBag.TotalMessages ?? Model.Count) message(s)</div>
+    </section>
+
+    <section class="tm-card" aria-label="Technician messages">
+        <div class="tm-toolbar">
+            <div class="form-group">
+                <label for="tmSearch">Search messages</label>
+                <input id="tmSearch" type="search" class="form-control form-control-sm" placeholder="Name, phone or message..." />
+            </div>
+            <div class="form-group">
+                <label for="tmTechnician">Technician</label>
+                <select id="tmTechnician" class="form-control form-control-sm">
+                    <option value="">All technicians</option>
+                    @foreach (var tech in technicians)
+                    {
+                        <option value="@tech.TechnicianId">@tech.TechnicianName</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="tmDirection">Direction</label>
+                <select id="tmDirection" class="form-control form-control-sm">
+                    <option value="">All directions</option>
+                    <option value="incoming">Incoming from technician</option>
+                    <option value="outgoing">Outgoing to technician</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="tm-table-wrap">
+            <table class="table table-hover tm-table" id="tblTechnicianMessages">
+                <thead>
+                    <tr>
+                        <th>Technician record</th>
+                        <th>Phone</th>
+                        <th>Direction</th>
+                        <th>Message</th>
+                        <th>Media</th>
+                        <th>Date / Time</th>
+                        <th>Mapping</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Count == 0)
+                    {
+                        <tr><td colspan="7" class="tm-empty">@ViewBag.EmptyMessage</td></tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model)
+                        {
+                            var direction = string.Equals(item.Direction, "Incoming", StringComparison.OrdinalIgnoreCase) ? "incoming" : "outgoing";
+                            <tr data-technician-id="@(item.TechnicianId?.ToString() ?? "")" data-direction="@direction">
+                                <td>
+                                    @if (item.TechnicianId.HasValue)
+                                    {
+                                        <a class="tm-person" asp-controller="Technicians" asp-action="Edit" asp-route-id="@item.TechnicianId.Value">@item.TechnicianName</a>
+                                        <span class="tm-meta">Technician ID: @item.TechnicianId · SMS ID: @item.SmsId</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="tm-person text-warning">@item.TechnicianName</span>
+                                        <span class="tm-meta">SMS ID: @item.SmsId</span>
+                                    }
+                                </td>
+                                <td>@item.TechnicianPhone</td>
+                                <td>
+                                    @if (direction == "incoming")
+                                    {
+                                        <span class="tm-badge tm-in">Incoming</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="tm-badge tm-out">@item.Direction</span>
+                                    }
+                                    <span class="tm-meta">From: @item.FromNumber<br />To: @item.ToNumber</span>
+                                </td>
+                                <td class="tm-message">@item.MessageBody</td>
+                                <td>
+                                    @if (item.AttachmentCount > 0)
+                                    {
+                                        <a class="btn btn-sm btn-outline-secondary" asp-controller="Sms" asp-action="OpenAttachments" asp-route-id="@item.SmsId">View @item.AttachmentCount</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>@item.CreatedOnBusiness.ToString("dd MMM yyyy, hh:mm:ss tt")</td>
+                                <td>
+                                    @if (item.TechnicianId.HasValue)
+                                    {
+                                        <span class="tm-badge tm-linked">Linked</span>
+                                        <span class="tm-meta">@item.MappingStatus</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="tm-badge tm-review">Needs review</span>
+                                        <span class="tm-meta">@item.MappingStatus</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="p-3 text-muted small" id="tmResultCount" aria-live="polite"></div>
+    </section>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const table = document.getElementById('tblTechnicianMessages');
+            if (!table || !table.tBodies.length) return;
+            const search = document.getElementById('tmSearch');
+            const technician = document.getElementById('tmTechnician');
+            const direction = document.getElementById('tmDirection');
+            const resultCount = document.getElementById('tmResultCount');
+
+            function applyFilters() {
+                const q = (search.value || '').trim().toLocaleLowerCase();
+                const techId = technician.value;
+                const dir = direction.value;
+                let visible = 0;
+                Array.from(table.tBodies[0].rows).forEach(row => {
+                    const matchesText = !q || row.textContent.toLocaleLowerCase().includes(q);
+                    const matchesTech = !techId || row.dataset.technicianId === techId;
+                    const matchesDirection = !dir || row.dataset.direction === dir;
+                    const show = matchesText && matchesTech && matchesDirection;
+                    row.hidden = !show;
+                    if (show) visible++;
+                });
+                resultCount.textContent = visible + (visible === 1 ? ' message shown' : ' messages shown');
+            }
+
+            [search, technician, direction].forEach(el => el.addEventListener('input', applyFilters));
+            [technician, direction].forEach(el => el.addEventListener('change', applyFilters));
+            applyFilters();
+        })();
+    </script>
+}

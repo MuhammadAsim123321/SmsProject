@@ -693,6 +693,9 @@ namespace SendSmsCallAlerts.Migrations
                     b.Property<int?>("SentByUserId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("TechnicianId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("createdOn")
                         .HasColumnType("datetime2");
 
@@ -729,6 +732,8 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.HasIndex("SentByUserId")
                         .HasDatabaseName("IX_SmsDetails_SentByUserId");
+
+                    b.HasIndex("TechnicianId");
 
                     b.HasIndex("createdOn")
                         .HasDatabaseName("IX_SmsDetails_CreatedOn");
@@ -1323,7 +1328,13 @@ namespace SendSmsCallAlerts.Migrations
                         .HasForeignKey("ScheduledJobId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("SendSmsCallAlerts.Models.Technician", "Technician")
+                        .WithMany()
+                        .HasForeignKey("TechnicianId");
+
                     b.Navigation("ContactDetail");
+
+                    b.Navigation("Technician");
                 });
 
             modelBuilder.Entity("SendSmsCallAlerts.Models.SmsLog", b =>

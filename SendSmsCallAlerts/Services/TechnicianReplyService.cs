@@ -45,10 +45,26 @@ namespace SendSmsCallAlerts.Services
             try
             {
                 var techs = await db.Technicians.AsNoTracking()
-                    .Select(t => new { t.Id, t.FirstName, t.LastName, t.ContactNumber })
-                    .ToListAsync(ct);
-                var tech = techs.FirstOrDefault(t => Last10(t.ContactNumber) == from10);
-                if (tech == null) return false;          // not a technician: customer flow continues
+    .Select(t => new { t.Id, t.FirstName, t.LastName, t.ContactNumber })
+    .ToListAsync(ct);
+
+                var phoneMatches = techs
+                    .Where(t => Last10(t.ContactNumber) == from10)
+                    .ToList();
+
+                // Prefer the FK assigned by IncomingController. If this is a legacy row,
+                // only infer a technician when exactly one record matches the sender number.
+                var tech = sms.TechnicianId.HasValue
+                    ? techs.SingleOrDefault(t => t.Id == sms.TechnicianId.Value)
+                    : phoneMatches.Count == 1 ? phoneMatches[0] : null;
+
+                if (tech == null)
+                {
+                    if (phoneMatches.Count > 1)
+                        logger.LogError("Technician SMS sender {From} matches multiple technician records.", sms.fromNum);
+                    return false;
+                }
+
                 handled = true;
 
                 var reply = await BuildReplyAsync(tech.Id, rest, ct);

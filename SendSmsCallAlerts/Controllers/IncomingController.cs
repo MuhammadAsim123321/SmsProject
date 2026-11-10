@@ -84,13 +84,47 @@ namespace SendSmsCallAlerts.Controllers
             smsDetail.createdOn = DateTime.UtcNow;
             smsDetail.IsReadYesOrNo = "No";
 
-            // link the message to the customer right away when the number is already known
-            var knownContactId = await _context.ContactDetail.AsNoTracking()
-                .Where(c => c.PhoneNumber == smsDetail.fromNum)
-                .Select(c => (int?)c.Id)
-                .FirstOrDefaultAsync();
-            if (knownContactId.HasValue) smsDetail.ContactDetailId = knownContactId;
+            // Classify the sender before linking the message to a customer.
+            // PhoneMatch handles common E.164 / +1 / digits-only storage variations.
+            var senderVariants = PhoneMatch.Variants(smsDetail.fromNum).ToList();
 
+            var technicianRows = await _context.Technicians.AsNoTracking()
+                .Select(t => new { t.Id, t.ContactNumber })
+                .ToListAsync();
+
+            var matchedTechnicians = technicianRows
+                .Where(t => PhoneMatch.Variants(t.ContactNumber)
+                    .Intersect(senderVariants, StringComparer.Ordinal).Any())
+                .ToList();
+
+            // Keep this flag even when duplicate technician numbers exist. An ambiguous
+            // technician sender must never fall through into the customer IVR workflow.
+            var isTechnicianSender = matchedTechnicians.Count > 0;
+
+            if (matchedTechnicians.Count == 1)
+            {
+                smsDetail.TechnicianId = matchedTechnicians[0].Id;
+            }
+            else if (matchedTechnicians.Count > 1)
+            {
+                _logger.LogError(
+                    "Incoming SMS {SmsFrom} matches multiple technician records: {TechnicianIds}. Fix duplicate technician phone numbers.",
+                    smsDetail.fromNum,
+                    string.Join(",", matchedTechnicians.Select(t => t.Id)));
+            }
+
+            // A technician message is not a customer message. Only resolve ContactDetail
+            // when the sender is not registered as a technician.
+            if (!isTechnicianSender && senderVariants.Count > 0)
+            {
+                var knownContactId = await _context.ContactDetail.AsNoTracking()
+                    .Where(c => c.PhoneNumber != null && senderVariants.Contains(c.PhoneNumber))
+                    .Select(c => (int?)c.Id)
+                    .FirstOrDefaultAsync();
+
+                if (knownContactId.HasValue)
+                    smsDetail.ContactDetailId = knownContactId.Value;
+            }
             _context.Add(smsDetail);
             _context.SaveChanges();
 
@@ -103,27 +137,53 @@ namespace SendSmsCallAlerts.Controllers
                 _context.SaveChanges();
             }
 
-            bool handledByTechnician = false;
-            try { handledByTechnician = await _technicianReply.TryHandleAsync(smsDetail); }
-            catch (Exception ex) { _logger.LogError(ex, "Technician reply handling failed."); }
-
-            if (!handledByTechnician) await ProcessSmsBody(smsDetail);
-
-            try
+            if (isTechnicianSender)
             {
-                if (ForwardingNumber.Length > 0 && (smsDetail.fromNum == ForwardingNumber || smsDetail.toNum == ForwardingNumber))
-                    await ForwardMessage(smsDetail, imgUrlList);
+                // All messages from technicians stay in the technician-message workflow.
+                // TryHandleAsync only acts on supported confirmation commands; ordinary
+                // technician text is still stored and will not trigger customer IVR logic.
+                try
+                {
+                    await _technicianReply.TryHandleAsync(smsDetail);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Technician reply handling failed for {FromNumber}.", smsDetail.fromNum);
+                }
             }
-            catch (Exception ex) { }
-
-            try
+            else
             {
-                if (smsDetail.fromNum == "+18557233022" || smsDetail.toNum == "+18557233022")
-                    await ResendWithMask(smsDetail, imgUrlList);
+                await ProcessSmsBody(smsDetail);
             }
-            catch (Exception ex) { }
 
-            if (!handledByTechnician) await IvrSms(smsDetail);
+            // Forwarding, masking and IVR welcome/options are customer flows. Do not run
+            // them for registered technician senders.
+            if (!isTechnicianSender)
+            {
+                try
+                {
+                    if (ForwardingNumber.Length > 0 &&
+                        (smsDetail.fromNum == ForwardingNumber || smsDetail.toNum == ForwardingNumber))
+                        await ForwardMessage(smsDetail, imgUrlList);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Incoming customer SMS forwarding failed.");
+                }
+
+                try
+                {
+                    if (smsDetail.fromNum == "+18557233022" || smsDetail.toNum == "+18557233022")
+                        await ResendWithMask(smsDetail, imgUrlList);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Incoming customer SMS masking failed.");
+                }
+
+                await IvrSms(smsDetail);
+            }
+
 
             return Ok();
         }
