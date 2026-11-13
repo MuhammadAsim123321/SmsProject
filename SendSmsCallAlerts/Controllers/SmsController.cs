@@ -247,9 +247,29 @@ namespace SendSmsCallAlerts.Controllers
 
         public async Task<ActionResult> DownloadAttachment(string path)
         {
-            string WebAddress = _configuration["AppSettings:WebAddress"];
-            path = _hostingEnvironment.WebRootPath + "/" + path;
-            return File(path, "application/octet-stream", "TempFileName");
+            var webRootPath = _hostingEnvironment.WebRootPath;
+            if (string.IsNullOrWhiteSpace(webRootPath))
+            {
+                return NotFound();
+            }
+
+            var relativePath = path?.Replace('\\', '/').TrimStart('/');
+            if (string.IsNullOrWhiteSpace(relativePath))
+            {
+                return NotFound();
+            }
+
+            var rootPath = Path.GetFullPath(webRootPath);
+            var filePath = Path.GetFullPath(Path.Combine(rootPath, relativePath));
+
+            if (!filePath.StartsWith(rootPath + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || !System.IO.File.Exists(filePath))
+            {
+                return NotFound();
+            }
+
+            var contentType = "application/octet-stream";
+            var fileName = Path.GetFileName(filePath);
+            return PhysicalFile(filePath, contentType, fileName);
         }
 
         public async Task<IActionResult> DownloadMMSFileDirect(string fileName)
