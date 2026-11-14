@@ -274,6 +274,14 @@ namespace SendSmsCallAlerts.Controllers
 
         public async Task<IActionResult> DownloadMMSFileDirect(string fileName)
         {
+            // Restrict downloads to attachments linked to a message this user can access.
+            var link = await _context.MmsLinkss
+                .FirstOrDefaultAsync(m => m.FileName == fileName || m.Location == fileName);
+            if (link == null || !StaffCanAccessMessage(link.SmsId))
+            {
+                return NotFound();
+            }
+
             // If an absolute remote Location was supplied, proxy it server-side so the
             // browser downloads it with Content-Disposition: attachment instead of
             // navigating away from the attachments page.
@@ -423,7 +431,7 @@ namespace SendSmsCallAlerts.Controllers
             return RedirectToAction("IncomingLogs");
         }
 
-        public string DeleteMdFileUsingLink(string location = "")
+        private string DeleteMdFileUsingLink(string location = "")
         {
             string fullPath = Path.Combine(_hostingEnvironment.WebRootPath, location);
 
@@ -511,9 +519,14 @@ namespace SendSmsCallAlerts.Controllers
                         : technicianPhoneVariants.Contains(s.toNum)));
 
                 // Staff: restrict to their own messages
+                bool isAdmin = string.Equals(HttpContext.Session.GetString("UserRole"), AppRoles.Admin, StringComparison.OrdinalIgnoreCase);
                 string staffPhone = GetTwilioNumber();
-                if (!string.IsNullOrEmpty(staffPhone) && staffPhone != "N/A" && staffPhone != "Error")
+                if (!isAdmin)
                 {
+                    if (string.IsNullOrEmpty(staffPhone) || staffPhone == "N/A" || staffPhone == "Error")
+                    {
+                        return Json(new { success = false, message = "No Twilio number assigned to your account." });
+                    }
                     var variants = PhoneMatch.Variants(staffPhone);
                     // Only old line commented out for reference; new logic below
                     // .Where(s => string.IsNullOrEmpty(staffPhone) || s.fromNum == staffPhone)
@@ -630,6 +643,17 @@ namespace SendSmsCallAlerts.Controllers
         {
             try
             {
+                // Staff without a usable Twilio# see no jobs
+                string usrRole = HttpContext.Session.GetString("UserRole");
+                if (!string.Equals(usrRole, "ADMIN", StringComparison.OrdinalIgnoreCase))
+                {
+                    string staffPhone = GetTwilioNumber();
+                    if (string.IsNullOrEmpty(staffPhone) || staffPhone == "N/A" || staffPhone == "Error")
+                    {
+                        return Json(new { aaData = new List<object>() });
+                    }
+                }
+
                 var query = _context.Jobs.AsNoTracking()
                     .Include(j => j.ContactDetail)
                     .Include(j => j.Technician)
@@ -703,6 +727,17 @@ namespace SendSmsCallAlerts.Controllers
         {
             try
             {
+                // Staff without a usable Twilio# see no jobs
+                string usrRole = HttpContext.Session.GetString("UserRole");
+                if (!string.Equals(usrRole, "ADMIN", StringComparison.OrdinalIgnoreCase))
+                {
+                    string staffPhone = GetTwilioNumber();
+                    if (string.IsNullOrEmpty(staffPhone) || staffPhone == "N/A" || staffPhone == "Error")
+                    {
+                        return Json(new { aaData = new List<object>() });
+                    }
+                }
+
                 var jobs = await _context.Jobs.AsNoTracking()
                     .Include(j => j.ContactDetail)
                     .Include(j => j.Technician)

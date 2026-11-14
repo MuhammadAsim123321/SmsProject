@@ -88,8 +88,30 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         // Task 5: Chat view — kept for backward compatibility but SMS.cshtml is the main UI
-        public IActionResult Chat(string num)
+        public async Task<IActionResult> Chat(string num)
         {
+            // Staff access control: Staff can only view conversations for customer numbers
+            // that have messages tied to their Twilio#. This prevents URL manipulation.
+            string usrRole = HttpContext.Session.GetString("UserRole");
+            if (usrRole != "ADMIN" && !string.IsNullOrWhiteSpace(num))
+            {
+                string twilioNum = GetTwilioNumber();
+                if (string.IsNullOrEmpty(twilioNum) || twilioNum == "N/A" || twilioNum == "Error")
+                {
+                    return RedirectToAction("IncomingLogs", "Sms");
+                }
+                string e164 = NormaliseToE164(num);
+                string twilioE164 = NormaliseToE164(twilioNum);
+                // Verify Staff has access to this conversation (at least one message connects them)
+                var hasAccess = await _context.SmsDetails
+                    .AnyAsync(s => (s.fromNum == e164 || s.toNum == e164)
+                                && (s.fromNum == twilioE164 || s.toNum == twilioE164));
+                if (!hasAccess)
+                {
+                    return RedirectToAction("IncomingLogs", "Sms");
+                }
+            }
+
             ViewBag.CustomerNumber = num;
             var convs = GetConversation(num);
             return View(convs ?? new List<SmsDetail>());
