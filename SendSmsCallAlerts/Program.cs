@@ -112,6 +112,7 @@ if (builder.Environment.IsProduction())
 
 // was: builder.Services.AddControllersWithViews();
 builder.Services.AddControllersWithViews(options => options.Filters.Add<SendSmsCallAlerts.Filters.StaffActivityFilter>());
+builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
 
 builder.Services.AddDbContext<ApplicationDbContext>(option =>
 option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -169,6 +170,18 @@ builder.Services.AddHostedService<HangfireStartUp>();
 
 
 var app = builder.Build();
+try
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var passwords = scope.ServiceProvider.GetRequiredService<IPasswordService>();
+    int converted = LegacyPasswordMigration.HashPlaintextPasswords(db, passwords);
+    app.Logger.LogInformation("Legacy password migration: {Count} password(s) hashed.", converted);
+}
+catch (Exception ex)
+{
+    app.Logger.LogError(ex, "Legacy password migration failed.");
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

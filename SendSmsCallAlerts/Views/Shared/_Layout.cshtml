@@ -232,7 +232,15 @@
             });
         })();
     </script>
+    @Html.AntiForgeryToken()
     <script>
+            $(document).ajaxSend(function (e, xhr, opts) {
+                if (opts.crossDomain) return;
+                var t = $('input[name="__RequestVerificationToken"]').first().val();
+                if (t && opts.type && opts.type.toUpperCase() !== 'GET') {
+                    xhr.setRequestHeader('RequestVerificationToken', t);
+                }
+            });
         $(document).ajaxError(function (e, xhr, opts) {
             if (xhr.status === 403 && typeof xhr.responseText === 'string' && xhr.responseText.indexOf('LogOut') !== -1) {
                 var currentPageUrl = window.location.href;
