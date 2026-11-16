@@ -366,6 +366,8 @@ namespace SendSmsCallAlerts.Controllers
         // =====================================================================
         // MESSAGE DELETE (unchanged)
         // =====================================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<string> DeleteMsg(int id)
         {
             // Staff access control: only their own message
@@ -505,6 +507,7 @@ namespace SendSmsCallAlerts.Controllers
         // LOG DELETE / CSV EXPORT BY DATE
         // =====================================================================
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteLogsByDate(DateTime fromDate, DateTime toDate)
         {
             try
@@ -552,6 +555,7 @@ namespace SendSmsCallAlerts.Controllers
 
         /// <summary>CSV export. Category / Scheduler now come from the customer's real jobs.</summary>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DownloadLogsByDate(DateTime fromDate, DateTime toDate)
         {
             try
@@ -797,6 +801,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> TogglePausePlan(int planId)
         {
             var plan = await _context.AllScheduledJobs.FindAsync(planId);
@@ -809,6 +814,7 @@ namespace SendSmsCallAlerts.Controllers
 
         /// <summary>Removes the message plan only. The job (appointment) stays; cancel it from the Incoming SMS modal.</summary>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeletePlan(int planId)
         {
             var plan = await _context.AllScheduledJobs.FindAsync(planId);
@@ -1122,6 +1128,7 @@ namespace SendSmsCallAlerts.Controllers
 
         /// <summary>The single Update button: contact + job + message plan, all or nothing.</summary>
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveContactJob([FromBody] SaveContactJobRequest request)
         {
             if (request == null)

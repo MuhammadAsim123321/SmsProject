@@ -290,6 +290,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
         [RequestSizeLimit(52 * 1024 * 1024)]
         [RequestFormLimits(MultipartBodyLengthLimit = 52 * 1024 * 1024)]
         public async Task<IActionResult> SendSms(Conversation conversation, List<IFormFile> file)

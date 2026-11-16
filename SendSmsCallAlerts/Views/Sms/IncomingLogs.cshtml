@@ -196,6 +196,7 @@
             <div class="modal-content">
                 <div class="modal-header"><h5 class="modal-title">Select Download Range</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                 <form method="post" action="/Sms/DownloadLogsByDate">
+                    @Html.AntiForgeryToken()
                     <div class="modal-body">
                         <div class="mb-3"><label>From Date</label><input type="date" name="fromDate" class="form-control" required /></div>
                         <div class="mb-3"><label>To Date</label><input type="date" name="toDate" class="form-control" required /></div>
