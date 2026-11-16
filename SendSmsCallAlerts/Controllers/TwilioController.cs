@@ -33,42 +33,63 @@ namespace SendSmsCallAlerts.Controllers
             return View();
         }
 
+
+        [HttpPost]
         public IActionResult LiveAvailablePhoneNumbers(int areaCode)
         {
-            string accountSid = _configuration["AppSettings:AccountSid"];
-            string authToken = _configuration["AppSettings:AuthToken"];
-
-            TwilioClient.Init(accountSid, authToken);
-
-            var local = LocalResource.Read(areaCode: areaCode, pathCountryCode: "US", limit: 20);
-
-
-            if (local == null)
+            try
             {
+                string accountSid = _configuration["AppSettings:AccountSid"];
+                string authToken = _configuration["AppSettings:AuthToken"];
+
+                TwilioClient.Init(accountSid, authToken);
+
+                var local = LocalResource.Read(
+                    areaCode: areaCode,
+                    pathCountryCode: "US",
+                    limit: 20
+                );
+
+                if (local == null)
+                {
+                    return Json(new
+                    {
+                        aaData = new List<AvailablePhoneNumber>(),
+                        errorMessage = (string)null
+                    });
+                }
+
+                foreach (var record in local)
+                {
+                    Console.WriteLine(record.FriendlyName);
+                }
+
+                string jsonResponse = local.ToJson();
+
+                List<AvailablePhoneNumber> phoneNumbers =
+                    JsonConvert.DeserializeObject<List<AvailablePhoneNumber>>(jsonResponse);
+
                 return Json(new
                 {
-                    aaData = new List<AvailablePhoneNumber>()
+                    aaData = phoneNumbers ?? new List<AvailablePhoneNumber>(),
+                    errorMessage = (string)null
                 });
             }
-
-            foreach (var record in local)
+            catch (Exception ex)
             {
-                Console.WriteLine(record.FriendlyName);
+                Console.Error.WriteLine(
+                    "LiveAvailablePhoneNumbers error: " + ex
+                );
+
+                return Json(new
+                {
+                    aaData = new List<AvailablePhoneNumber>(),
+                    errorMessage = "Unable to retrieve available phone numbers. Please try again."
+                });
             }
-
-            string jsonResponse = local.ToJson();
-
-            // Deserialize JSON response
-            // AvailablePhoneNumbersResponse response = JsonConvert.DeserializeObject<AvailablePhoneNumbersResponse>(jsonResponse);
-            List<AvailablePhoneNumber> phoneNumbers = JsonConvert.DeserializeObject<List<AvailablePhoneNumber>>(jsonResponse);
-
-            return Json(new
-            {
-                aaData = phoneNumbers
-            });
-            //return phoneNumbers;
         }
-
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult PurchasePhoneNumber(string phoneNumber)
         {
             string accountSid = _configuration["AppSettings:AccountSid"];

@@ -34,7 +34,18 @@
         .tm-heading p { margin:4px 0 0; color:#71808d; font-size:.86rem; }
         .tm-count { color:#6e7c88; font-size:.82rem; margin-left:auto; }
         .tm-empty { padding:28px; text-align:center; color:#74818d; }
-        @@media(max-width:700px) { .tm-heading { align-items:flex-start; } .tm-count { width:100%; margin-left:54px; } }
+
+        @@media(max-width:700px) {
+            .tm-heading {
+                align-items: flex-start;
+            }
+
+            .tm-count {
+                width: auto;
+                margin-left: 54px;
+                align-self: flex-start;
+            }
+        }
     </style>
 }
 

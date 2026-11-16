@@ -31,6 +31,12 @@
 <section class="nova-list-card sg-fix-numbers" aria-label="Available numbers">
     <div class="nova-list-toolbar"><div class="nova-list-heading"><span class="nova-list-heading-icon"><i class="fa fa-phone"></i></span><div><h2>Available numbers</h2><p>Browse matching Twilio numbers</p></div></div></div>
     <div class="nova-table-viewport">
+        <div id="numberSearchError"
+             class="alert alert-danger"
+             role="alert"
+             style="display:none;">
+        </div>
+
 <table class="table table-bordered table-striped" id="tblRPM">
     <thead style="background: #70b3db;">
         <tr>
@@ -46,7 +52,15 @@
 </section>
 <div>
 </div>
+<form id="purchasePhoneForm"
+      method="post"
+      action="@Url.Action("PurchasePhoneNumber", "Twilio")"
+      style="display:none;">
 
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="phoneNumber" id="purchasePhoneNumber" />
+</form>
 <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
 <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
@@ -55,6 +69,23 @@
 
 
 <script>
+
+    $('#tblRPM').on('preXhr.dt', function () {
+        $('#numberSearchError').hide().text('');
+    });
+
+    $('#tblRPM').on('xhr.dt', function (e, settings, json, xhr) {
+
+        if (json && json.errorMessage) {
+            $('#numberSearchError')
+                .text(json.errorMessage)
+                .show();
+        }
+        else if (json) {
+            $('#numberSearchError').hide().text('');
+        }
+    });
+
 
     var RpmDatatable = $('#tblRPM').on('error.dt', function (e, settings, techNote, message) {
     //SessionExpiredRedirect();
@@ -136,13 +167,26 @@
     "searchable": true
     }
     ,
-    {
-    "render": function (data, type, row) {
+            {
+                "render": function (data, type, row) {
 
-    return '<button style="background: #52aadf;" onclick="Purchase(' + row.phone_number + ')"> Purchase </button>';
+                    if (type !== 'display') return data;
 
+                    var phoneNumber = String(row.phone_number ?? '').replace(/[&<>"']/g, function (char) {
+                        return {
+                            '&': '&amp;',
+                            '<': '&lt;',
+                            '>': '&gt;',
+                            '"': '&quot;',
+                            "'": '&#39;'
+                        }[char];
+                    });
 
-    },
+                    return '<button type="button" style="background: #52aadf;" data-purchase-number="' +
+                        phoneNumber + '">Purchase</button>';
+                },
+                "searchable": true
+            },
     "searchable": true
     }
 
@@ -159,12 +203,13 @@
     }
 
 
-    function Purchase(id) {
-    var url = '@Url.Action("PurchasePhoneNumber", "Twilio")';
-    url += '?phoneNumber=' + id;
-    window.location.href = url;
-    }
-    
+function Purchase(phoneNumber) {
+    $('#purchasePhoneNumber').val(phoneNumber);
+    $('#purchasePhoneForm').submit();
+}
+    $('#tblRPM').on('click', '[data-purchase-number]', function () {
+        Purchase($(this).attr('data-purchase-number'));
+    });
     //function EditRecord(id) {
     //    var url = '@Url.Action("Edit", "Stores")';
     //    url += '?id=' + id;

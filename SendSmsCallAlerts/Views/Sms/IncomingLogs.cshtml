@@ -218,14 +218,56 @@
 
 <script>
 
-    function formatFiveItems(data) {
-        if (data && data !== "N/A" && typeof data === 'string') {
-            var items = data.split(',').map(function (i) { return i.trim(); });
-            var showText = items.length > 5 ? items.slice(0, 5).join(', ') + ' ...' : items.join(', ');
-            return '<span title="' + data + '" style="cursor:help; text-decoration:underline dotted #70b3db 2px; text-underline-offset:4px;">' + showText + '</span>';
-        }
-        return data;
+
+    // Safely encode untrusted values before inserting them into HTML.
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, function (char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char];
+        });
     }
+
+    // Safely display comma-separated items with a five-item preview.
+    function formatFiveItems(data, type) {
+
+        if (type !== 'display') {
+            return data;
+        }
+
+        if (data && data !== "N/A" && typeof data === 'string') {
+
+            var items = data.split(',').map(function (i) {
+                return i.trim();
+            });
+
+            var showText = items.length > 5
+                ? items.slice(0, 5).join(', ') + ' ...'
+                : items.join(', ');
+
+            return '<span title="' + escapeHtml(data) +
+                '" style="cursor:help; text-decoration:underline dotted #70b3db 2px; text-underline-offset:4px;">' +
+                escapeHtml(showText) +
+                '</span>';
+        }
+
+        return escapeHtml(data ?? '');
+    }
+
+    function renderTextOnly(data, type) {
+
+        // Preserve original values for searching, sorting and filtering.
+        if (type !== 'display') {
+            return data;
+        }
+
+        return escapeHtml(data ?? '');
+    }
+
     (function () {
         var q = new URLSearchParams(window.location.search);
         if (!q.get('from')) return;
@@ -312,8 +354,16 @@
             });
         },
         "columns": [
-            { "data": "fromNum",      "searchable": true },
-            { "data": "smsBody",      "searchable": true },
+            {
+                "data": "fromNum",
+                "searchable": true,
+                "render": renderTextOnly
+            },
+            {
+                "data": "smsBody",
+                "searchable": true,
+                "render": renderTextOnly
+            },
             {
                 "data": null,
                 "defaultContent": "N/A",

@@ -68,8 +68,10 @@
                                 <i class="fa fa-eye" aria-hidden="true"></i> View image
                             </button>
                         }
-                        <button class="btn btn-primary btn-sm" type="button" onclick="downloadAttachment('@DownloadUrl(attachment)')"><i class="fa fa-download" aria-hidden="true"></i> Download</button>
-                    </td>
+                                <button class="btn btn-primary btn-sm" type="button" data-download="@DownloadUrl(attachment)">
+                                    <i class="fa fa-download" aria-hidden="true"></i> Download
+                                </button>
+                            </td>
                 </tr>
             }
         </tbody>
@@ -166,7 +168,14 @@ document.addEventListener("click", function (event) {
     imageViewerContent.alt = button.dataset.imageName || "Attachment image";
     imageViewer.showModal();
 });
+document.addEventListener("click", function (event) {
+    if (!(event.target instanceof Element)) return;
 
+    const button = event.target.closest("[data-download]");
+    if (!button) return;
+
+    downloadAttachment(button.dataset.download || '');
+});
 document.getElementById("closeImageViewer").addEventListener("click", function () {
     imageViewer.close();
 });

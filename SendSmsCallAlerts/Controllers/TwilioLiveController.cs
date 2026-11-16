@@ -48,7 +48,8 @@ namespace SendSmsCallAlerts.Controllers
             return phoneNumbers;
         }
 
-
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public string PurchasePhoneNumber(string phoneNumber)
         {
             string accountSid = _configuration["AppSettings:AccountSid"];
