@@ -38,8 +38,9 @@ body.signal-app { color: var(--sg-ink); background: var(--sg-base); font-family:
 .signal-app .signal-brand-link { display: inline-flex; align-items: center; gap: 11px; color: #fff; width: 100%; text-decoration: none; }
 .signal-app .signal-brand-link:hover { color: #fff; text-decoration: none; }
 .signal-brand-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 39px; height: 39px; border-radius: 12px; background: linear-gradient(145deg,#4777ff,#1f4bdd); color: white; font-size: 19px; box-shadow: 0 5px 12px rgba(24,70,196,.35); }
-.signal-brand-text { font-size: 21px; font-weight: 800; line-height: 1; letter-spacing: -.9px; white-space: nowrap; }
-.signal-brand-sub { display: block; padding-top: 6px; font-size: 8px; letter-spacing: 2px; opacity: .58; font-weight: 750; }
+/* replaced by brand fix 2026-11-17: brand typography is handled by signal-brand.css. */
+/* .signal-brand-text { font-size: 21px; font-weight: 800; line-height: 1; letter-spacing: -.9px; white-space: nowrap; } */
+/* .signal-brand-sub { display: block; padding-top: 6px; font-size: 8px; letter-spacing: 2px; opacity: .58; font-weight: 750; } */
 .signal-app #toggle_btn.signal-nav-toggle { display: inline-flex; align-items: center; justify-content: center; position: relative; inset: auto; float: none; color: #51617d; background: var(--sg-base); height: 36px; width: 36px; border-radius: 10px; margin: 0 22px; font-size: 15px; transition: background .15s,color .15s; }
 .signal-app #toggle_btn:hover { color: var(--sg-blue); background: var(--sg-blue-soft); }
 .signal-topbar-context { display: flex; align-items: center; gap: 11px; min-width: 0; font-weight: 650; }
@@ -63,7 +64,8 @@ body.signal-app { color: var(--sg-ink); background: var(--sg-base); font-family:
 .signal-app .signal-account-dropdown .dropdown-item:hover { background: var(--sg-blue-soft); color: var(--sg-blue); }
 .signal-app .signal-account-dropdown .dropdown-item i { color: var(--sg-muted); width: 22px; }
 .signal-app .signal-mobile-toggle { display: none; }
-/* Sidebar. The selectors override vendor theme while keeping #sidebar/#sidebar-menu for original JS. */
+/* Replaced by sidebar fix 2026-11-17: sidebar rules moved to signal-sidebar.css. */
+/*
 .signal-app .sidebar.signal-sidebar { top: var(--sg-topbar-height); width: var(--sg-sidebar-width); bottom: 0; background: var(--sg-navy); border: 0; box-shadow: none; z-index: 1034; transition: width .24s ease, left .24s ease; }
 .signal-app .sidebar-inner.signal-sidebar-scroll { background: var(--sg-navy); height: 100%; }
 .signal-sidebar-menu { padding: 0 0 12px; }
@@ -82,6 +84,7 @@ body.signal-app { color: var(--sg-ink); background: var(--sg-base); font-family:
 .signal-sidebar-footer { margin: 30px 14px 20px; display: flex; align-items: center; gap: 10px; padding: 13px 12px; border: 1px solid rgba(255,255,255,.10); border-radius: 12px; color: #d0dbed; font-size: 11px; font-weight: 700; }
 .signal-sidebar-footer-icon { background: rgba(92,132,219,.19); color: #a7c0ff; border-radius: 8px; width: 33px; height: 33px; display: flex; align-items: center; justify-content: center; }
 .signal-sidebar-footer small { display: block; color: #7186a7; font-size: 10px; font-weight: 500; }
+*/
 /* Main content */
 .signal-app .page-wrapper.signal-page-wrapper { background: var(--sg-base); margin-left: var(--sg-sidebar-width); padding-top: var(--sg-topbar-height); min-height: 100vh; position: relative; transition: margin-left .24s ease; }
 .signal-app .signal-page-content { padding: 26px 29px 35px; max-width: 1800px; margin: 0 auto; }
@@ -246,8 +249,12 @@ body.signal-app { color: var(--sg-ink); background: var(--sg-base); font-family:
     .signal-app .sidebar-overlay.opened { z-index: 1033; }
 }
 @media (max-width: 650px) {
+    /* Replaced by sidebar fix 2026-11-17: preserve the mobile brand text. */
+    /*
     .signal-app .signal-header .header-left.signal-brand { flex: 0 0 65px; width: 65px; padding: 0 13px; }
-    .signal-app .signal-brand-text { display: none; }
+    /* replaced by brand fix 2026-11-17: mobile brand text remains visible. */
+    /* .signal-app .signal-brand-text { display: none; } */
+    */
     .signal-app .signal-header { padding-right: 10px; }
     .signal-app .signal-header .signal-account-details, .signal-app .signal-account-chevron, .signal-app .signal-location-label, .signal-app .signal-location-slash { display: none; }
     .signal-app .signal-location-page { max-width: 145px; font-size: 12px; }
@@ -846,8 +853,12 @@ body.signal-app, body.signal-login-body { overflow-x: clip; }
     .signal-app .signal-sidebar .sidebar-inner { overscroll-behavior: contain; }
 }
 @media (max-width: 767.98px) {
+    /* Replaced by sidebar fix 2026-11-17: keep the compact mobile brand visible. */
+    /*
     .signal-app .signal-header .header-left.signal-brand { flex: 0 0 68px; width: 68px; padding: 0 15px; }
-    .signal-app .signal-header .signal-brand-text { display: none; }
+    /* replaced by brand fix 2026-11-17: mobile brand text remains visible. */
+    /* .signal-app .signal-header .signal-brand-text { display: none; } */
+    */
     .signal-app .signal-header .signal-mobile-toggle { flex: 0 0 38px; margin-left: 8px; width: 38px; }
     .signal-app .signal-header .signal-user-menu { margin-left: auto !important; }
     .signal-app .signal-header .signal-account-details,
@@ -1519,11 +1530,13 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 .signal-app .signal-view-surface > * {min-width:0;}
 /* App shell: restrained header, purposeful dark navigation, one breadcrumb. */
 .signal-app .header.signal-header {height:var(--sg-topbar-height); min-height:var(--sg-topbar-height); background:#fff !important; border-bottom:1px solid var(--nova-line); box-shadow:0 2px 14px rgba(34,38,81,.024);}
-.signal-app .signal-header .header-left.signal-brand {background:#191d3b !important;border-color:rgba(255,255,255,.065);}
+/* replaced by brand fix 2026-11-17: mobile brand surface is handled by signal-brand.css. */
+/* .signal-app .signal-header .header-left.signal-brand {background:#191d3b !important;border-color:rgba(255,255,255,.065);} */
 .signal-app .signal-sidebar.signal-sidebar,.signal-app .sidebar-inner.signal-sidebar-scroll {background:#191d3b !important;}
 .signal-app .signal-brand-icon {background:linear-gradient(135deg,#7870f8,#4d67dc); border-radius:12px; box-shadow:0 6px 15px rgba(74,65,183,.35);}
-.signal-app .signal-brand-text {font-weight:800; font-size:21px; letter-spacing:-.8px;}
-.signal-app .signal-brand-sub {letter-spacing:1.65px; color:#d0d3fa; opacity:.75; font-size:8px;}
+/* replaced by brand fix 2026-11-17: brand typography is handled by signal-brand.css. */
+/* .signal-app .signal-brand-text {font-weight:800; font-size:21px; letter-spacing:-.8px;} */
+/* .signal-app .signal-brand-sub {letter-spacing:1.65px; color:#d0d3fa; opacity:.75; font-size:8px;} */
 .signal-app .signal-sidebar .signal-sidebar-intro {padding-top:25px;}
 .signal-app .signal-sidebar .sidebar-menu ul li.menu-title {color:#858dae !important; font-size:10px; letter-spacing:1.55px; margin-top:10px;}
 .signal-app .signal-sidebar .sidebar-menu ul li a {padding:11px 13px; min-height:43px; border-radius:11px; color:#bbc0d9; margin:3px 0; font-size:13px; font-weight:550; gap:12px;}
@@ -1801,22 +1814,29 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 
 /* ===== Carpet Repair & Cleaning Logo Optimization ===== */
 /* Custom adjustments for longer company name to fit nicely in header */
+/* replaced by brand fix 2026-11-17: brand typography is handled by signal-brand.css. */
+/*
 .signal-app .signal-brand-text {
     font-size: 17px !important;
     font-weight: 750 !important;
     letter-spacing: -0.5px !important;
     line-height: 1.15 !important;
 }
+*/
 
+/*
 .signal-app .signal-brand-sub {
     padding-top: 4px !important;
     font-size: 7px !important;
     letter-spacing: 1.5px !important;
 }
+*/
 
+/*
 .signal-app .signal-brand-link {
     gap: 9px !important;
 }
+*/
 
 .signal-app .signal-brand-icon {
     width: 36px !important;
@@ -1826,13 +1846,19 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 
 /* Ensure proper wrapping and spacing on smaller screens */
 @media (max-width: 991.98px) {
+    /* replaced by brand fix 2026-11-17: mobile brand sizing is handled by signal-brand.css. */
+    /*
     .signal-app .signal-header .header-left.signal-brand {
         flex: 0 0 240px !important;
         width: 240px !important;
     }
+    */
+    /* replaced by brand fix 2026-11-17: mobile typography is handled by signal-brand.css. */
+    /*
     .signal-app .signal-brand-text {
         font-size: 16px !important;
     }
+    */
 }
 
 /* For NOVA design system compatibility */

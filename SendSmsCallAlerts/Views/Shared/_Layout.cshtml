@@ -89,6 +89,10 @@
     
     @* Page-specific styles: legacy views that inject <style> tags move content here via @section Styles *@
     @await RenderSectionAsync("Styles", required: false)
+
+    <link rel="stylesheet" href="~/css/signal-shell.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-sidebar.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/signal-brand.css" asp-append-version="true" />
     
     @* Sidebar collapsed state: apply via class on <html> before paint to prevent layout shift on reload *@
     <script>
@@ -147,7 +151,7 @@
         {
             <header class="header signal-header" role="banner">
                 <div class="header-left signal-brand">
-                    <a asp-controller="Sms" asp-action="IncomingLogs" class="signal-brand-link" aria-label="Carpet Repair & Cleaning — Incoming SMS">
+                    <a asp-controller="Sms" asp-action="IncomingLogs" class="signal-brand-link" aria-label="Carpet Repair & Cleaning — Incoming SMS" title="Carpet Repair & Cleaning — Messaging Platform">
                         <span class="signal-brand-icon" aria-hidden="true"><i class="fa fa-commenting-o"></i></span>
                         <span class="signal-brand-text">Carpet Repair & Cleaning<span class="signal-brand-sub">MESSAGING PLATFORM</span></span>
                     </a>
@@ -177,6 +181,45 @@
             </header>
             @await Html.PartialAsync("_Sidebar")
             <div class="sidebar-overlay"></div>
+            <script>
+                (function () {
+                    var storageKey = 'signal-sidebar-scroll-top';
+                    var sidebar = document.querySelector('.signal-sidebar-scroll');
+                    if (!sidebar) return;
+
+                    function saveSidebarScroll() {
+                        window.sessionStorage.setItem(storageKey, String(sidebar.scrollTop));
+                    }
+
+                    function centerActiveLink() {
+                        var active = document.querySelector('#sidebar-menu a.active');
+                        if (!active) return;
+                        var sidebarRect = sidebar.getBoundingClientRect();
+                        var activeRect = active.getBoundingClientRect();
+                        var target = sidebar.scrollTop + activeRect.top - sidebarRect.top -
+                            (sidebar.clientHeight - activeRect.height) / 2;
+                        var maxScroll = Math.max(0, sidebar.scrollHeight - sidebar.clientHeight);
+                        sidebar.scrollTop = Math.max(0, Math.min(target, maxScroll));
+                    }
+
+                    var saved = window.sessionStorage.getItem(storageKey);
+                    if (saved !== null) {
+                        var top = parseInt(saved, 10);
+                        if (!isNaN(top)) sidebar.scrollTop = top;
+                    }
+                    centerActiveLink();
+                    sidebar.addEventListener('scroll', saveSidebarScroll, { passive: true });
+                    document.querySelectorAll('#sidebar-menu a[href]').forEach(function (link) {
+                        link.addEventListener('click', saveSidebarScroll);
+                    });
+                    var mobileButton = document.getElementById('mobile_btn');
+                    if (mobileButton) {
+                        mobileButton.addEventListener('click', function () {
+                            window.setTimeout(centerActiveLink, 50);
+                        });
+                    }
+                })();
+            </script>
         }
         <div class="page-wrapper signal-page-wrapper">
             <main class="content container-fluid signal-page-content" id="main-content">
@@ -199,39 +242,7 @@
     <script src="~/assets/js/jquery.slimscroll.js"></script>
     <script src="~/assets/js/app.js"></script>
     <script src="~/js/password-toggle.js" asp-append-version="true"></script>
-    <script>
-        (function () {
-            var storageKey = 'signal-sidebar-scroll-top';
-            function sidebarScrollElement() {
-                return document.querySelector('.signal-sidebar-scroll');
-            }
-            function restoreSidebarScroll() {
-                var sidebar = sidebarScrollElement();
-                if (!sidebar) return;
-                var saved = window.sessionStorage.getItem(storageKey);
-                if (saved !== null) {
-                    var top = parseInt(saved, 10);
-                    if (!isNaN(top)) {
-                        sidebar.scrollTop = top;
-                        @* Restore scroll synchronously before paint; no setTimeout (was: 100ms, caused visible jump) *@
-                    }
-                }
-            }
-            document.addEventListener('DOMContentLoaded', function () {
-                var sidebar = sidebarScrollElement();
-                if (!sidebar) return;
-                restoreSidebarScroll();
-                sidebar.addEventListener('scroll', function () {
-                    window.sessionStorage.setItem(storageKey, String(sidebar.scrollTop));
-                });
-                document.querySelectorAll('#sidebar-menu a[href]').forEach(function (link) {
-                    link.addEventListener('click', function () {
-                        window.sessionStorage.setItem(storageKey, String(sidebar.scrollTop));
-                    });
-                });
-            });
-        })();
-    </script>
+    @* Replaced by sidebar fix 2026-11-17: scroll restoration now runs beside the sidebar markup. *@
     @Html.AntiForgeryToken()
     <script>
             $(document).ajaxSend(function (e, xhr, opts) {

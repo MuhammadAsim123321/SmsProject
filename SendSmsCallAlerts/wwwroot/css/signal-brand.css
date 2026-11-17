@@ -1,0 +1,93 @@
+/* Header brand corrections. Loaded last so desktop and mobile brand rules are deterministic. */
+.signal-app .signal-header .header-left.signal-brand {
+    min-width: 0;
+}
+
+.signal-app .signal-header .signal-brand-link {
+    min-width: 0;
+}
+
+.signal-app .signal-header .signal-brand-text {
+    display: block;
+    min-width: 0;
+    max-width: 178px;
+    overflow: visible;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 750;
+    line-height: 1.2;
+    letter-spacing: -.5px;
+    white-space: normal;
+}
+
+.signal-app .signal-header .signal-brand-sub {
+    display: block;
+    padding-top: 4px;
+    color: #d0d3fa;
+    font-size: 7px;
+    line-height: 1.2;
+    letter-spacing: 1.5px;
+    white-space: nowrap;
+}
+
+@media (max-width: 1199.98px) and (min-width: 768px) {
+    .signal-app .signal-header .signal-brand-text {
+        max-width: 150px;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .signal-app .signal-header {
+        background: #fff;
+        border-bottom: 1px solid #e8eaf3;
+        box-shadow: 0 2px 14px rgba(34, 38, 81, .04);
+    }
+
+    .signal-app .signal-header .header-left.signal-brand {
+        flex: 1 1 auto;
+        width: auto;
+        min-width: 0;
+        background: transparent !important;
+        border-right: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .signal-app .signal-header .signal-brand-link {
+        align-items: center;
+        color: #262847;
+    }
+
+    .signal-app .signal-header .signal-brand-text {
+        max-width: none;
+        overflow: hidden;
+        color: #262847;
+        font-size: 16px;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .signal-app .signal-header .signal-brand-sub {
+        color: #5a55d9;
+    }
+
+    .signal-app .signal-header .signal-mobile-toggle,
+    .signal-app .signal-header .signal-user-menu {
+        align-self: center;
+    }
+}
+
+@media (max-width: 420px) {
+    .signal-app .signal-header {
+        height: 60px;
+        min-height: 60px;
+    }
+
+    .signal-app .signal-header .signal-brand-text {
+        font-size: 15px;
+    }
+
+    .signal-app .signal-header .signal-brand-sub {
+        display: none;
+    }
+}

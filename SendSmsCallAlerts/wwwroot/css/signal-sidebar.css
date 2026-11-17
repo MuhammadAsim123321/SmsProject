@@ -1,0 +1,314 @@
+#sidebar,
+.signal-sidebar {
+    top: var(--sg-topbar-height);
+    bottom: 0;
+    width: var(--sg-sidebar-width);
+    z-index: 1034;
+    background: #10243f;
+    border: 0;
+    box-shadow: none;
+    transition: width .24s ease, left .24s ease;
+}
+
+#sidebar .sidebar-inner,
+.signal-sidebar .sidebar-inner {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    background: #10243f;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, .24) transparent;
+}
+
+#sidebar #sidebar-menu,
+.signal-sidebar .signal-sidebar-menu {
+    padding: 0 0 12px;
+}
+
+#sidebar .signal-sidebar-intro,
+.signal-sidebar .signal-sidebar-intro {
+    display: flex;
+    flex-direction: column;
+    padding: 25px 24px 12px;
+}
+
+#sidebar .signal-sidebar-kicker,
+.signal-sidebar .signal-sidebar-kicker {
+    color: rgba(255, 255, 255, .48);
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 2px;
+}
+
+#sidebar .signal-sidebar-description,
+.signal-sidebar .signal-sidebar-description {
+    padding-top: 6px;
+    color: rgba(255, 255, 255, .8);
+    font-size: 12px;
+}
+
+#sidebar #sidebar-menu > ul,
+.signal-sidebar .signal-sidebar-menu > ul {
+    padding: 0 12px;
+    margin: 0;
+}
+
+#sidebar #sidebar-menu li,
+.signal-sidebar .signal-sidebar-menu li {
+    list-style: none;
+}
+
+#sidebar #sidebar-menu li.menu-title,
+.signal-sidebar .signal-sidebar-menu li.menu-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 20px 12px 8px;
+    margin: 0;
+    color: #8a9eba;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    line-height: 1.1;
+    text-transform: uppercase;
+}
+
+#sidebar #sidebar-menu li.menu-title::after,
+.signal-sidebar .signal-sidebar-menu li.menu-title::after {
+    flex: 1;
+    height: 1px;
+    content: "";
+    background: rgba(255, 255, 255, .1);
+}
+
+#sidebar #sidebar-menu li > a,
+.signal-sidebar .signal-sidebar-menu li > a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    gap: 11px;
+    margin: 2px 0;
+    padding: 6px 10px;
+    border-radius: 10px;
+    color: #b9c5d7;
+    font-size: 13px;
+    font-weight: 580;
+    line-height: 1.35;
+    text-decoration: none;
+    transition: background .15s, color .15s;
+}
+
+#sidebar #sidebar-menu li > a::before,
+.signal-sidebar .signal-sidebar-menu li > a::before {
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    content: "";
+    background: transparent;
+}
+
+#sidebar #sidebar-menu li > a:hover,
+.signal-sidebar .signal-sidebar-menu li > a:hover {
+    background: rgba(241, 246, 255, .1);
+    color: #fff;
+}
+
+#sidebar #sidebar-menu li > a.active,
+.signal-sidebar .signal-sidebar-menu li > a.active {
+    background: linear-gradient(90deg, rgba(77, 123, 221, .32), rgba(77, 123, 221, .14));
+    color: #fff;
+    font-weight: 680;
+}
+
+#sidebar #sidebar-menu li > a.active::before,
+.signal-sidebar .signal-sidebar-menu li > a.active::before {
+    background: #82a7ff;
+}
+
+#sidebar #sidebar-menu li > a i,
+.signal-sidebar .signal-sidebar-menu li > a i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    margin: 0;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .08);
+    color: #a7b9d8;
+    font-size: 14px;
+}
+
+#sidebar #sidebar-menu li > a.active i,
+.signal-sidebar .signal-sidebar-menu li > a.active i {
+    background: rgba(130, 167, 255, .24);
+    color: #fff;
+}
+
+#sidebar #sidebar-menu li > a > span,
+.signal-sidebar .signal-sidebar-menu li > a > span {
+    flex: 1;
+    min-width: 0;
+}
+
+#sidebar #sidebar-menu .signal-sidebar-info,
+.signal-sidebar .signal-sidebar-menu .signal-sidebar-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 10px 0 4px;
+    padding: 10px 11px;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 9px;
+    color: rgba(255, 255, 255, .68);
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+#sidebar #sidebar-menu .signal-sidebar-info i,
+.signal-sidebar .signal-sidebar-menu .signal-sidebar-info i {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    color: #a7c0ff;
+}
+
+#sidebar .signal-sidebar-footer,
+.signal-sidebar .signal-sidebar-footer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 28px 14px 20px;
+    padding: 13px 12px;
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: 12px;
+    color: #d0dbed;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#sidebar .signal-sidebar-footer-icon,
+.signal-sidebar .signal-sidebar-footer-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 33px;
+    width: 33px;
+    height: 33px;
+    border-radius: 8px;
+    background: rgba(92, 132, 219, .19);
+    color: #a7c0ff;
+}
+
+#sidebar .signal-sidebar-footer small,
+.signal-sidebar .signal-sidebar-footer small {
+    display: block;
+    color: #7186a7;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+#sidebar a:focus-visible,
+.signal-sidebar a:focus-visible {
+    outline: 3px solid rgba(130, 167, 255, .55);
+    outline-offset: 2px;
+}
+
+@media (max-width: 991.98px) {
+    #sidebar,
+    .signal-sidebar {
+        left: calc(-1 * min(280px, 86vw));
+        top: 60px;
+        width: min(280px, 86vw);
+        max-height: calc(100dvh - 60px);
+    }
+
+    #sidebar.opened,
+    .signal-sidebar.opened {
+        left: 0;
+    }
+
+    #sidebar .signal-sidebar-intro,
+    .signal-sidebar .signal-sidebar-intro {
+        padding: 22px 20px 14px;
+    }
+
+    #sidebar #sidebar-menu li > a,
+    .signal-sidebar .signal-sidebar-menu li > a {
+        min-height: 44px;
+    }
+
+    #sidebar ~ .sidebar-overlay.opened {
+        top: 60px;
+        z-index: 1033;
+    }
+}
+
+@media (min-width: 992px) {
+    html.signal-sidebar-collapsed #sidebar,
+    body.mini-sidebar #sidebar,
+    html.signal-sidebar-collapsed .signal-sidebar,
+    body.mini-sidebar .signal-sidebar {
+        width: 70px;
+    }
+
+    html.signal-sidebar-collapsed #sidebar #sidebar-menu li.menu-title,
+    body.mini-sidebar #sidebar #sidebar-menu li.menu-title,
+    html.signal-sidebar-collapsed .signal-sidebar .signal-sidebar-menu li.menu-title,
+    body.mini-sidebar .signal-sidebar .signal-sidebar-menu li.menu-title,
+    html.signal-sidebar-collapsed .signal-sidebar-intro,
+    body.mini-sidebar .signal-sidebar-intro,
+    html.signal-sidebar-collapsed .signal-sidebar-footer,
+    body.mini-sidebar .signal-sidebar-footer {
+        display: none;
+    }
+
+    html.signal-sidebar-collapsed #sidebar #sidebar-menu > ul,
+    body.mini-sidebar #sidebar #sidebar-menu > ul,
+    html.signal-sidebar-collapsed .signal-sidebar .signal-sidebar-menu > ul,
+    body.mini-sidebar .signal-sidebar .signal-sidebar-menu > ul {
+        padding: 12px 8px;
+    }
+
+    html.signal-sidebar-collapsed #sidebar #sidebar-menu li > a,
+    body.mini-sidebar #sidebar #sidebar-menu li > a,
+    html.signal-sidebar-collapsed .signal-sidebar .signal-sidebar-menu li > a,
+    body.mini-sidebar .signal-sidebar .signal-sidebar-menu li > a {
+        justify-content: center;
+        padding: 6px;
+    }
+
+    html.signal-sidebar-collapsed #sidebar #sidebar-menu li > a > span,
+    body.mini-sidebar #sidebar #sidebar-menu li > a > span,
+    html.signal-sidebar-collapsed .signal-sidebar .signal-sidebar-menu li > a > span,
+    body.mini-sidebar .signal-sidebar .signal-sidebar-menu li > a > span {
+        display: none;
+    }
+
+    html.signal-sidebar-collapsed .page-wrapper.signal-page-wrapper,
+    body.mini-sidebar .page-wrapper.signal-page-wrapper {
+        margin-left: 70px;
+    }
+
+    body.expand-menu #sidebar,
+    body.expand-menu .signal-sidebar {
+        width: var(--sg-sidebar-width);
+    }
+
+    body.expand-menu #sidebar #sidebar-menu li.menu-title,
+    body.expand-menu .signal-sidebar .signal-sidebar-menu li.menu-title,
+    body.expand-menu .signal-sidebar-intro,
+    body.expand-menu .signal-sidebar-footer {
+        display: flex;
+    }
+
+    body.expand-menu #sidebar #sidebar-menu li > a > span,
+    body.expand-menu .signal-sidebar .signal-sidebar-menu li > a > span {
+        display: inline;
+    }
+}

@@ -8,7 +8,9 @@ $(document).ready(function($) {
 	// Variables declarations
 	var $wrapper = $('.main-wrapper');
 	var $pageWrapper = $('.page-wrapper');
-	var $slimScrolls = $('.slimscroll');
+	// Replaced by sidebar fix 2026-11-17: the sidebar uses native overflow scrolling.
+	// var $slimScrolls = $('.slimscroll');
+	var $slimScrolls = $('.slimscroll').not('.signal-sidebar-scroll');
 	var $sidebarOverlay = $('.sidebar-overlay');
 	
 	// Sidebar
@@ -240,8 +242,13 @@ $(document).ready(function($) {
 	
 	// Small Sidebar — persist collapsed state via sessionStorage to avoid layout shift on page reload
 	if(screen.width >= 992) {
+		if(sessionStorage.getItem('signal-sidebar-collapsed') === 'true') {
+			$('body').addClass('mini-sidebar');
+		}
 		$(document).on('click', '#toggle_btn', function() {
-			if($('body').hasClass('mini-sidebar')) {
+			// Replaced by sidebar fix 2026-11-17: also honor the pre-paint html state.
+			// if($('body').hasClass('mini-sidebar')) {
+			if($('body').hasClass('mini-sidebar') || document.documentElement.classList.contains('signal-sidebar-collapsed')) {
 				$('body').removeClass('mini-sidebar');
 				document.documentElement.classList.remove('signal-sidebar-collapsed');
 				sessionStorage.setItem('signal-sidebar-collapsed', 'false');

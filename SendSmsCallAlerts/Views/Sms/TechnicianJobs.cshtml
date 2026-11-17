@@ -6,7 +6,9 @@
 
 <section class="nova-page-head" aria-label="Page heading">
     <div class="nova-heading-group">
-        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-hard-hat"></i></span>
+        @* Replaced by sidebar fix 2026-11-17: Font Awesome 4.7 has no fa-hard-hat icon. *@
+        @* <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-hard-hat"></i></span> *@
+        <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-briefcase"></i></span>
         <div class="nova-heading-copy">
             <span class="nova-eyebrow">OPERATIONS</span>
             <h1>Technician Jobs</h1>
@@ -342,7 +344,9 @@
                             if (tech !== lastTech) {
                                 var icon = (tech === 'Unassigned')
                                     ? '<i class="fa fa-question-circle me-2 text-muted"></i>'
-                                    : '<i class="fa fa-hard-hat me-2" style="color:#2563eb;"></i>';
+                                    // Replaced by sidebar fix 2026-11-17: use the Font Awesome 4.7 equivalent.
+                                    // : '<i class="fa fa-hard-hat me-2" style="color:#2563eb;"></i>';
+                                    : '<i class="fa fa-briefcase me-2" style="color:#2563eb;"></i>';
                                 var jobCount = techCounts[tech];
                                 var totalQuoted = techQuoted[tech] > 0 ? '$' + techQuoted[tech].toFixed(2) : '—';
                                 /* ROUND 5: Added sticky positioning to group band header */

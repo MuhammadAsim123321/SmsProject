@@ -38,7 +38,13 @@
                     <li><a class="@(controller == "Conversations" ? "active" : "")" asp-controller="Conversations" asp-action="SMS"><i class="fa fa-paper-plane-o" aria-hidden="true"></i><span>Send SMS</span></a></li>
                 }
                 <li><a class="@(controller == "Sms" && action == "ScheduledJobs" ? "active" : "")" asp-controller="Sms" asp-action="ScheduledJobs"><i class="fa fa-clock-o" aria-hidden="true"></i><span>Scheduled jobs</span></a></li>
-                <li><a class="@(controller == "Sms" && action == "TechnicianJobs" ? "active" : "")" asp-controller="Sms" asp-action="TechnicianJobs"><i class="fa fa-hard-hat" aria-hidden="true"></i><span>Technician jobs</span></a></li>
+                @* Replaced by sidebar fix 2026-11-17: Font Awesome 4.7 has no fa-hard-hat icon. *@
+                @* <li><a class="@(controller == "Sms" && action == "TechnicianJobs" ? "active" : "")" asp-controller="Sms" asp-action="TechnicianJobs"><i class="fa fa-hard-hat" aria-hidden="true"></i><span>Technician jobs</span></a></li> *@
+                <li><a class="@(controller == "Sms" && action == "TechnicianJobs" ? "active" : "")" asp-controller="Sms" asp-action="TechnicianJobs"><i class="fa fa-briefcase" aria-hidden="true"></i><span>Technician jobs</span></a></li>
+                <li class="menu-title">OPERATIONS</li>
+                <li><a class="@(controller == "Technicians" ? "active" : "")" asp-controller="Technicians" asp-action="Index"><i class="fa fa-wrench" aria-hidden="true"></i><span>Technicians</span></a></li>
+                <li><a class="@(controller == "AutomatedNotifications" ? "active" : "")" asp-controller="AutomatedNotifications" asp-action="Index"><i class="fa fa-bell-o" aria-hidden="true"></i><span>Automated SMS</span></a></li>
+                <li><a class="@(controller == "SmsLogs" ? "active" : "")" asp-controller="SmsLogs" asp-action="Index"><i class="fa fa-list-alt" aria-hidden="true"></i><span>SMS Logs</span></a></li>
                 <li class="menu-title">CALLS</li>
                 <li><a class="@(controller == "RingCentralCalls" ? "active" : "")" asp-controller="RingCentralCalls" asp-action="Index"><i class="fa fa-phone" aria-hidden="true"></i><span>Outgoing calls</span></a></li>
                 <li class="menu-title">CALL FLOWS</li>
@@ -52,10 +58,13 @@
                 {
                     <li class="signal-sidebar-info"><i class="fa fa-info-circle" aria-hidden="true"></i><span>Ask an administrator to assign your Twilio# to unlock messaging pages.</span></li>
                 }
+                @* Replaced by sidebar fix 2026-11-17: OPERATIONS now appears before CALLS. *@
+                @*
                 <li class="menu-title">OPERATIONS</li>
                 <li><a class="@(controller == "Technicians" ? "active" : "")" asp-controller="Technicians" asp-action="Index"><i class="fa fa-wrench" aria-hidden="true"></i><span>Technicians</span></a></li>
                 <li><a class="@(controller == "AutomatedNotifications" ? "active" : "")" asp-controller="AutomatedNotifications" asp-action="Index"><i class="fa fa-bell-o" aria-hidden="true"></i><span>Automated SMS</span></a></li>
                 <li><a class="@(controller == "SmsLogs" ? "active" : "")" asp-controller="SmsLogs" asp-action="Index"><i class="fa fa-list-alt" aria-hidden="true"></i><span>SMS Logs</span></a></li>
+                *@
                 @if (isAdmin)
                 {
                     <li class="menu-title">ADMINISTRATION</li>

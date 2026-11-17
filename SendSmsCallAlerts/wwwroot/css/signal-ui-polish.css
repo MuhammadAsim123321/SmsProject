@@ -381,8 +381,11 @@ body.signal-app, body.signal-login-body { overflow-x: clip; }
     .signal-app .signal-sidebar .sidebar-inner { overscroll-behavior: contain; }
 }
 @media (max-width: 767.98px) {
+    /* replaced by brand fix 2026-11-17: keep the mobile brand text available. */
+    /*
     .signal-app .signal-header .header-left.signal-brand { flex: 0 0 68px; width: 68px; padding: 0 15px; }
     .signal-app .signal-header .signal-brand-text { display: none; }
+    */
     .signal-app .signal-header .signal-mobile-toggle { flex: 0 0 38px; margin-left: 8px; width: 38px; }
     .signal-app .signal-header .signal-user-menu { margin-left: auto !important; }
     .signal-app .signal-header .signal-account-details,
