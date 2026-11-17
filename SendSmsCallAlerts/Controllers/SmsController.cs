@@ -319,6 +319,7 @@ namespace SendSmsCallAlerts.Controllers
             return File(System.IO.File.ReadAllBytes(filePath), "application/octet-stream", suggestedFileName + fileExtension);
         }
 
+        [NonAction]
         public IActionResult _DownloadMMSFileDirect(string fileName)
         {
             string filePath = Path.Combine(_hostingEnvironment.WebRootPath, "downloads", "ME4ee908d01e24e9ce9e1055ba815fcad4_07_25_07_.jpg");
@@ -337,20 +338,13 @@ namespace SendSmsCallAlerts.Controllers
 
             string fileName = Path.GetFileName(filePath);
 
-            Response.Clear();
-            Response.ContentType = "application/octet-stream";
-            Response.Headers.Add("Content-Disposition", "attachment; filename=" + fileName);
-            Response.Headers.Add("Content-Length", new FileInfo(filePath).Length.ToString());
-
-            using (FileStream fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read))
+            if (!System.IO.File.Exists(filePath))
             {
-                await fileStream.CopyToAsync(Response.Body);
+                return NotFound();
             }
 
-            return new FileStreamResult(Response.Body, "application/octet-stream")
-            {
-                FileDownloadName = fileName
-            };
+            var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            return File(stream, "application/octet-stream", fileName);
         }
 
         private string ConvertFileStreamResultToBase64(FileStreamResult fileStreamResult)
