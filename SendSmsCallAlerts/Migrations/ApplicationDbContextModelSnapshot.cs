@@ -1094,8 +1094,14 @@ namespace SendSmsCallAlerts.Migrations
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("EmailNormalized")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -1109,9 +1115,24 @@ namespace SendSmsCallAlerts.Migrations
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("UsernameNormalized")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("EmailNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("UX_User_EmailNormalized")
+                        .HasFilter("[EmailNormalized] IS NOT NULL");
+
+                    b.HasIndex("UsernameNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("UQ_User_UsernameNormalized")
+                        .HasFilter("[UsernameNormalized] IS NOT NULL");
 
                     b.ToTable("User");
                 });

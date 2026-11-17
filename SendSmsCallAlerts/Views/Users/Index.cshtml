@@ -17,13 +17,17 @@
         <a asp-action="IncomingLogs" asp-controller="Sms" class="btn btn-outline-secondary btn-sm sg-secondary-action">
             <i class="fa fa-arrow-left me-1"></i> Back to SMS Logs
         </a>
-        <a href="#" class="btn btn-primary sg-primary-action" id="create-user-button"><i class="fa fa-plus"></i> Create New</a>
+        <a href="#" class="btn btn-primary sg-primary-action" id="create-user-button"><i class="fa fa-user-plus"></i> Create New</a>
     </div>
 </section>
 
 <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap4.min.css" rel="stylesheet" />
 
-<div class="users-page">
+<div class="users-page"
+     data-create-url="@Url.Action("CreateForm", "Users")"
+     data-edit-url="@Url.Action("EditForm", "Users")"
+     data-delete-url="@Url.Action("Delete", "Users")"
+     data-list-url="@Url.Action("GetUsersTbl", "Users")">
     <section class="nova-list-card sg-fix-users" aria-label="All Users">
         <div class="nova-list-toolbar">
             <div class="nova-list-heading">
@@ -63,7 +67,9 @@
 @section Scripts {
     <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap4.min.js"></script>
-    <script>
+    <script src="~/js/users.js"></script>
+    @* replaced by users-fix 2026-11-17: Users page JavaScript moved to wwwroot/js/users.js. *@
+    @*
         (function ($) {
             function setLoader(settings, on) {
                 $(settings.nTableWrapper).find('.dataTables_processing').each(function () {
@@ -110,7 +116,7 @@
                 $('#save-user-button').html('<i class="fa fa-spinner fa-spin fa-3x fa-fw users-button-spinner" aria-hidden="true"></i><span class="sr-only">Loading...</span>').prop('disabled', true);
                 $('#user-form-body').html('<div class="users-modal-loader"><i class="fa fa-spinner fa-spin fa-3x fa-fw" aria-hidden="true"></i><span class="sr-only">Loading...</span></div>');
                 $('#user-form-modal').modal('show');
-                $.get(url).done(function (html) { $('#user-form-body').html(html); window.initPasswordToggles($('#user-form-body')[0]); setSaveButton(false, title); }).fail(showAjaxError);
+                $.get(url).done(function (html) { $('#user-form-body').html(html); window.initPasswordToggles($('#user-form-body')[0]); validateUserForm($('#user-form-body .user-modal-form')); setSaveButton(false, title); }).fail(showAjaxError);
             }
             function setSaveButton(busy, title) { var label = title && title.indexOf('Edit') === 0 ? 'Update' : 'Save'; $('#save-user-button').prop('disabled', busy).html(busy ? '<i class="fa fa-spinner fa-spin fa-3x fa-fw users-button-spinner" aria-hidden="true"></i><span class="sr-only">Loading...</span>' : '<i class="fa fa-save" aria-hidden="true"></i> ' + label); }
             function showAjaxError(xhr) { var message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Unable to complete the request.'; $('#user-form-body').html('<div class="alert alert-danger" role="alert">' + message + '</div>'); setSaveButton(false, $('#user-form-title').text()); }
@@ -118,9 +124,73 @@
             window.EditRecord = function (id) { showForm('@Url.Action("EditForm", "Users")?id=' + id, 'Edit user'); };
             window.DeleteRecord = function (id, username, name) { $('#confirm-delete-user').data('id', id); $('#delete-user-name').text((username || '') + (name ? ' - ' + name : '')); $('#delete-user-error').hide().empty(); $('#delete-user-modal').modal('show'); };
             $('#confirm-delete-user').on('click', function () { var button = $(this); button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin fa-3x fa-fw users-button-spinner" aria-hidden="true"></i><span class="sr-only">Loading...</span>'); $.post('@Url.Action("Delete", "Users")', { id: button.data('id'), __RequestVerificationToken: $('#user-form-body input[name="__RequestVerificationToken"]').val() || $('input[name="__RequestVerificationToken"]').first().val() }).done(function (response) { if (!response.success) { $('#delete-user-error').text(response.message).show(); return; } $('#delete-user-modal').modal('hide'); showToast(response.message, 'success'); table.ajax.reload(null, false); }).fail(function (xhr) { var message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Unable to complete the request.'; $('#delete-user-error').text(message).show(); }).always(function () { button.prop('disabled', false).html('<i class="fa fa-trash" aria-hidden="true"></i> Delete'); }); });
+            /* replaced by users-fix 2026-11-17: confirmation and AJAX submission are handled once below. */
+            /*
             $(document).on('submit', '.user-modal-form', function (e) { e.preventDefault(); var form = $(this); var title = $('#user-form-title').text(); setSaveButton(true, title); $.ajax({ url: form.attr('action'), method: 'POST', data: form.serialize(), headers: { 'X-Requested-With': 'XMLHttpRequest' } }).done(function (response) { if (response.success) { $('#user-form-modal').modal('hide'); showToast(response.message, 'success'); table.ajax.reload(null, false); } else { $('#user-form-body').html(response); window.initPasswordToggles($('#user-form-body')[0]); setSaveButton(false, title); } }).fail(function (xhr) { if (xhr.status === 403 && xhr.responseJSON) { $('#user-form-body').html('<div class="alert alert-danger">' + xhr.responseJSON.message + '</div>'); } else { showAjaxError(xhr); } }); });
+            */
+            var pendingUserForm = null;
+            var userRequestInFlight = false;
+            function fieldError(name, message) {
+                var input = $('#user-form-body [name="' + name + '"]');
+                input.toggleClass('is-invalid', !!message);
+                input.closest('.form-group').find('[data-user-error="' + name + '"]').remove();
+                if (message) input.closest('.form-group').append('<span class="text-danger" data-user-error="' + name + '">' + $('<div>').text(message).html() + '</span>');
+            }
+            function validateUserForm(form) {
+                var errors = {}, username = $.trim(form.find('[name="Username"]').val() || ''), name = $.trim(form.find('[name="Name"]').val() || ''), email = $.trim(form.find('[name="Email"]').val() || ''), role = (form.find('[name="Role"]').val() || '').toUpperCase(), phone = $.trim(form.find('[name="Phone"]').val() || ''), password = form.find('[name="Password"]').val() || '';
+                if (!/^[A-Za-z0-9_.]{3,30}$/.test(username)) errors.Username = 'Username must be 3 to 30 characters and contain only letters, digits, underscores, and dots.';
+                if (name.length < 2 || name.length > 100) errors.Name = 'Name must be between 2 and 100 characters.';
+                else if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(name)) errors.Name = "Enter the person's name, not an email address.";
+                if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errors.Email = 'Enter a valid email address.';
+                if (role !== 'STAFF' && role !== 'ADMIN') errors.Role = 'Role must be Staff or Admin.';
+                if (form.data('user-operation') === 'create' && (!password || password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password))) errors.Password = 'Password must be at least 8 characters and contain a letter and a digit.';
+                if (role === 'STAFF' && !phone) errors.Phone = 'Twilio number is required for Staff users.';
+                if (phone && !/^\+[1-9]\d{7,14}$/.test(phone.replace(/[\s\-()]/g, ''))) errors.Phone = 'Enter a valid phone number in international format, such as +923456543210.';
+                Object.keys(errors).forEach(function (key) { fieldError(key, errors[key]); });
+                ['Username', 'Name', 'Email', 'Role', 'Phone', 'Password'].forEach(function (key) { if (!errors[key]) fieldError(key, ''); });
+                return errors;
+            }
+            function setUserConfirmButton(disabled) { $('#actionConfirmModal .btn-danger').prop('disabled', disabled); }
+            function submitUserForm() {
+                if (!pendingUserForm || userRequestInFlight) return;
+                userRequestInFlight = true;
+                var form = pendingUserForm, title = $('#user-form-title').text();
+                setSaveButton(true, title); setUserConfirmButton(true);
+                $.ajax({ url: form.attr('action'), method: 'POST', data: form.serialize(), headers: { 'X-Requested-With': 'XMLHttpRequest' } }).done(function (response) {
+                    if (response.success) {
+                        $('#actionConfirmModal').modal('hide'); $('#user-form-modal').modal('hide'); showToast(response.message, 'success');
+                        window.setTimeout(function () { window.location.href = response.redirectUrl; }, 250);
+                    }
+                }).fail(function (xhr) {
+                    $('#actionConfirmModal').modal('hide');
+                    var payload = xhr.responseJSON || {}, errors = payload.errors || {};
+                    Object.keys(errors).forEach(function (key) { fieldError(key, errors[key]); });
+                    showToast(payload.message || 'Unable to create the user. Please try again.', 'error');
+                    setSaveButton(false, title);
+                }).always(function () {
+                    userRequestInFlight = false; setUserConfirmButton(false); pendingUserForm = null;
+                });
+            }
+            $(document).on('submit', '.user-modal-form', function (e) {
+                e.preventDefault();
+                var form = $(this), errors = validateUserForm(form);
+                if (Object.keys(errors).length) { setSaveButton(false, $('#user-form-title').text()); return false; }
+                pendingUserForm = form;
+                $('#actionConfirmTitle').text(form.data('user-operation') === 'create' ? 'Create user' : 'Save user');
+                $('#actionConfirmMessage').text((form.data('user-operation') === 'create' ? 'Create user ' : 'Save changes for ') + $.trim(form.find('[name="Username"]').val()) + '?');
+                setUserConfirmButton(false); $('#actionConfirmModal').modal('show');
+                return false;
+            });
+            $(document).on('blur', '.user-modal-form input, .user-modal-form select', function () { validateUserForm($(this).closest('form')); });
+            $(function () {
+                var globalExecuteAction = window.executeAction;
+                window.executeAction = function () {
+                    if (pendingUserForm) { submitUserForm(); return; }
+                    globalExecuteAction();
+                };
+            });
         })(jQuery);
-    </script>
+    *@
 
     <style>
         /* ID selector (#tblRPM_wrapper) outranks global class-based CSS, even when that uses !important */
