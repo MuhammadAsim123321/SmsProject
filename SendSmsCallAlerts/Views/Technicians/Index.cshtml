@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Technicians";
+
     var technicianViewModels = ViewBag.TechnicianViewModels as List<dynamic>;
     var availabilitySummaries = ViewBag.AvailabilitySummaries as Dictionary<int, string>;
     var jobCounts = ViewBag.JobCounts as Dictionary<int, int>;
@@ -10,108 +11,534 @@
     var categories = ViewBag.Categories as List<SendSmsCallAlerts.Models.IvrOptions>;
 }
 
-<div class="sg-content-stack">
-    <section class="nova-page-head" aria-label="Page heading">
-        <div class="nova-heading-group">
-            <span class="nova-heading-icon" aria-hidden="true"><i class="fa fa-wrench"></i></span>
-            <div class="nova-heading-copy">
-                <span class="nova-eyebrow">TEAM</span>
-                <h1>Technicians</h1>
-                <p>Manage field technicians and assignments</p>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+
+<style>
+    .page-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.08);
+        padding: 28px;
+        margin: 20px;
+    }
+
+    .page-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .page-subtitle {
+        color: #888;
+        font-size: .9rem;
+        margin-top: 5px;
+    }
+
+    .nova-jobs-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
+
+    .nova-eyebrow {
+        color: #70a9ce;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        margin-bottom: 6px;
+    }
+
+    .nova-list-card {
+        background: #fff;
+        border: 1px solid #edf0f5;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,.04);
+    }
+
+    .nova-list-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .nova-list-heading {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .nova-list-heading-icon {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #edf6fc;
+        color: #55a0d0;
+        font-size: 17px;
+    }
+
+    .nova-list-heading h2 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .nova-list-heading p {
+        font-size: .82rem;
+        color: #9299a3;
+        margin: 4px 0 0;
+    }
+
+    .nova-search {
+        position: relative;
+        display: block;
+        width: min(100%, 350px);
+    }
+
+        .nova-search i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9299a3;
+            z-index: 2;
+        }
+
+        .nova-search input {
+            width: 100%;
+            height: 46px;
+            padding: 10px 15px 10px 44px;
+            border: 1px solid #e1e5f0;
+            border-radius: 12px;
+            background: #fbfcff;
+            outline: none;
+            font-size: .9rem;
+        }
+
+            .nova-search input:focus {
+                border-color: #70b3db;
+                box-shadow: 0 0 0 3px rgba(112,179,219,.12);
+            }
+
+    .sg-tech-filters {
+        display: flex;
+        align-items: end;
+        flex-wrap: wrap;
+        gap: 14px;
+        padding: 16px;
+        margin-bottom: 18px;
+        background: #f8fafc;
+        border: 1px solid #edf0f5;
+        border-radius: 10px;
+    }
+
+    .sg-filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 145px;
+    }
+
+    .sg-filter-label {
+        font-size: .78rem;
+        font-weight: 600;
+        color: #657080;
+    }
+
+    .sg-filter-select {
+        min-width: 145px;
+        height: 38px;
+        border-radius: 8px;
+        border-color: #dfe5ed;
+        font-size: .85rem;
+    }
+
+    .sg-clear-filters {
+        height: 38px;
+        border-radius: 8px;
+    }
+
+    .nova-table-viewport {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    #tblTechnicians {
+        width: 100% !important;
+        margin-bottom: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: .88rem;
+    }
+
+        #tblTechnicians thead th {
+            background: #70b3db;
+            color: #fff;
+            font-weight: 600;
+            padding: 14px 12px;
+            white-space: nowrap;
+            border: none;
+        }
+
+        #tblTechnicians tbody td {
+            padding: 13px 12px;
+            vertical-align: middle;
+            color: #455160;
+            border-bottom: 1px solid #edf0f5;
+        }
+
+        #tblTechnicians tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        #tblTechnicians tbody tr:hover {
+            background: #f0f7fc;
+        }
+
+    .sg-sortable {
+        cursor: pointer;
+        user-select: none;
+    }
+
+        .sg-sortable i {
+            margin-right: 5px;
+            opacity: .8;
+        }
+
+    .sg-sort-active i {
+        opacity: 1;
+    }
+
+    .sg-tech-name {
+        font-weight: 600;
+        color: #2c3e50 !important;
+    }
+
+    .sg-tech-badge {
+        display: inline-block;
+        background: #edf6fc;
+        color: #4288b8;
+        padding: 4px 8px;
+        margin: 2px;
+        border-radius: 6px;
+        font-size: .75rem;
+        white-space: nowrap;
+    }
+
+    .sg-tech-badge--more {
+        background: #f1f2f5;
+        color: #687384;
+    }
+
+    .nova-status {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: .75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .nova-status--active {
+        background: #e7f7ee;
+        color: #218653;
+    }
+
+    .nova-status--muted {
+        background: #f0f1f3;
+        color: #777f8b;
+    }
+
+    .sg-action-buttons {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+    }
+
+        .sg-action-buttons .btn {
+            border-radius: 7px;
+            font-size: .78rem;
+        }
+
+    .sg-tech-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding-top: 18px;
+        color: #7b8491;
+        font-size: .85rem;
+    }
+
+    .sg-pagination-buttons {
+        display: flex;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+
+        .sg-pagination-buttons button {
+            min-width: 34px;
+            height: 34px;
+            border: 1px solid #e1e5ed;
+            border-radius: 7px;
+            background: #fff;
+            color: #526071;
+            font-size: .82rem;
+        }
+
+            .sg-pagination-buttons button:hover:not(:disabled),
+            .sg-pagination-buttons button.active {
+                background: #70b3db;
+                border-color: #70b3db;
+                color: #fff;
+            }
+
+            .sg-pagination-buttons button:disabled {
+                opacity: .4;
+                cursor: not-allowed;
+            }
+
+    .sg-empty-state {
+        text-align: center;
+        padding: 35px 15px;
+        color: #9299a3;
+    }
+
+        .sg-empty-state i {
+            display: block;
+            font-size: 30px;
+            margin-bottom: 10px;
+            color: #b5c5d2;
+        }
+
+    @@media (max-width: 768px) {
+        .page-card {
+            margin: 10px;
+            padding: 16px;
+        }
+
+        .nova-jobs-heading {
+            align-items: flex-start;
+        }
+
+        .nova-list-card {
+            padding: 14px;
+        }
+
+        .nova-search {
+            width: 100%;
+        }
+
+        .nova-list-controls {
+            width: 100%;
+        }
+
+        .sg-tech-filters {
+            align-items: stretch;
+        }
+
+        .sg-filter-group,
+        .sg-filter-select {
+            width: 100%;
+        }
+
+        .sg-tech-pagination {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="page-card sg-fix-tech">
+
+    <!-- PAGE HEADER -->
+    <div class="nova-jobs-heading">
+        <div>
+            <div class="nova-eyebrow">TEAM OVERVIEW</div>
+
+            <h1 class="page-title">
+                <i class="fa fa-users me-2" aria-hidden="true"></i>Technicians
+            </h1>
+
+            <div class="page-subtitle">
+                Manage field technicians, availability and assignments
             </div>
         </div>
-        <div class="nova-page-actions">
-            <a asp-action="Create" class="btn btn-primary sg-primary-action">
-                <i class="fa fa-plus me-1"></i> Add technician
-            </a>
-        </div>
-    </section>
 
-    <section class="nova-list-card sg-fix-tech" aria-label="All Technicians">
+        <a asp-action="Create" class="btn btn-primary btn-sm">
+            <i class="fa fa-plus me-1"></i> Add Technician
+        </a>
+    </div>
+
+    <!-- TECHNICIANS TABLE CARD -->
+    <div class="nova-list-card">
+
         <div class="nova-list-toolbar">
+
             <div class="nova-list-heading">
-                <span class="nova-list-heading-icon" aria-hidden="true"><i class="fa fa-list-ul"></i></span>
+                <span class="nova-list-heading-icon">
+                    <i class="fa fa-users" aria-hidden="true"></i>
+                </span>
+
                 <div>
                     <h2>All Technicians</h2>
-                    <p>Manage field technicians and assignments</p>
+                    <p>View and manage technician details and assignments</p>
                 </div>
             </div>
+
             <div class="nova-list-controls">
                 <label class="nova-search" for="search-tblTechnicians">
                     <i class="fa fa-search" aria-hidden="true"></i>
-                    <span class="sr-only">Search technicians</span>
-                    <input type="search" id="search-tblTechnicians" data-nova-search="tblTechnicians" placeholder="Search name, phone, city..." autocomplete="off" />
+                    <input type="search"
+                           id="search-tblTechnicians"
+                           placeholder="Search technicians..."
+                           autocomplete="off" />
                 </label>
             </div>
+
         </div>
 
-        <div class="sg-tech-filters">
-            <div class="sg-filter-group">
-                <label for="filterCategory" class="sg-filter-label">Category</label>
-                <select id="filterCategory" class="form-select form-select-sm sg-filter-select" data-filter-type="category">
-                    <option value="">All Categories</option>
-                    @if (categories != null)
-                    {
-                        @foreach (var cat in categories.OrderBy(c => c.keyword))
+        <!-- FILTERS -->
+        <div class="nova-list-card" style="background:#fbfcfe; padding:16px; box-shadow:none;">
+
+            <div class="nova-list-toolbar" style="margin-bottom:15px;">
+                <div class="nova-list-heading">
+                    <span class="nova-list-heading-icon">
+                        <i class="fa fa-filter" aria-hidden="true"></i>
+                    </span>
+
+                    <div>
+                        <h2>Filter technicians</h2>
+                        <p>Filter by category, city and today's availability</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sg-tech-filters" style="margin-bottom:0;">
+
+                <div class="sg-filter-group">
+                    <label for="filterCategory" class="sg-filter-label">
+                        <i class="fa fa-layer-group me-1"></i> Category
+                    </label>
+
+                    <select id="filterCategory" class="form-select form-select-sm sg-filter-select">
+                        <option value="">All Categories</option>
+
+                        @if (categories != null)
                         {
-                            <option value="@cat.keyword">@cat.keyword</option>
+                            @foreach (var cat in categories.OrderBy(c => c.keyword))
+                            {
+                                <option value="@cat.keyword">@cat.keyword</option>
+                            }
                         }
-                    }
-                </select>
-            </div>
+                    </select>
+                </div>
 
-            <div class="sg-filter-group">
-                <label for="filterCity" class="sg-filter-label">City/State</label>
-                <select id="filterCity" class="form-select form-select-sm sg-filter-select" data-filter-type="city">
-                    <option value="">All Cities</option>
-                    @if (cities != null)
-                    {
-                        @foreach (var city in cities)
+                <div class="sg-filter-group">
+                    <label for="filterCity" class="sg-filter-label">
+                        <i class="fa fa-map-marker-alt me-1"></i> City/State
+                    </label>
+
+                    <select id="filterCity" class="form-select form-select-sm sg-filter-select">
+                        <option value="">All Cities</option>
+
+                        @if (cities != null)
                         {
-                            <option value="@city">@city</option>
+                            @foreach (var city in cities)
+                            {
+                                <option value="@city">@city</option>
+                            }
                         }
-                    }
-                </select>
-            </div>
+                    </select>
+                </div>
 
-            <div class="sg-filter-group">
-                <label for="filterAvailability" class="sg-filter-label">Today</label>
-                <select id="filterAvailability" class="form-select form-select-sm sg-filter-select" data-filter-type="availability">
-                    <option value="">All</option>
-                    <option value="available">Available</option>
-                    <option value="off">Off</option>
-                </select>
-            </div>
+                <div class="sg-filter-group">
+                    <label for="filterAvailability" class="sg-filter-label">
+                        <i class="fa fa-calendar-check me-1"></i> Today
+                    </label>
 
-            <div class="sg-filter-group">
-                <label for="pageSize" class="sg-filter-label">Per Page</label>
-                <select id="pageSize" class="form-select form-select-sm sg-filter-select" data-page-size="true">
-                    <option value="10">10</option>
-                    <option value="25" selected>25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-            </div>
+                    <select id="filterAvailability" class="form-select form-select-sm sg-filter-select">
+                        <option value="">All</option>
+                        <option value="available">Available</option>
+                        <option value="off">Off</option>
+                    </select>
+                </div>
 
-            <button type="button" id="clearFilters" class="btn btn-sm btn-outline-secondary sg-clear-filters" title="Clear all filters">
-                <i class="fa fa-times me-1"></i> Clear
-            </button>
+                <div class="sg-filter-group">
+                    <label for="pageSize" class="sg-filter-label">
+                        <i class="fa fa-list-ol me-1"></i> Per Page
+                    </label>
+
+                    <select id="pageSize" class="form-select form-select-sm sg-filter-select">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+
+                <button type="button" id="clearFilters"
+                        class="btn btn-sm btn-outline-secondary sg-clear-filters">
+                    <i class="fa fa-times me-1"></i> Clear Filters
+                </button>
+
+            </div>
         </div>
 
+        <!-- TABLE -->
         <div class="nova-table-viewport">
-            <table id="tblTechnicians" class="table table-bordered table-striped">
+
+            <table id="tblTechnicians" class="table">
                 <thead>
                     <tr>
-                        <th class="sg-sortable" data-sort="name"><i class="fa fa-sort"></i> Name</th>
-                        <th class="sg-sortable" data-sort="phone"><i class="fa fa-sort"></i> Phone</th>
-                        <th class="sg-sortable" data-sort="location"><i class="fa fa-sort"></i> Location</th>
-                        <th class="sg-sortable" data-sort="categories"><i class="fa fa-sort"></i> Categories</th>
-                        <th class="sg-sortable" data-sort="availability"><i class="fa fa-sort"></i> Availability</th>
-                        <th class="sg-sortable" data-sort="jobs" data-sort-dir="desc"><i class="fa fa-sort"></i> Jobs</th>
-                        <th class="sg-sortable" data-sort="today"><i class="fa fa-sort"></i> Today</th>
+                        <th class="sg-sortable" data-sort="name">
+                            <i class="fa fa-sort"></i> Name
+                        </th>
+
+                        <th class="sg-sortable" data-sort="phone">
+                            <i class="fa fa-sort"></i> Phone
+                        </th>
+
+                        <th class="sg-sortable" data-sort="location">
+                            <i class="fa fa-sort"></i> Location
+                        </th>
+
+                        <th class="sg-sortable" data-sort="categories">
+                            <i class="fa fa-sort"></i> Categories
+                        </th>
+
+                        <th class="sg-sortable" data-sort="availability">
+                            <i class="fa fa-sort"></i> Availability
+                        </th>
+
+                        <th class="sg-sortable" data-sort="jobs" data-sort-dir="desc">
+                            <i class="fa fa-sort"></i> Jobs
+                        </th>
+
+                        <th class="sg-sortable" data-sort="today">
+                            <i class="fa fa-sort"></i> Today
+                        </th>
+
                         <th>Actions</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     @if (technicianViewModels != null && technicianViewModels.Count > 0)
                     {
@@ -119,41 +546,79 @@
                         {
                             var tech = (SendSmsCallAlerts.Models.Technician)item.Technician;
                             var categoryNames = (List<string>)item.CategoryNames;
-                            var availabilityText = availabilitySummaries?.ContainsKey(tech.Id) == true
+
+                            var availabilityText =
+                                availabilitySummaries?.ContainsKey(tech.Id) == true
                                 ? availabilitySummaries[tech.Id]
                                 : "Not configured";
-                            var upcomingJobs = jobCounts?.ContainsKey(tech.Id) == true ? jobCounts[tech.Id] : 0;
-                            var isAvailableToday = todayAvailable?.ContainsKey(tech.Id) == true && todayAvailable[tech.Id];
-                            var categoryDisplay = categoryNames != null && categoryNames.Any()
-                                ? string.Join(" ", categoryNames.Take(2).Select(c => $"<span class=\"sg-tech-badge\">{c}</span>"))
-                                  + (categoryNames.Count > 2 ? $" <span class=\"sg-tech-badge sg-tech-badge--more\">+{categoryNames.Count - 2}</span>" : "")
+
+                            var upcomingJobs =
+                                jobCounts?.ContainsKey(tech.Id) == true
+                                ? jobCounts[tech.Id]
+                                : 0;
+
+                            var isAvailableToday =
+                                todayAvailable?.ContainsKey(tech.Id) == true &&
+                                todayAvailable[tech.Id];
+
+                            var categoryDisplay =
+                                categoryNames != null && categoryNames.Any()
+                                ? string.Join(" ", categoryNames.Take(2).Select(c =>
+                                    $"<span class=\"sg-tech-badge\">{System.Net.WebUtility.HtmlEncode(c)}</span>"))
+                                    + (categoryNames.Count > 2
+                                        ? $" <span class=\"sg-tech-badge sg-tech-badge--more\">+{categoryNames.Count - 2}</span>"
+                                        : "")
                                 : "<span class=\"text-muted\">—</span>";
 
                             <tr>
                                 <td class="sg-tech-name">@tech.FullName</td>
+
                                 <td class="sg-tech-phone">@tech.ContactNumber</td>
+
                                 <td class="sg-tech-location">
                                     <div>@(tech.CityState ?? "—")</div>
-                                    <div class="text-muted small">@(tech.ZipCode ?? "—")</div>
+                                    <div class="text-muted small">
+                                        @(tech.ZipCode ?? "—")
+                                    </div>
                                 </td>
-                                <td class="sg-tech-categories" title="@(categoryNames != null ? string.Join(", ", categoryNames) : "No categories")">@Html.Raw(categoryDisplay)</td>
-                                <td class="sg-tech-availability">@availabilityText</td>
-                                <td class="sg-tech-jobs text-center">@upcomingJobs</td>
+
+                                <td class="sg-tech-categories"
+                                    title="@(categoryNames != null ? string.Join(", ", categoryNames) : "No categories")">
+                                    @Html.Raw(categoryDisplay)
+                                </td>
+
+                                <td class="sg-tech-availability">
+                                    @availabilityText
+                                </td>
+
+                                <td class="sg-tech-jobs text-center">
+                                    @upcomingJobs
+                                </td>
+
                                 <td class="sg-tech-today">
                                     <span class="nova-status @(isAvailableToday ? "nova-status--active" : "nova-status--muted")">
                                         @(isAvailableToday ? "Available" : "Off")
                                     </span>
                                 </td>
+
                                 <td class="sg-tech-actions">
                                     <div class="sg-action-buttons">
-                                        <a href="@Url.Action("Edit", new { id = tech.Id })" class="btn btn-sm btn-primary">
-                                            <i class="fa fa-pencil"></i> Edit
+
+                                        <a href="@Url.Action("Edit", new { id = tech.Id })"
+                                           class="btn btn-sm btn-primary">
+                                            <i class="fa fa-pencil me-1"></i> Edit
                                         </a>
-                                        <form asp-action="Delete" asp-route-id="@tech.Id" method="post" style="display: inline;"
+
+                                        <form asp-action="Delete"
+                                              asp-route-id="@tech.Id"
+                                              method="post"
+                                              style="display:inline;"
                                               onsubmit="return confirmDelete(event, 'Delete this technician? This cannot be undone.', this);">
+
                                             <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="fa fa-trash"></i> Delete
+                                                <i class="fa fa-trash me-1"></i> Delete
                                             </button>
+
                                         </form>
                                     </div>
                                 </td>
@@ -162,169 +627,316 @@
                     }
                 </tbody>
             </table>
+
+            <div id="noTechniciansFound" class="sg-empty-state" style="display:none;">
+                <i class="fa fa-users"></i>
+                No technicians found matching your filters.
+            </div>
+
         </div>
-    </section>
+
+        <!-- PAGINATION -->
+        <div class="sg-tech-pagination">
+            <div id="paginationInfo">Showing 0 technicians</div>
+            <div class="sg-pagination-buttons" id="paginationButtons"></div>
+        </div>
+
+    </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+
         const searchInput = document.getElementById('search-tblTechnicians');
         const table = document.getElementById('tblTechnicians');
+
         const categoryFilter = document.getElementById('filterCategory');
         const cityFilter = document.getElementById('filterCity');
         const availabilityFilter = document.getElementById('filterAvailability');
+
         const pageSizeSelect = document.getElementById('pageSize');
         const clearFiltersBtn = document.getElementById('clearFilters');
+
+        const paginationInfo = document.getElementById('paginationInfo');
+        const paginationButtons = document.getElementById('paginationButtons');
+        const emptyState = document.getElementById('noTechniciansFound');
+
         const sortHeaders = document.querySelectorAll('.sg-sortable');
+
+        if (!table) return;
+
+        const allRows = Array.from(table.querySelectorAll('tbody tr'));
 
         let currentPage = 1;
         let sortColumn = null;
         let sortDir = 'asc';
-        let filteredRows = [];
+        let filteredRows = [...allRows];
 
-        if (!table) return;
+        function sortRows(column, direction) {
 
-        // Store original rows for filtering
-        const allRows = Array.from(table.querySelectorAll('tbody tr'));
-
-        // Sorting
-        sortHeaders.forEach(header => {
-            header.addEventListener('click', function () {
-                const column = this.dataset.sort;
-                sortDir = this.dataset.sortDir === 'desc' ? 'asc' : 'desc';
-                this.dataset.sortDir = sortDir;
-
-                // Update icon
-                sortHeaders.forEach(h => h.classList.remove('sg-sort-active'));
-                this.classList.add('sg-sort-active');
-
-                sortRows(column, sortDir);
-                applyPagination();
-            });
-        });
-
-        function sortRows(column, dir) {
             filteredRows.sort((rowA, rowB) => {
-                let valA, valB;
+
+                let valA = '';
+                let valB = '';
+
                 switch (column) {
                     case 'name':
-                        valA = rowA.querySelector('.sg-tech-name')?.textContent || '';
-                        valB = rowB.querySelector('.sg-tech-name')?.textContent || '';
+                        valA = rowA.querySelector('.sg-tech-name')?.textContent.trim() || '';
+                        valB = rowB.querySelector('.sg-tech-name')?.textContent.trim() || '';
                         break;
+
                     case 'phone':
-                        valA = rowA.querySelector('.sg-tech-phone')?.textContent || '';
-                        valB = rowB.querySelector('.sg-tech-phone')?.textContent || '';
+                        valA = rowA.querySelector('.sg-tech-phone')?.textContent.trim() || '';
+                        valB = rowB.querySelector('.sg-tech-phone')?.textContent.trim() || '';
                         break;
+
                     case 'location':
-                        valA = rowA.querySelector('.sg-tech-location')?.textContent || '';
-                        valB = rowB.querySelector('.sg-tech-location')?.textContent || '';
+                        valA = rowA.querySelector('.sg-tech-location')?.textContent.trim() || '';
+                        valB = rowB.querySelector('.sg-tech-location')?.textContent.trim() || '';
                         break;
+
                     case 'categories':
-                        valA = rowA.querySelector('.sg-tech-categories')?.textContent || '';
-                        valB = rowB.querySelector('.sg-tech-categories')?.textContent || '';
+                        valA = rowA.querySelector('.sg-tech-categories')?.textContent.trim() || '';
+                        valB = rowB.querySelector('.sg-tech-categories')?.textContent.trim() || '';
                         break;
+
                     case 'availability':
-                        valA = rowA.querySelector('.sg-tech-availability')?.textContent || '';
-                        valB = rowB.querySelector('.sg-tech-availability')?.textContent || '';
+                        valA = rowA.querySelector('.sg-tech-availability')?.textContent.trim() || '';
+                        valB = rowB.querySelector('.sg-tech-availability')?.textContent.trim() || '';
                         break;
+
                     case 'jobs':
-                        valA = parseInt(rowA.querySelector('.sg-tech-jobs')?.textContent || 0);
-                        valB = parseInt(rowB.querySelector('.sg-tech-jobs')?.textContent || 0);
-                        break;
+                        valA = parseInt(rowA.querySelector('.sg-tech-jobs')?.textContent || '0', 10);
+                        valB = parseInt(rowB.querySelector('.sg-tech-jobs')?.textContent || '0', 10);
+
+                        return direction === 'asc' ? valA - valB : valB - valA;
+
                     case 'today':
-                        valA = rowA.querySelector('.sg-tech-today')?.textContent || '';
-                        valB = rowB.querySelector('.sg-tech-today')?.textContent || '';
+                        valA = rowA.querySelector('.sg-tech-today')?.textContent.trim() || '';
+                        valB = rowB.querySelector('.sg-tech-today')?.textContent.trim() || '';
                         break;
-                    default:
-                        return 0;
                 }
 
-                if (typeof valA === 'string') {
-                    return dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-                } else {
-                    return dir === 'asc' ? valA - valB : valB - valA;
-                }
+                return direction === 'asc'
+                    ? String(valA).localeCompare(String(valB), undefined, { numeric: true })
+                    : String(valB).localeCompare(String(valA), undefined, { numeric: true });
             });
         }
 
-        // Filtering
         function applyFilters() {
-            const searchQuery = searchInput.value.toLowerCase();
-            const categoryVal = categoryFilter.value;
-            const cityVal = cityFilter.value;
+
+            const searchQuery = searchInput.value.toLowerCase().trim();
+            const categoryVal = categoryFilter.value.toLowerCase();
+            const cityVal = cityFilter.value.toLowerCase();
             const availabilityVal = availabilityFilter.value;
 
             filteredRows = allRows.filter(row => {
+
                 const name = row.querySelector('.sg-tech-name')?.textContent || '';
                 const phone = row.querySelector('.sg-tech-phone')?.textContent || '';
                 const location = row.querySelector('.sg-tech-location')?.textContent || '';
-                const combined = (name + ' ' + phone + ' ' + location).toLowerCase();
+                const categories = row.querySelector('.sg-tech-categories')?.textContent || '';
 
-                // Search filter
-                if (searchQuery && !combined.includes(searchQuery)) return false;
+                const combined = (
+                    name + ' ' + phone + ' ' + location + ' ' + categories
+                ).toLowerCase();
 
-                // Category filter
-                if (categoryVal) {
-                    const categories = row.querySelector('.sg-tech-categories')?.textContent || '';
-                    if (!categories.includes(categoryVal)) return false;
-                }
+                if (searchQuery && !combined.includes(searchQuery))
+                    return false;
 
-                // City filter
-                if (cityVal) {
-                    const locText = row.querySelector('.sg-tech-location')?.textContent || '';
-                    if (!locText.includes(cityVal)) return false;
-                }
+                if (categoryVal && !categories.toLowerCase().includes(categoryVal))
+                    return false;
 
-                // Availability filter
+                if (cityVal && !location.toLowerCase().includes(cityVal))
+                    return false;
+
                 if (availabilityVal) {
-                    const today = row.querySelector('.sg-tech-today .nova-status')?.textContent?.trim() || '';
-                    if (availabilityVal === 'available' && today !== 'Available') return false;
-                    if (availabilityVal === 'off' && today !== 'Off') return false;
+
+                    const today = row.querySelector('.sg-tech-today .nova-status')
+                        ?.textContent.trim() || '';
+
+                    if (availabilityVal === 'available' && today !== 'Available')
+                        return false;
+
+                    if (availabilityVal === 'off' && today !== 'Off')
+                        return false;
                 }
 
                 return true;
             });
+
+            if (sortColumn) {
+                sortRows(sortColumn, sortDir);
+            }
 
             currentPage = 1;
             applyPagination();
         }
 
         function applyPagination() {
-            const pageSize = parseInt(pageSizeSelect.value);
-            const totalPages = Math.ceil(filteredRows.length / pageSize);
+
+            const pageSize = parseInt(pageSizeSelect.value, 10);
+            const totalRows = filteredRows.length;
+            const totalPages = Math.ceil(totalRows / pageSize);
+
+            if (currentPage > totalPages && totalPages > 0) {
+                currentPage = totalPages;
+            }
+
             const start = (currentPage - 1) * pageSize;
-            const end = start + pageSize;
+            const end = Math.min(start + pageSize, totalRows);
 
-            allRows.forEach(row => row.style.display = 'none');
-            filteredRows.slice(start, end).forEach(row => row.style.display = '');
+            allRows.forEach(row => {
+                row.style.display = 'none';
+            });
 
-            updatePaginationInfo();
+            filteredRows.slice(start, end).forEach(row => {
+                row.style.display = '';
+            });
+
+            emptyState.style.display = totalRows === 0 ? 'block' : 'none';
+            table.style.display = totalRows === 0 ? 'none' : 'table';
+
+            updatePaginationInfo(start, end, totalRows);
+            renderPagination(totalPages);
         }
 
-        function updatePaginationInfo() {
-            const pageSize = parseInt(pageSizeSelect.value);
-            const totalPages = Math.ceil(filteredRows.length / pageSize);
-            // Can add pagination info display here if needed
+        function updatePaginationInfo(start, end, totalRows) {
+
+            if (totalRows === 0) {
+                paginationInfo.textContent = 'Showing 0 technicians';
+                return;
+            }
+
+            paginationInfo.textContent =
+                `Showing ${start + 1} to ${end} of ${totalRows} technicians`;
         }
 
-        // Event listeners
+        function renderPagination(totalPages) {
+
+            paginationButtons.innerHTML = '';
+
+            if (totalPages <= 1) return;
+
+            const previousButton = document.createElement('button');
+            previousButton.type = 'button';
+            previousButton.innerHTML = '<i class="fa fa-chevron-left"></i>';
+            previousButton.title = 'Previous page';
+            previousButton.disabled = currentPage === 1;
+
+            previousButton.addEventListener('click', function () {
+                if (currentPage > 1) {
+                    currentPage--;
+                    applyPagination();
+                }
+            });
+
+            paginationButtons.appendChild(previousButton);
+
+            for (let page = 1; page <= totalPages; page++) {
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.textContent = page;
+
+                if (page === currentPage) {
+                    button.classList.add('active');
+                }
+
+                button.addEventListener('click', function () {
+                    currentPage = page;
+                    applyPagination();
+                });
+
+                paginationButtons.appendChild(button);
+            }
+
+            const nextButton = document.createElement('button');
+            nextButton.type = 'button';
+            nextButton.innerHTML = '<i class="fa fa-chevron-right"></i>';
+            nextButton.title = 'Next page';
+            nextButton.disabled = currentPage === totalPages;
+
+            nextButton.addEventListener('click', function () {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    applyPagination();
+                }
+            });
+
+            paginationButtons.appendChild(nextButton);
+        }
+
+        // Sorting
+        sortHeaders.forEach(header => {
+
+            header.addEventListener('click', function () {
+
+                const column = this.dataset.sort;
+
+                if (sortColumn === column) {
+                    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    sortColumn = column;
+                    sortDir = column === 'jobs' ? 'desc' : 'asc';
+                }
+
+                sortHeaders.forEach(h => {
+                    h.classList.remove('sg-sort-active');
+
+                    const icon = h.querySelector('i');
+                    if (icon) icon.className = 'fa fa-sort';
+                });
+
+                this.classList.add('sg-sort-active');
+
+                const activeIcon = this.querySelector('i');
+
+                if (activeIcon) {
+                    activeIcon.className = sortDir === 'asc'
+                        ? 'fa fa-sort-up'
+                        : 'fa fa-sort-down';
+                }
+
+                sortRows(column, sortDir);
+                applyPagination();
+            });
+        });
+
+        // Filter events
         searchInput.addEventListener('input', applyFilters);
         categoryFilter.addEventListener('change', applyFilters);
         cityFilter.addEventListener('change', applyFilters);
         availabilityFilter.addEventListener('change', applyFilters);
-        pageSizeSelect.addEventListener('change', applyPagination);
 
+        pageSizeSelect.addEventListener('change', function () {
+            currentPage = 1;
+            applyPagination();
+        });
+
+        // Clear filters
         clearFiltersBtn.addEventListener('click', function () {
+
             searchInput.value = '';
             categoryFilter.value = '';
             cityFilter.value = '';
             availabilityFilter.value = '';
             pageSizeSelect.value = '25';
-            sortHeaders.forEach(h => {
-                h.classList.remove('sg-sort-active');
-                h.dataset.sortDir = 'asc';
+
+            sortColumn = null;
+            sortDir = 'asc';
+
+            sortHeaders.forEach(header => {
+                header.classList.remove('sg-sort-active');
+                header.dataset.sortDir = 'asc';
+
+                const icon = header.querySelector('i');
+                if (icon) icon.className = 'fa fa-sort';
             });
-            applyFilters();
+
+            filteredRows = [...allRows];
+
+            applyPagination();
         });
 
         // Initial load
