@@ -114,7 +114,8 @@
                                     <a href="@Url.Action("Edit", new { id = s.Id })" class="btn btn-sm btn-primary">
                                         <i class="fa fa-pencil"></i> Edit
                                     </a>
-                                    <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post" style="display: inline;">
+                                    <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post" style="display: inline;"
+                                          onsubmit="return confirmDelete(event, 'Are you sure you want to change this notification status?', this);">
                                         <button type="submit" class="btn btn-sm @(s.IsActive ? "btn-warning" : "btn-success")">
                                             <i class="fa @(s.IsActive ? "fa-pause" : "fa-play")"></i>
                                             @(s.IsActive ? "Deactivate" : "Activate")

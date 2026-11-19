@@ -204,6 +204,7 @@
 
 
 function Purchase(phoneNumber) {
+    if (!confirm('Are you sure you want to purchase this number?')) return;
     $('#purchasePhoneNumber').val(phoneNumber);
     $('#purchasePhoneForm').submit();
 }

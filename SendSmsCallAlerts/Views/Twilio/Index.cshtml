@@ -54,3 +54,18 @@ else
     }
 }
 
+@section Scripts {
+    <script>
+        $(function () {
+            $('#registerForm').on('submit', function (e) {
+                var action = $('#registerForm').attr('action').toLowerCase();
+                var msg = action.includes('storedata')
+                    ? 'Are you sure you want to add this Twilio number?'
+                    : 'Are you sure you want to update this Twilio number?';
+                if (!confirm(msg)) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+}

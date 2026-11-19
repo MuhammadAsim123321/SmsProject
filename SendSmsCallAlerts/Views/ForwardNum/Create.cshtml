@@ -7,12 +7,8 @@
 <div class="sg-page-header sg-page-header--form"><h1>Add Number</h1></div>
 
 <hr />
-@if (ViewBag.ErMsg != null)
-{
-    <div class="alert alert-danger">
-        <b>@ViewBag.ErMsg</b>
-    </div>
-}
+@* Error messages now render as a top-right toast via the shared _ErrorToast partial. *@
+<partial name="_ErrorToast" />
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Create" onsubmit="return confirmAction(event, 'Create Forward Number', 'Are you sure you want to create this forward number?', this);">

@@ -276,6 +276,26 @@
     </div>
 </div>
 
+<!-- Confirm Pause/Resume Modal -->
+<div class="modal fade" id="confirmPauseModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-white">
+                <h6 class="modal-title"><i class="fa fa-pause me-2"></i>Confirm Action</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fa fa-question-circle fa-2x text-warning mb-3"></i>
+                <p class="mb-1" id="pauseConfirmMessage">Are you sure you want to pause this job?</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="btnConfirmPause" class="btn btn-warning btn-sm">Yes, Proceed</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Result Modal -->
 <div class="modal fade" id="resultModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
@@ -378,8 +398,8 @@
                             var deleteBtn = '<button class="btn btn-del btn-sm rounded-2" onclick="showDeleteConfirm(' + row.planId + ')"><i class="fa fa-trash"></i></button>';
                             if (row.isSent) return '<div class="d-flex gap-1 align-items-center"><span class="text-success fw-bold small"><i class="fa fa-check-circle"></i> Sent</span>' + deleteBtn + '</div>';
                             var pauseBtn = row.isPaused
-                                ? '<button class="btn btn-resume btn-sm rounded-2" onclick="togglePause(' + row.planId + ')"><i class="fa fa-play me-1"></i>Resume</button>'
-                                : '<button class="btn btn-pause btn-sm rounded-2" onclick="togglePause(' + row.planId + ')"><i class="fa fa-pause me-1"></i>Pause</button>';
+                                ? '<button class="btn btn-resume btn-sm rounded-2" onclick="togglePause(' + row.planId + ', true)"><i class="fa fa-play me-1"></i>Resume</button>'
+                                : '<button class="btn btn-pause btn-sm rounded-2" onclick="togglePause(' + row.planId + ', false)"><i class="fa fa-pause me-1"></i>Pause</button>';
                             return '<div class="d-flex gap-1">' + pauseBtn + deleteBtn + '</div>';
                         }
                     }
@@ -398,8 +418,22 @@
             $('#statSent').text(sent);
         }
 
-        function togglePause(jobId) {
-            $.post("/Sms/TogglePausePlan", { planId: jobId }, function (res) {
+        var _pauseJobId = null;
+        var _pauseIsPaused = false;
+
+        function togglePause(jobId, isPaused) {
+            _pauseJobId = jobId;
+            _pauseIsPaused = isPaused;
+            $('#pauseConfirmTitle').text(isPaused ? 'Resume Job' : 'Pause Job');
+            $('#pauseConfirmMessage').text(isPaused ? 'Are you sure you want to resume this job?' : 'Are you sure you want to pause this job?');
+            $('#confirmPauseModal').modal('show');
+        }
+
+        $('#btnConfirmPause').click(function () {
+            if (!_pauseJobId) return;
+            $('#confirmPauseModal').modal('hide');
+            $.post("/Sms/TogglePausePlan", { planId: _pauseJobId }, function (res) {
+                _pauseJobId = null;
                 if (res.success) {
                     showResult("Success", "Job has been " + (res.isPaused ? "Paused" : "Resumed") + ".", "text-success");
                     JobsDatatable.ajax.reload(null, false);
@@ -407,7 +441,7 @@
                     showResult("Error", res.message || "Failed to update status.", "text-danger");
                 }
             });
-        }
+        });
 
         function showDeleteConfirm(jobId) {
             $('#deleteJobId').val(jobId);
