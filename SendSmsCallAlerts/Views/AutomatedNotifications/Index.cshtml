@@ -1,6 +1,7 @@
 @model IEnumerable<SendSmsCallAlerts.Models.AutomatedSmsSetting>
 @using SendSmsCallAlerts.Controllers
 @using SendSmsCallAlerts.Models
+@inject SendSmsCallAlerts.Services.IAppClock AppClock
 @{
     ViewData["Title"] = "Automated SMS";
     var nextOccurrences = (Dictionary<int, DateTime>)ViewBag.NextOccurrences;
@@ -72,10 +73,11 @@
                         {
                             var now = DateTime.UtcNow;
                             var diff = nextRun.Subtract(now);
+                            var nextRunLocal = AppClock.ToBusiness(nextRun);
                             
                             if (diff.TotalDays >= 1)
                             {
-                                nextRunText = nextRun.ToString("ddd h:mm tt");
+                                nextRunText = nextRunLocal.ToString("ddd h:mm tt");
                             }
                             else if (diff.TotalHours >= 1)
                             {
@@ -89,7 +91,7 @@
                             {
                                 nextRunText = "Soon";
                             }
-                            nextRunTitle = nextRun.ToString("dddd, MMMM d, yyyy h:mm tt");
+                            nextRunTitle = nextRunLocal.ToString("dddd, MMMM d, yyyy h:mm tt");
                         }
 
                         <tr>

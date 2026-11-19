@@ -442,9 +442,13 @@
 
                         @if (categories != null)
                         {
-                            @foreach (var cat in categories.OrderBy(c => c.keyword))
+                            @foreach (var kw in categories
+                                .Select(c => c.keyword)
+                                .Where(k => !string.IsNullOrWhiteSpace(k))
+                                .Distinct()
+                                .OrderBy(k => k))
                             {
-                                <option value="@cat.keyword">@cat.keyword</option>
+                                <option value="@kw">@kw</option>
                             }
                         }
                     </select>

@@ -301,6 +301,19 @@ namespace SendSmsCallAlerts.Controllers
         [HttpGet]
         public async Task<JsonResult> CheckAvailability(int technicianId, DateTime jobDateTime)
         {
+            // A missing / unknown technician must never be treated as available.
+            var technicianExists = await _context.Technicians.AnyAsync(t => t.Id == technicianId);
+            if (!technicianExists)
+            {
+                return Json(new
+                {
+                    success = false,
+                    allowed = false,
+                    configured = false,
+                    message = "Technician not found."
+                });
+            }
+
             var result = await _availabilityService.CheckAsync(technicianId, jobDateTime);
             return Json(new
             {

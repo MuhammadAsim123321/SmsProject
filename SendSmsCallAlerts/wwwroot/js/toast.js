@@ -59,6 +59,25 @@
     var _pendingActionForm = null;
     window.confirmAction = function (event, title, message, form) {
         event.preventDefault();
+
+        // Respect client-side validation: never show the confirmation dialog for an
+        // invalid form. The inline onsubmit handler runs before jQuery validate, so we
+        // must explicitly validate here; otherwise an empty/invalid form would still
+        // open the confirm modal and only be rejected server-side after "Yes".
+        if (form) {
+            var $form = window.jQuery ? window.jQuery(form) : null;
+            if ($form && $form.data('validator')) {
+                if (!$form.valid()) {
+                    return false;
+                }
+            } else if (typeof form.checkValidity === 'function') {
+                if (!form.checkValidity()) {
+                    if (typeof form.reportValidity === 'function') form.reportValidity();
+                    return false;
+                }
+            }
+        }
+
         _pendingActionForm = form;
         var titleEl = document.getElementById('actionConfirmTitle');
         var msgEl = document.getElementById('actionConfirmMessage');
