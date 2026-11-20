@@ -4,7 +4,7 @@
 
 <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
 
-<section class="nova-page-head" aria-label="Page heading">
+<section class="nova-page-head tj-page" aria-label="Page heading">
     <div class="nova-heading-group">
         <div class="nova-heading-copy">
             <span class="nova-eyebrow">OPERATIONS</span>
@@ -95,7 +95,7 @@
     <div class="nova-table-viewport" style="overflow-x: auto; width: 100%;">
         <!-- COMMENTED OUT (Round 4): table-layout:fixed;width:100%; -->
         <!-- COMMENTED OUT (Round 4): <colgroup> with percentage widths -->
-        <table id="tblTechJobs" class="table table-bordered table-striped" aria-label="Technician scheduled jobs">
+        <table id="tblTechJobs" class="table table-bordered" aria-label="Technician scheduled jobs">
             <!-- COMMENTED OUT Round 4 colgroup: Column widths (sum 100%): Technician 10% | Time 7% | Order# 6% | Customer 11% | Street 16% | City/State 11% | ZIP 6% | Distance 9% | Phone 10% | Quoted 7% | Status 7% -->
             <!--
             <colgroup>
@@ -193,10 +193,13 @@
                     },
                     processing: true,
                     paging: true,
+                    scrollX: true,
                     pageLength: 25,
                     language: {
                         emptyTable: 'No jobs found.',
-                        processing: '<div class="text-center py-3"><i class="fa fa-spinner fa-spin fa-2x" style="color:#70b3db;"></i></div>'
+                        processing: '<div class="text-center py-3"><i class="fa fa-spinner fa-spin fa-2x" style="color:#70b3db;"></i></div>',
+                        search: '',
+                        searchPlaceholder: 'Search jobs...'
                     },
                     // Sort by technician name first, then job start time
                     order: [[0, 'asc'], [1, 'asc']],
@@ -347,7 +350,7 @@
                                 var jobCount = techCounts[tech];
                                 var totalQuoted = techQuoted[tech] > 0 ? '$' + techQuoted[tech].toFixed(2) : '—';
                                 /* ROUND 5: Added sticky positioning to group band header */
-                                $('<tr class="tj-tech-group-row"><td colspan="11" style="position:sticky; left:0; font-weight:700; color:#1e3a8a; font-size:0.95rem; background:#f8fafc;">'
+                                $('<tr class="tj-tech-group-row"><td colspan="11" style="position:sticky; left:0; font-weight:700; color:#1e3a8a; font-size:0.95rem;">'
                                     + icon + esc(tech) + ' <span style="font-weight:500; color:#666;">(' + jobCount + ' job' + (jobCount !== 1 ? 's' : '') + ', Total: ' + totalQuoted + ')</span></td></tr>')
                                     .insertBefore(domRows[i]);
                                 lastTech = tech;

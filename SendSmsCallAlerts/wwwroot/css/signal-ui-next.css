@@ -298,14 +298,17 @@ body.signal-app { color: var(--sg-ink); background: var(--sg-base); font-family:
    colors without changing JavaScript selectors, form submissions, DataTables or modals. */
 .signal-app .signal-view-surface .table thead th,
 .signal-app .signal-view-surface #tblRPM thead th,
-.signal-app .signal-view-surface #tblScheduledJobs thead th {
+.signal-app .signal-view-surface #tblScheduledJobs thead th,
+.signal-app .signal-view-surface #tblTechJobs thead th {
     background: #f0f4fb !important; color: #566784 !important; border-color: #e3eaf3 !important;
     text-align: left; font-size: 11px; font-weight: 800; letter-spacing: .045em;
 }
 .signal-app .signal-view-surface #tblRPM tbody tr:nth-child(even),
-.signal-app .signal-view-surface #tblScheduledJobs tbody tr:nth-child(even) { background: #f9fbff; }
+.signal-app .signal-view-surface #tblScheduledJobs tbody tr:nth-child(even),
+.signal-app .signal-view-surface #tblTechJobs tbody tr:nth-child(even) { background: #f9fbff; }
 .signal-app .signal-view-surface #tblRPM tbody tr:hover,
-.signal-app .signal-view-surface #tblScheduledJobs tbody tr:hover { background: #eff5ff !important; }
+.signal-app .signal-view-surface #tblScheduledJobs tbody tr:hover,
+.signal-app .signal-view-surface #tblTechJobs tbody tr:hover { background: #eff5ff !important; }
 .signal-app .signal-view-surface .table-bordered td, .signal-app .signal-view-surface .table-bordered th { border-color: #ebeff7; }
 .signal-app .signal-view-surface .dataTables_wrapper { overflow-x: auto; }
 .signal-app .signal-view-surface .dataTables_scroll, .signal-app .signal-view-surface .dataTables_scrollBody { width: 100%; }
@@ -1983,8 +1986,8 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 
 /* Stat card colored variants */
 .signal-app .signal-view-surface .nova-stat-card.nova-stat--total {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: #fff;
+  border-color: #e8e8f3;
 }
 
 .signal-app .signal-view-surface .nova-stat-card.nova-stat--total .nova-stat-number {
@@ -1992,8 +1995,8 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 }
 
 .signal-app .signal-view-surface .nova-stat-card.nova-stat--scheduled {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: #fff;
+  border-color: #e8e8f3;
 }
 
 .signal-app .signal-view-surface .nova-stat-card.nova-stat--scheduled .nova-stat-number {
@@ -2001,8 +2004,8 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 }
 
 .signal-app .signal-view-surface .nova-stat-card.nova-stat--completed {
-  background: #fffbeb;
-  border-color: #fde68a;
+  background: #fff;
+  border-color: #e8e8f3;
 }
 
 .signal-app .signal-view-surface .nova-stat-card.nova-stat--completed .nova-stat-number {
@@ -2010,8 +2013,8 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 }
 
 .signal-app .signal-view-surface .nova-stat-card.nova-stat--cancelled {
-  background: #fef2f2;
-  border-color: #fecaca;
+  background: #fff;
+  border-color: #e8e8f3;
 }
 
 .signal-app .signal-view-surface .nova-stat-card.nova-stat--cancelled .nova-stat-number {
@@ -2128,6 +2131,19 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 /* ========== TECHNICIAN JOBS PAGE SCOPING (.tj-page) ========== */
 /* Higher specificity to override signal-list-tables.css rules (which have body selector) */
 
+/* Match Scheduled Jobs heading and records typography */
+.signal-app .signal-view-surface .nova-page-head.tj-page h1 {
+  font-size: clamp(24px, 2.2vw, 30px);
+  font-weight: 760;
+  letter-spacing: -1px;
+  color: #282b4b;
+}
+
+.signal-app .signal-view-surface .nova-page-head.tj-page p {
+  font-size: 13px;
+  color: #8991a3;
+}
+
 /* Stat cards: centered, colored backgrounds, proper sizing */
 .signal-app .signal-view-surface .tj-page .nova-stat-card {
   display: flex;
@@ -2164,8 +2180,8 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 
 /* Stat card color variants */
 .signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--total {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: #fff;
+  border-color: #e8e8f3;
 }
 
 .signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--total .nova-stat-number {
@@ -2173,8 +2189,8 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 }
 
 .signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--scheduled {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
+  background: #fff;
+  border-color: #e8e8f3;
 }
 
 .signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--scheduled .nova-stat-number {
@@ -2182,8 +2198,8 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 }
 
 .signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--completed {
-  background: #fffbeb;
-  border-color: #fde68a;
+  background: #fff;
+  border-color: #e8e8f3;
 }
 
 .signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--completed .nova-stat-number {
@@ -2191,8 +2207,8 @@ body.signal-app,body.signal-login-body {background:var(--nova-bg); color:var(--n
 }
 
 .signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--cancelled {
-  background: #fef2f2;
-  border-color: #fecaca;
+  background: #fff;
+  border-color: #e8e8f3;
 }
 
 .signal-app .signal-view-surface .tj-page .nova-stat-card.nova-stat--cancelled .nova-stat-number {
