@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -60,6 +62,78 @@ namespace SendSmsCallAlerts.Controllers
             return valid;
         }
 
+        private static string NormalizeKey(string value) => value.Trim().ToUpperInvariant();
+
+        private static bool TryNormalizeUsersPhone(ref string? phone)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return true;
+            var value = phone.Trim();
+            if (!value.StartsWith("+", StringComparison.Ordinal)) return false;
+            var digits = value.Substring(1).Replace(" ", "").Replace("-", "").Replace("(", "").Replace(")", "");
+            if (digits.Length < 8 || digits.Length > 15 || digits[0] == '0' || digits.Any(c => c < '0' || c > '9'))
+                return false;
+            phone = "+" + digits;
+            return true;
+        }
+
+        private static bool TryNormalizeUsersPhoneValue(string? phone, out string? normalized)
+        {
+            normalized = phone;
+            return TryNormalizeUsersPhone(ref normalized);
+        }
+
+        private Dictionary<string, string> UserErrors() =>
+            ModelState.Where(x => x.Value?.Errors.Count > 0)
+                .ToDictionary(x => x.Key, x => x.Value!.Errors[0].ErrorMessage);
+
+        private IActionResult UserValidationFailure(User user, string generalMessage)
+        {
+            if (IsAjax)
+                return StatusCode(400, new { success = false, errors = UserErrors(), message = generalMessage });
+            ViewBag.ErMsg = generalMessage;
+            return FormFailure(user);
+        }
+
+        private void ValidateCreateUser(User user)
+        {
+            user.Username = user.Username?.Trim() ?? "";
+            user.Name = user.Name?.Trim();
+            user.Email = string.IsNullOrWhiteSpace(user.Email) ? null : user.Email.Trim();
+            user.Role = user.Role?.Trim();
+            ModelState.Clear();
+
+            if (!Regex.IsMatch(user.Username, "^[A-Za-z0-9_.]{3,30}$"))
+                ModelState.AddModelError(nameof(user.Username), "Username must be 3 to 30 characters and contain only letters, digits, underscores, and dots.");
+            if (string.IsNullOrWhiteSpace(user.Name) || user.Name.Length < 2 || user.Name.Length > 100)
+                ModelState.AddModelError(nameof(user.Name), "Name must be between 2 and 100 characters.");
+            else if (new EmailAddressAttribute().IsValid(user.Name))
+                ModelState.AddModelError(nameof(user.Name), "Enter the person's name, not an email address.");
+            if (!string.IsNullOrWhiteSpace(user.Email) && !new EmailAddressAttribute().IsValid(user.Email))
+                ModelState.AddModelError(nameof(user.Email), "Enter a valid email address.");
+            if (!AppRoles.IsValid(user.Role))
+                ModelState.AddModelError(nameof(user.Role), "Role must be Staff or Admin.");
+            if (string.IsNullOrEmpty(user.Password))
+                ModelState.AddModelError(nameof(user.Password), "Password is required.");
+            else if (user.Password.Length < MinPasswordLength || !user.Password.Any(char.IsLetter) || !user.Password.Any(char.IsDigit))
+                ModelState.AddModelError(nameof(user.Password), "Password must be at least 8 characters and contain a letter and a digit.");
+            if (AppRoles.Normalize(user.Role) == AppRoles.Staff)
+            {
+                if (string.IsNullOrWhiteSpace(user.Phone))
+                    ModelState.AddModelError(nameof(user.Phone), "Twilio number is required for Staff users.");
+                else if (!TryNormalizeUsersPhoneValue(user.Phone, out var staffPhone))
+                    ModelState.AddModelError(nameof(user.Phone), "Enter a valid phone number in international format, such as +923456543210.");
+                else
+                    user.Phone = staffPhone;
+            }
+            else if (!string.IsNullOrWhiteSpace(user.Phone))
+            {
+                if (!TryNormalizeUsersPhoneValue(user.Phone, out var adminPhone))
+                    ModelState.AddModelError(nameof(user.Phone), "Enter a valid phone number in international format, such as +923456543210.");
+                else
+                    user.Phone = adminPhone;
+            }
+        }
+
         private bool IsAjax => Request.Headers["X-Requested-With"] == "XMLHttpRequest";
 
         private IActionResult FormFailure(User user)
@@ -70,7 +144,7 @@ namespace SendSmsCallAlerts.Controllers
         }
 
         private IActionResult FormSuccess(string message) => IsAjax
-            ? Json(new { success = true, message })
+            ? Json(new { success = true, redirectUrl = Url.Action(nameof(Index)), message })
             : RedirectToAction(nameof(Index));
 
         [HttpGet]
@@ -172,45 +246,32 @@ namespace SendSmsCallAlerts.Controllers
         public async Task<IActionResult> Create(User user)
         {
             LoadRoles(user.Role);
-            user.Username = user.Username?.Trim() ?? "";
-
-            if (string.IsNullOrEmpty(user.Username) || string.IsNullOrEmpty(user.Password))
-            {
-                ViewBag.ErMsg = "Please enter a username and password!";
-                return FormFailure(user);
-            }
+            ValidateCreateUser(user);
 
             if (IsHidden(user))
             {
-                ViewBag.ErMsg = "This username is reserved. Please choose another one.";
-                return FormFailure(user);
+                ModelState.AddModelError(nameof(user.Username), "This username is reserved. Please choose another one.");
             }
 
-            if (user.Password.Length < MinPasswordLength)
+            user.UsernameNormalized = NormalizeKey(user.Username);
+            user.EmailNormalized = string.IsNullOrWhiteSpace(user.Email) ? null : NormalizeKey(user.Email);
+            if (_context.User.Any(u => u.UsernameNormalized == user.UsernameNormalized ||
+                u.Username.ToUpper() == user.UsernameNormalized ||
+                (user.EmailNormalized != null && (u.EmailNormalized == user.EmailNormalized ||
+                    u.Email != null && u.Email.ToUpper() == user.EmailNormalized))))
             {
-                ViewBag.ErMsg = $"Password must be at least {MinPasswordLength} characters.";
-                return FormFailure(user);
+                if (_context.User.Any(u => u.UsernameNormalized == user.UsernameNormalized ||
+                    u.Username.ToUpper() == user.UsernameNormalized))
+                    ModelState.AddModelError(nameof(user.Username), "This username is already taken.");
+                if (user.EmailNormalized != null && _context.User.Any(u => u.EmailNormalized == user.EmailNormalized ||
+                    u.Email != null && u.Email.ToUpper() == user.EmailNormalized))
+                    ModelState.AddModelError(nameof(user.Email), "This email is already used by another user.");
             }
 
-            if (_context.User.Any(u => u.Username.ToLower() == user.Username.ToLower()))
-            {
-                ViewBag.ErMsg = "A user with this username already exists!";
-                return FormFailure(user);
-            }
+            if (!ModelState.IsValid)
+                return UserValidationFailure(user, "Please correct the highlighted fields.");
 
-            if (!AppRoles.IsValid(user.Role))
-            {
-                ViewBag.ErMsg = "Please select a valid role!";
-                return FormFailure(user);
-            }
-
-            if (!TryNormalizePhone(user))
-            {
-                ViewBag.ErMsg = "Please enter a valid Twilio number!";
-                return FormFailure(user);
-            }
-
-            if (ModelState.IsValid)
+            try
             {
                 var entity = new User
                 {
@@ -218,18 +279,28 @@ namespace SendSmsCallAlerts.Controllers
                     Name = user.Name?.Trim(),
                     Email = user.Email?.Trim(),
                     Phone = user.Phone,
-                    Role = AppRoles.Normalize(user.Role)
+                    Role = AppRoles.Normalize(user.Role),
+                    UsernameNormalized = user.UsernameNormalized,
+                    EmailNormalized = user.EmailNormalized
                 };
                 entity.Password = _passwords.Hash(entity, user.Password);
 
                 _context.Add(entity);
                 await _context.SaveChangesAsync();
+                if (IsAjax)
+                    return Json(new { success = true, redirectUrl = Url.Action(nameof(Index)), message = "User created successfully!" });
                 TempData["StMsg"] = "User created successfully!";
-                return FormSuccess("User created successfully!");
+                return RedirectToAction(nameof(Index));
             }
-
-            ViewBag.ErMsg = "Please try again with all necessary details!";
-            return FormFailure(user);
+            catch (DbUpdateException)
+            {
+                return StatusCode(409, new
+                {
+                    success = false,
+                    errors = new Dictionary<string, string> { [nameof(user.Username)] = "This username is already taken." },
+                    message = "The user could not be created because a unique value is already in use."
+                });
+            }
         }
 
         // GET: Users/Edit/5
@@ -275,29 +346,44 @@ namespace SendSmsCallAlerts.Controllers
 
             ModelState.Remove("Password"); // blank password = keep the current one
             user.Username = user.Username?.Trim() ?? "";
+            user.Name = user.Name?.Trim();
+            user.Email = string.IsNullOrWhiteSpace(user.Email) ? null : user.Email.Trim();
 
-            if (string.IsNullOrEmpty(user.Username))
+            if (!Regex.IsMatch(user.Username, "^[A-Za-z0-9_.]{3,30}$"))
             {
-                ViewBag.ErMsg = "Please enter a username!";
-                return FormFailure(user);
+                ModelState.AddModelError(nameof(user.Username), "Username must be 3 to 30 characters and contain only letters, digits, underscores, and dots.");
+                return UserValidationFailure(user, "Please correct the highlighted fields.");
             }
 
             if (IsHidden(user))
             {
                 ViewBag.ErMsg = "This username is reserved. Please choose another one.";
-                return FormFailure(user);
+                return UserValidationFailure(user, "Please correct the highlighted fields.");
             }
 
-            if (_context.User.Any(u => u.Id != id && u.Username.ToLower() == user.Username.ToLower()))
+            if (_context.User.Any(u => u.Id != id && (u.UsernameNormalized == NormalizeKey(user.Username) ||
+                u.Username.ToUpper() == NormalizeKey(user.Username))))
             {
-                ViewBag.ErMsg = "A user with this username already exists!";
-                return FormFailure(user);
+                ModelState.AddModelError(nameof(user.Username), "This username is already taken.");
+                return UserValidationFailure(user, "Please correct the highlighted fields.");
+            }
+
+            if (user.Name == null || user.Name.Length < 2 || user.Name.Length > 100)
+                ModelState.AddModelError(nameof(user.Name), "Name must be between 2 and 100 characters.");
+            else if (new EmailAddressAttribute().IsValid(user.Name))
+                ModelState.AddModelError(nameof(user.Name), "Enter the person's name, not an email address.");
+            if (!string.IsNullOrWhiteSpace(user.Email) && !new EmailAddressAttribute().IsValid(user.Email))
+                ModelState.AddModelError(nameof(user.Email), "Enter a valid email address.");
+            if (!string.IsNullOrWhiteSpace(user.Email) && _context.User.Any(u => u.Id != id &&
+                (u.EmailNormalized == NormalizeKey(user.Email) || u.Email != null && u.Email.ToUpper() == NormalizeKey(user.Email))))
+            {
+                ModelState.AddModelError(nameof(user.Email), "This email is already used by another user.");
             }
 
             if (!AppRoles.IsValid(user.Role))
             {
                 ViewBag.ErMsg = "Please select a valid role!";
-                return FormFailure(user);
+                return UserValidationFailure(user, "Please correct the highlighted fields.");
             }
 
             var newRole = AppRoles.Normalize(user.Role);
@@ -307,32 +393,39 @@ namespace SendSmsCallAlerts.Controllers
                 if (isSelf)
                 {
                     ViewBag.ErMsg = "You cannot change your own role.";
-                    return FormFailure(user);
+                    return UserValidationFailure(user, "Please correct the highlighted fields.");
                 }
                 if (oldRole == AppRoles.Admin && !IsOtherAdminLeft(id))
                 {
                     ViewBag.ErMsg = "At least one Admin must remain.";
-                    return FormFailure(user);
+                    return UserValidationFailure(user, "Please correct the highlighted fields.");
                 }
             }
 
             if (!string.IsNullOrEmpty(user.Password) && user.Password.Length < MinPasswordLength)
             {
                 ViewBag.ErMsg = $"Password must be at least {MinPasswordLength} characters.";
-                return FormFailure(user);
+                return UserValidationFailure(user, "Please correct the highlighted fields.");
             }
 
-            if (!TryNormalizePhone(user))
+            // Replaced by users-fix 2026-11-17: Users must enter a complete E.164 number.
+            if (newRole == AppRoles.Staff && string.IsNullOrWhiteSpace(user.Phone))
+                ModelState.AddModelError(nameof(user.Phone), "Twilio number is required for Staff users.");
+            else if (!string.IsNullOrWhiteSpace(user.Phone))
             {
-                ViewBag.ErMsg = "Please enter a valid Twilio number!";
-                return FormFailure(user);
+                if (!TryNormalizeUsersPhoneValue(user.Phone, out var editedPhone))
+                    ModelState.AddModelError(nameof(user.Phone), "Enter a valid phone number in international format, such as +923456543210.");
+                else
+                    user.Phone = editedPhone;
             }
 
             if (ModelState.IsValid)
             {
                 existing.Username = user.Username;
+                existing.UsernameNormalized = NormalizeKey(user.Username);
                 existing.Name = user.Name?.Trim();
                 existing.Email = user.Email?.Trim();
+                existing.EmailNormalized = string.IsNullOrWhiteSpace(existing.Email) ? null : NormalizeKey(existing.Email);
                 existing.Phone = user.Phone;
                 existing.Role = newRole;
                 if (!string.IsNullOrEmpty(user.Password))
@@ -356,7 +449,7 @@ namespace SendSmsCallAlerts.Controllers
                 }
                 return FormSuccess("Record Updated Successfully!");
             }
-            return FormFailure(user);
+            return UserValidationFailure(user, "Please correct the highlighted fields.");
         }
 
         // GET: Users/Delete/5

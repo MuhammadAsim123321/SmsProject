@@ -13,12 +13,8 @@
 
 <hr />
 
-@if (ViewBag.ErMsg != null)
-{
-    <div class="alert alert-danger">
-        <b>@ViewBag.ErMsg </b>
-    </div>
-}
+@* Error messages now render as a top-right toast via the shared _ErrorToast partial. *@
+<partial name="_ErrorToast" />
 <div class="row">
     <div class="col-md-4 sg-wide-editor">
         @using (Html.BeginForm("Create", "Schedulers", FormMethod.Post, new { enctype = "multipart/form-data", @role = "form", @id = "registerForm", @class = "form-horizontal", onsubmit = "return confirmAction(event, 'Create Scheduler', 'Are you sure you want to create this scheduler?', this);" }))

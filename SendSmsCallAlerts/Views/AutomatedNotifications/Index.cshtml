@@ -1,6 +1,7 @@
 @model IEnumerable<SendSmsCallAlerts.Models.AutomatedSmsSetting>
 @using SendSmsCallAlerts.Controllers
 @using SendSmsCallAlerts.Models
+@inject SendSmsCallAlerts.Services.IAppClock AppClock
 @{
     ViewData["Title"] = "Automated SMS";
     var nextOccurrences = (Dictionary<int, DateTime>)ViewBag.NextOccurrences;
@@ -72,10 +73,11 @@
                         {
                             var now = DateTime.UtcNow;
                             var diff = nextRun.Subtract(now);
+                            var nextRunLocal = AppClock.ToBusiness(nextRun);
                             
                             if (diff.TotalDays >= 1)
                             {
-                                nextRunText = nextRun.ToString("ddd h:mm tt");
+                                nextRunText = nextRunLocal.ToString("ddd h:mm tt");
                             }
                             else if (diff.TotalHours >= 1)
                             {
@@ -89,7 +91,7 @@
                             {
                                 nextRunText = "Soon";
                             }
-                            nextRunTitle = nextRun.ToString("dddd, MMMM d, yyyy h:mm tt");
+                            nextRunTitle = nextRunLocal.ToString("dddd, MMMM d, yyyy h:mm tt");
                         }
 
                         <tr>
@@ -112,7 +114,8 @@
                                     <a href="@Url.Action("Edit", new { id = s.Id })" class="btn btn-sm btn-primary">
                                         <i class="fa fa-pencil"></i> Edit
                                     </a>
-                                    <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post" style="display: inline;">
+                                    <form asp-action="ToggleActive" asp-route-id="@s.Id" method="post" style="display: inline;"
+                                          onsubmit="return confirmDelete(event, 'Are you sure you want to change this notification status?', this);">
                                         <button type="submit" class="btn btn-sm @(s.IsActive ? "btn-warning" : "btn-success")">
                                             <i class="fa @(s.IsActive ? "fa-pause" : "fa-play")"></i>
                                             @(s.IsActive ? "Deactivate" : "Activate")

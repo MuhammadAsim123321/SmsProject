@@ -11,12 +11,13 @@
     </a>
 </div>
 
-@if (ViewBag.ErMsg != null)
+@* replaced by users-fix 2026-11-17: validation is shown once inside _UserForm. *@
+@* @if (ViewBag.ErMsg != null)
 {
     <div class="alert alert-danger">
         <b>@ViewBag.ErMsg</b>
     </div>
-}
+} *@
 
 <hr />
 @*   <input asp-for="Email" class="form-control" />*@
@@ -24,3 +25,7 @@
 
 <div>
 </div>
+
+@section Scripts {
+    <script src="~/js/users.js"></script>
+}

@@ -511,6 +511,7 @@
         window.location.href = url;
     }
     function DeleteRecord(id) {
+        if (!confirm('Are you sure you want to delete this message?')) return;
         $.post('/Sms/DeleteMsg', { id: id }, function (response) {
             if (response == "success") {
                 RpmDatatable.row(function (idx, data) { return data.id === id; }).remove().draw(false);
@@ -800,6 +801,7 @@
     }   
     
     function DeleteRecord(id) {
+        if (!confirm('Are you sure you want to delete this message?')) return;
         $.ajax({
             url: '/Sms/DeleteMsg',
             type: 'POST',

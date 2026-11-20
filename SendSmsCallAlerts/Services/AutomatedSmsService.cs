@@ -20,7 +20,6 @@ namespace SendSmsCallAlerts.Services
         public int? JobId { get; set; }
         public List<int>? JobIds { get; set; }   // technician summary: job ids in SMS number order
         public DateTime? JobDate { get; set; }
-        public List<TechnicianJobList>? JobList { get; set; }
     }
 
     public class AutomatedSmsService
@@ -269,8 +268,6 @@ namespace SendSmsCallAlerts.Services
                     item.Status = already ? "Already handled" : "Error: could not queue";
                     continue;
                 }
-                if (!dryRun && item.SkipReason == null && item.JobList != null)
-                    await SaveJobListAsync(item.RecipientId, item.JobList, ct);
 
                 item.Status = item.SkipReason != null ? "Skipped: " + item.SkipReason
                             : dryRun ? "Test (not sent)"
@@ -424,22 +421,6 @@ namespace SendSmsCallAlerts.Services
                             && (confirmedOnly ? j.Status == JobStatus.Confirmed : j.Status != JobStatus.Cancelled))
                 .OrderBy(j => j.StartAt).ThenBy(j => j.Id)
                 .ToListAsync(ct);
-        }
-
-        private async Task SaveJobListAsync(int technicianId, List<TechnicianJobList> rows, CancellationToken ct)
-        {
-            try
-            {
-                await db.TechnicianJobLists.Where(l => l.TechnicianId == technicianId).ExecuteDeleteAsync(ct);
-                foreach (var r in rows) r.SentAtUtc = DateTime.UtcNow;
-                db.TechnicianJobLists.AddRange(rows);
-                await db.SaveChangesAsync(ct);
-            }
-            catch (Exception ex)
-            {
-                foreach (var r in rows) db.Entry(r).State = EntityState.Detached;
-                logger.LogError(ex, "Could not save the job list of technician {Id}", technicianId);
-            }
         }
 
         private static string Addr(ContactDetail c) => c.Address ?? "";

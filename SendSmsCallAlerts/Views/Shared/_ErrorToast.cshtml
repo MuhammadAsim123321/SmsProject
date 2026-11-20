@@ -1,0 +1,26 @@
+@{
+    // Renders ViewBag.ErMsg as a top-right error toast (same markup/CSS/JS as _Toast)
+    // so form-level errors appear in the toast area instead of as an inline banner.
+    var msg = ViewData["ErMsg"] as string;
+}
+@if (!string.IsNullOrWhiteSpace(msg))
+{
+    <div class="toast-container">
+        <div class="toast toast--error" role="alert" aria-live="polite">
+            <div class="toast__icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+            </div>
+            <span class="toast__text">@msg</span>
+            <button class="toast__close" type="button" aria-label="Close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 6 6 18"></path>
+                    <path d="m6 6 12 12"></path>
+                </svg>
+            </button>
+        </div>
+    </div>
+}

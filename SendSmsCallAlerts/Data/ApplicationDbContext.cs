@@ -57,6 +57,19 @@ namespace SendSmsCallAlerts.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<User>(e =>
+            {
+                e.Property(u => u.UsernameNormalized).HasMaxLength(30);
+                // replaced by emailnormalized-fix 2026-11-18:
+                e.Property(u => u.EmailNormalized).HasMaxLength(256);
+                e.HasIndex(u => u.UsernameNormalized).IsUnique()
+                    .HasFilter("[UsernameNormalized] IS NOT NULL")
+                    .HasDatabaseName("UQ_User_UsernameNormalized");
+                e.HasIndex(u => u.EmailNormalized).IsUnique()
+                    .HasFilter("[EmailNormalized] IS NOT NULL")
+                    .HasDatabaseName("UX_User_EmailNormalized");
+            });
+
             // ---------------- customer ----------------
             modelBuilder.Entity<ContactDetail>(e =>
             {

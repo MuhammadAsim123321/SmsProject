@@ -11,12 +11,8 @@
     </a>
 </div>
 
-@if (ViewBag.ErMsg != null)
-{
-    <div class="alert alert-danger">
-        <b>@ViewBag.ErMsg</b>
-    </div>
-}
+@* Error messages now render as a top-right toast via the shared _ErrorToast partial. *@
+<partial name="_ErrorToast" />
 <hr />
 <div class="row">
     <div class="col-md-4">
