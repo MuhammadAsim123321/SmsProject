@@ -98,7 +98,7 @@ namespace SendSmsCallAlerts.Controllers
                 await service.EnsureNextOccurrencesAsync();
 
             var query = db.SmsLogs.AsNoTracking()
-                .Where(l => l.Source == SmsLogSources.Automated);
+                .Where(l => l.Source == SmsLogSources.Automated || l.Source == SmsLogSources.Forward);
             if (tab == "Queue") query = query.Where(l => l.Status == SmsLogStatus.Pending);
             if (tab == "History") query = query.Where(l => l.Status != SmsLogStatus.Pending);
             if (!string.IsNullOrWhiteSpace(occurrenceKey))
@@ -123,9 +123,8 @@ namespace SendSmsCallAlerts.Controllers
             var logs = await query.OrderByDescending(l => l.CreatedOn)
                 .Skip((page - 1) * PageSize).Take(PageSize).ToListAsync();
 
-            var automated = db.SmsLogs.AsNoTracking().Where(l => l.Source == SmsLogSources.Automated);
+            var automated = db.SmsLogs.AsNoTracking().Where(l => l.Source == SmsLogSources.Automated || l.Source == SmsLogSources.Forward);
             var counts = await automated
-                .Where(l => l.Source == SmsLogSources.Automated)
                 .GroupBy(l => l.Status)
                 .Select(g => new { g.Key, C = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.C);
             var settingNames = await db.AutomatedSmsSettings.AsNoTracking()
@@ -229,7 +228,7 @@ namespace SendSmsCallAlerts.Controllers
         [HttpGet]
         public async Task<IActionResult> Summary()
         {
-            var automated = db.SmsLogs.AsNoTracking().Where(l => l.Source == SmsLogSources.Automated);
+            var automated = db.SmsLogs.AsNoTracking().Where(l => l.Source == SmsLogSources.Automated || l.Source == SmsLogSources.Forward);
             var counts = await automated.GroupBy(l => l.Status)
                 .Select(g => new { g.Key, C = g.Count() }).ToDictionaryAsync(x => x.Key, x => x.C);
             int Get(string k) => counts.TryGetValue(k, out var v) ? v : 0;

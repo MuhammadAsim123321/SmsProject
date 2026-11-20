@@ -448,6 +448,25 @@ namespace SendSmsCallAlerts.Controllers
                     body,
                     mediaUrl,
                     senderOverride: ForwardingNumber);
+
+                // Record the forward attempt so it is visible in the Sms Logs page / DB.
+                var forwardLog = new SmsLog
+                {
+                    RecipientNumber = num,
+                    MessageContent = body,
+                    Status = result.Success ? SmsLogStatus.MessageSent : SmsLogStatus.SmsFailed,
+                    Source = SmsLogSources.Forward,
+                    IsSimulated = result.Simulated,
+                    SentDate = result.Success ? DateTime.UtcNow : (DateTime?)null,
+                    FailureReason = result.Error,
+                    RecipientType = "Customer",
+                    AttemptCount = 1,
+                    QueuedAt = DateTime.UtcNow,
+                    CreatedOn = DateTime.UtcNow
+                };
+                _context.SmsLogs.Add(forwardLog);
+                await _context.SaveChangesAsync();
+
                 if (!result.Success)
                 {
                     _logger.LogWarning("Forwarded SMS/MMS send failed: {Error}", result.Error);

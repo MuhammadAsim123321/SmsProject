@@ -20,6 +20,7 @@ namespace SendSmsCallAlerts.Models
         public const string Automated = "Automated";   // AutomatedSmsSetting rules (technician / customer notifications)
         public const string Manual = "Manual";         // typed by a user on the Send SMS page
         public const string JobPlan = "JobPlan";       // message plan of a job (SmsJob)
+        public const string Forward = "Forward";       // incoming SMS forwarded to ForwardNum numbers
     }
 
     /// <summary>
