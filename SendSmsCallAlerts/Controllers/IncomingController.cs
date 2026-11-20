@@ -156,7 +156,7 @@ namespace SendSmsCallAlerts.Controllers
                 await ProcessSmsBody(smsDetail);
             }
 
-            // Forwarding, masking and IVR welcome/options are customer flows. Do not run
+            // Forwarding and IVR welcome/options are customer flows. Do not run
             // them for registered technician senders.
             if (!isTechnicianSender)
             {
@@ -169,16 +169,6 @@ namespace SendSmsCallAlerts.Controllers
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Incoming customer SMS forwarding failed.");
-                }
-
-                try
-                {
-                    if (smsDetail.fromNum == "+18557233022" || smsDetail.toNum == "+18557233022")
-                        await ResendWithMask(smsDetail, imgUrlList);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Incoming customer SMS masking failed.");
                 }
 
                 await IvrSms(smsDetail);
@@ -424,21 +414,6 @@ namespace SendSmsCallAlerts.Controllers
                 _logger.LogError(ex, "Selected-option SMS processing failed.");
                 return false;
             }
-        }
-
-
-        private async Task<bool> ResendWithMask(SmsDetail smsDetail, List<MmsLinks> tempImgPath)
-        {
-            string Number = "+1" + smsDetail.smsBody.Substring(0, 10);
-
-            smsDetail.smsBody = smsDetail.smsBody.Substring(10);
-
-            if (Number.Length == 12)
-            {
-                await SendSmsMms(smsDetail, Number, tempImgPath);
-
-            }
-            return true;
         }
 
 
