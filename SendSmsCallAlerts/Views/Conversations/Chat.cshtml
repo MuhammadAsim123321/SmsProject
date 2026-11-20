@@ -1,4 +1,5 @@
 @model List<SendSmsCallAlerts.Models.SmsDetail>
+@inject SendSmsCallAlerts.Services.IAppClock Clock
 @{
     ViewData["Title"] = "Conversation";
 }
@@ -31,13 +32,15 @@
                     if (rec.fromNum == ViewBag.CustomerNumber)
                     {
                         <div class="signal-thread-line signal-thread-incoming">
-                            <div class="signal-thread-bubble"><p>@rec.smsBody</p><time>@rec.createdOn.ToString("MM-dd-yy HH:mm")</time></div>
+                            @* was: <div class="signal-thread-bubble"><p>@rec.smsBody</p><time>@rec.createdOn.ToString("MM-dd-yy HH:mm")</time></div> *@
+                            <div class="signal-thread-bubble"><p>@rec.smsBody</p><time>@Clock.ToBusiness(rec.createdOn).ToString("MM-dd-yy HH:mm")</time></div>
                         </div>
                     }
                     else
                     {
                         <div class="signal-thread-line signal-thread-outgoing">
-                            <div class="signal-thread-bubble"><p>@rec.smsBody</p><time>@rec.createdOn.ToString("MM-dd-yy HH:mm")</time></div>
+                            @* was: <div class="signal-thread-bubble"><p>@rec.smsBody</p><time>@rec.createdOn.ToString("MM-dd-yy HH:mm")</time></div> *@
+                            <div class="signal-thread-bubble"><p>@rec.smsBody</p><time>@Clock.ToBusiness(rec.createdOn).ToString("MM-dd-yy HH:mm")</time></div>
                         </div>
                     }
                 }

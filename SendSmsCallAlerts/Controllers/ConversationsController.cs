@@ -21,6 +21,7 @@ namespace SendSmsCallAlerts.Controllers
         private readonly ISmsGateway _smsGateway;
         private readonly IUploadedMediaStore _uploadedMediaStore;
         private readonly SmsLogService _smsLog;
+        private readonly IAppClock _clock;
 
         public ConversationsController(
             IConfiguration configuration,
@@ -28,7 +29,8 @@ namespace SendSmsCallAlerts.Controllers
             ApplicationDbContext context,
             ISmsGateway smsGateway,
             IUploadedMediaStore uploadedMediaStore,
-            SmsLogService smsLog)
+            SmsLogService smsLog,
+            IAppClock clock)
         {
             _configuration = configuration;
             _hostingEnvironment = hostingEnvironment;
@@ -37,6 +39,7 @@ namespace SendSmsCallAlerts.Controllers
             _smsGateway = smsGateway;
             _uploadedMediaStore = uploadedMediaStore;
             _smsLog = smsLog;
+            _clock = clock;
 
         }
 
@@ -216,9 +219,12 @@ namespace SendSmsCallAlerts.Controllers
                 Id = m.Id,
                 Body = m.smsBody ?? "",
                 Direction = m.smsDirection,
-                Date = m.createdOn.ToString("MM-dd-yyyy"),
-                Time = m.createdOn.ToString("hh:mm tt"),
-                DateTimeFull = m.createdOn.ToString("MM-dd-yyyy hh:mm tt"),
+                // was: Date = m.createdOn.ToString("MM-dd-yyyy"),
+                Date = _clock.ToBusiness(m.createdOn).ToString("MM-dd-yyyy"),
+                // was: Time = m.createdOn.ToString("hh:mm tt"),
+                Time = _clock.ToBusiness(m.createdOn).ToString("hh:mm tt"),
+                // was: DateTimeFull = m.createdOn.ToString("MM-dd-yyyy hh:mm tt"),
+                DateTimeFull = _clock.ToBusiness(m.createdOn).ToString("MM-dd-yyyy hh:mm tt"),
                 FromNum = m.fromNum,
                 ToNum = m.toNum,
                 Attachments = mmsCounts.FirstOrDefault(x => x.SmsId == m.Id)?.Count ?? 0,
@@ -228,7 +234,9 @@ namespace SendSmsCallAlerts.Controllers
 
             var auto = autoLogs.Select(l =>
             {
-                var at = l.SentDate ?? l.QueuedAt;
+                // was: var at = l.SentDate ?? l.QueuedAt;
+                var atUtc = l.SentDate ?? l.QueuedAt;
+                var at = _clock.ToBusiness(atUtc);
                 return new ConvMsg
                 {
                     Id = -(int)l.Id,                       // negative: never collides with SmsDetails ids
@@ -243,7 +251,8 @@ namespace SendSmsCallAlerts.Controllers
                     FailureReason = l.Status == SmsLogStatus.SmsFailed ? l.FailureReason : null,
                     Source = l.Source,
                     IsAutomated = true,
-                    Sort = at
+                    // was: Sort = at
+                    Sort = atUtc
                 };
             });
 

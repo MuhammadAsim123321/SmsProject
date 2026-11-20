@@ -506,9 +506,12 @@ namespace SendSmsCallAlerts.Controllers
         {
             try
             {
-                var endOfToDate = toDate.Date.AddDays(1).AddTicks(-1);
+                // was: var endOfToDate = toDate.Date.AddDays(1).AddTicks(-1);
+                var fromUtc = _clock.ToUtc(fromDate.Date);
+                var toUtcExclusive = _clock.ToUtc(toDate.Date.AddDays(1));
                 var query = _context.SmsDetails
-                    .Where(s => s.createdOn >= fromDate.Date && s.createdOn <= endOfToDate);
+                    // was: .Where(s => s.createdOn >= fromDate.Date && s.createdOn <= endOfToDate);
+                    .Where(s => s.createdOn >= fromUtc && s.createdOn < toUtcExclusive);
                 var technicianPhoneVariants = await GetTechnicianPhoneVariantsAsync();
                 query = query.Where(s => s.TechnicianId == null &&
                     !(s.smsDirection == "Incoming"
@@ -554,7 +557,8 @@ namespace SendSmsCallAlerts.Controllers
         {
             try
             {
-                var endOfToDate = toDate.Date.AddDays(1).AddTicks(-1);
+                var fromUtc = _clock.ToUtc(fromDate.Date);
+                var toUtcExclusive = _clock.ToUtc(toDate.Date.AddDays(1));
                 
                 // Get Staff phone for filtering (Admin gets null, no filter)
                 string staffPhone = GetTwilioNumber();
@@ -562,7 +566,8 @@ namespace SendSmsCallAlerts.Controllers
                 var technicianPhoneVariants = await GetTechnicianPhoneVariantsAsync();
 
                 var logs = await (from sms in _context.SmsDetails
-                                  where sms.createdOn >= fromDate.Date && sms.createdOn <= endOfToDate
+                                  // was: where sms.createdOn >= fromDate.Date && sms.createdOn <= endOfToDate
+                                  where sms.createdOn >= fromUtc && sms.createdOn < toUtcExclusive
                                   // Staff: restrict to their own messages (fromNum OR toNum matches)
                                   && (string.IsNullOrEmpty(staffPhone) || variants.Contains(sms.fromNum) || variants.Contains(sms.toNum))
                                   && sms.TechnicianId == null
@@ -610,7 +615,8 @@ namespace SendSmsCallAlerts.Controllers
                         scheduler = string.Join("; ", cj.Select(j => j.ScheduledJobs.FirstOrDefault()?.Scheduler?.name ?? "N/A"));
                     }
 
-                    builder.AppendLine($"{log.CreatedOn:MM-dd-yyyy HH:mm},{log.From},{log.Body},{attachmentsString},{log.Name},{category},{scheduler}");
+                    // was: builder.AppendLine($"{log.CreatedOn:MM-dd-yyyy HH:mm},{log.From},{log.Body},{attachmentsString},{log.Name},{category},{scheduler}");
+                    builder.AppendLine($"{_clock.ToBusiness(log.CreatedOn):MM-dd-yyyy HH:mm},{log.From},{log.Body},{attachmentsString},{log.Name},{category},{scheduler}");
                 }
 
                 var csvBytes = System.Text.Encoding.UTF8.GetBytes(builder.ToString());
@@ -779,6 +785,9 @@ namespace SendSmsCallAlerts.Controllers
                             startAt = j.StartAt.ToString("dd-MMM-yyyy hh:mm tt"),
                             endAt = j.EndAt.ToString("dd-MMM-yyyy hh:mm tt"),
                             lastExecutedAt = p?.LastExecutedAt,
+                            lastExecutedText = p?.LastExecutedAt?.ToString("hh:mm tt"),
+                            lastExecutedDate = p?.LastExecutedAt?.ToString("dd-MMM-yyyy"),
+                            lastExecutedIsToday = p?.LastExecutedAt != null && p.LastExecutedAt.Value.Date == now.Date,
                             status,
                             isPaused = p?.IsPaused ?? false,
                             isSent
@@ -943,7 +952,8 @@ namespace SendSmsCallAlerts.Controllers
                     smsBody = item.sms.smsBody,
                     smsDirection = item.sms.smsDirection,
                     IsReadYesOrNo = item.sms.IsReadYesOrNo,
-                    dt = item.sms.createdOn.ToString("MM-dd-yy HH:mm"),
+                    // was: dt = item.sms.createdOn.ToString("MM-dd-yy HH:mm"),
+                    dt = _clock.ToBusiness(item.sms.createdOn).ToString("MM-dd-yy HH:mm"),
                     createdOn = item.sms.createdOn,
                     imgPath = item.sms.imgPath,
                     attchmentsCount = item.attchmentsCount,
@@ -1046,13 +1056,17 @@ namespace SendSmsCallAlerts.Controllers
                 conversation.JobBookDate,
                 conversation.SchedulerId,
                 incomingDate = conversation.smsDirection == "Incoming"
-                    ? conversation.createdOn.ToString("MM-dd-yyyy") : "",
+                    // was: ? conversation.createdOn.ToString("MM-dd-yyyy") : "",
+                    ? _clock.ToBusiness(conversation.createdOn).ToString("MM-dd-yyyy") : "",
                 incomingTime = conversation.smsDirection == "Incoming"
-                    ? conversation.createdOn.ToString("hh:mm:ss tt") : "",
+                    // was: ? conversation.createdOn.ToString("hh:mm:ss tt") : "",
+                    ? _clock.ToBusiness(conversation.createdOn).ToString("hh:mm:ss tt") : "",
                 respondedDate = conversation.RespondedOn.HasValue
-                    ? conversation.RespondedOn.Value.ToString("MM-dd-yyyy") : "",
+                    // was: ? conversation.RespondedOn.Value.ToString("MM-dd-yyyy") : "",
+                    ? _clock.ToBusiness(conversation.RespondedOn.Value).ToString("MM-dd-yyyy") : "",
                 respondedTime = conversation.RespondedOn.HasValue
-                    ? conversation.RespondedOn.Value.ToString("hh:mm:ss tt") : "",
+                    // was: ? conversation.RespondedOn.Value.ToString("hh:mm:ss tt") : "",
+                    ? _clock.ToBusiness(conversation.RespondedOn.Value).ToString("hh:mm:ss tt") : "",
                 waitingDisplay = conversation.smsDirection == "Incoming"
                     ? (conversation.IsResponded
                         ? FormatWaitingTime(conversation.WaitingMinutes ?? 0)

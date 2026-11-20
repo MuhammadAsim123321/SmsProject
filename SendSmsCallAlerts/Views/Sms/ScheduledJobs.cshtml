@@ -369,11 +369,13 @@
                         "render": function (data, type, row) {
                             if (row.planId == null) return '<span class="text-muted">—</span>';
                             if (!data) return '<span class="badge-never"><i class="fa fa-clock me-1"></i>Never Sent</span>';
-                            var sent = new Date(data), today = new Date();
-                            var timeStr = sent.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            if (sent.toDateString() === today.toDateString())
-                                return '<span class="badge-sent-today"><i class="fa fa-check-circle me-1"></i>Today ' + timeStr + '</span>';
-                            return '<span class="badge-sent-old"><i class="fa fa-calendar-alt me-1"></i>' + sent.toLocaleDateString() + ' ' + timeStr + '</span>';
+                            // was: var sent = new Date(data), today = new Date();
+                            // was: var timeStr = sent.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            // was: if (sent.toDateString() === today.toDateString()) return '<span class="badge-sent-today"><i class="fa fa-check-circle me-1"></i>Today ' + timeStr + '</span>';
+                            // was: return '<span class="badge-sent-old"><i class="fa fa-calendar-alt me-1"></i>' + sent.toLocaleDateString() + ' ' + timeStr + '</span>';
+                            var timeStr = row.lastExecutedText;
+                            if (row.lastExecutedIsToday) return '<span class="badge-sent-today"><i class="fa fa-check-circle me-1"></i>Today ' + timeStr + '</span>';
+                            return '<span class="badge-sent-old"><i class="fa fa-calendar-alt me-1"></i>' + row.lastExecutedDate + ' ' + timeStr + '</span>';
                         }
                     },
                     {
