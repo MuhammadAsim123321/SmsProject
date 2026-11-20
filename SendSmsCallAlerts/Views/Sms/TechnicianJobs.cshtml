@@ -254,8 +254,8 @@
                             data: 'distanceMiles',
                             render: function (d, type, row) {
                                 if (type === 'sort') return row.distanceRaw != null ? row.distanceRaw : 99999;
-                                if (!d || d === 'N/A') return '<span class="tj-dist-badge"><i class="fa fa-map-marker-alt me-1"></i>N/A</span>';
-                                return '<span class="tj-dist-badge"><i class="fa fa-map-marker-alt me-1"></i>' + esc(d) + '</span>';
+                                if (!d || d === 'N/A') return '<span class="tj-dist-badge"><i class="fa fa-map-marker me-1"></i>N/A</span>';
+                                return '<span class="tj-dist-badge"><i class="fa fa-map-marker me-1"></i>' + esc(d) + '</span>';
                             }
                         },
                         // 8: Phone # (tel: link) (was column 9, now 8)
