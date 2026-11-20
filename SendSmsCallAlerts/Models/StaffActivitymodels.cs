@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using SendSmsCallAlerts.Controllers;
+using SendSmsCallAlerts.Services;
 
 namespace SendSmsCallAlerts.Models
 {
@@ -78,5 +80,13 @@ namespace SendSmsCallAlerts.Models
         public string? Path { get; set; }
 
         public bool Success { get; set; } = true;
+    }
+
+    /// <summary>View model for StaffActivityController.Index() combining SMS data and phone call data.</summary>
+    public class StaffActivityIndexVm
+    {
+        public List<StaffRow> StaffRows { get; set; } = new();
+        public List<RcCallRowVm> CallRows { get; set; } = new();
+        public string? CallsError { get; set; }
     }
 }

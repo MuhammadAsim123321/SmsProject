@@ -1,0 +1,140 @@
+@using SendSmsCallAlerts.Controllers
+@model List<RcCallRowVm>
+
+@* 
+    Shared Calls Table Partial
+    Used by: Views/StaffActivity/Index.cshtml (Phone calls pane)
+             Views/RingCentralCalls/Index.cshtml (Outgoing calls page)
+    
+    Renders a unified call table with search, pagination, and consistent styling.
+    DataTables will auto-generate search, length, and pagination controls.
+*@
+
+<div class="calls-table">
+    <div class="calls-table__wrapper">
+        
+        @if (Model != null && Model.Any())
+        {
+            @* replaced by calls-align-techjobs 2026-11-19: Changed wrapper from overflow-x:auto div to nova-table-viewport class to match Technician Jobs *@
+            <div class="nova-table-viewport" style="overflow-x: auto; width: 100%;">
+                <table id="tblCalls" class="table calls-table__table">
+                    <colgroup>
+                        <col style="width: 14%;" />  @* Date *@
+                        <col style="width: 10%;" />  @* Time *@
+                        <col style="width: 22%;" />  @* From *@
+                        <col style="width: 22%;" />  @* To *@
+                        <col style="width: 10%;" />  @* Duration *@
+                        <col style="width: 22%;" />  @* Result *@
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Duration</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model)
+                        {
+                            <tr>
+                                <td>@row.Date</td>
+                                <td>@row.Time</td>
+                                <td>
+                                    @row.FromNumber
+                                    @if (!string.IsNullOrWhiteSpace(row.FromName))
+                                    {
+                                        <span class="name-under-number">@row.FromName</span>
+                                    }
+                                </td>
+                                <td>
+                                    @row.ToNumber
+                                    @if (!string.IsNullOrWhiteSpace(row.ToName))
+                                    {
+                                        <span class="name-under-number">@row.ToName</span>
+                                    }
+                                </td>
+                                <td class="col-duration">
+                                    @if (row.DurationSeconds > 0)
+                                    {
+                                        <span title="@row.DurationSeconds seconds">@row.Duration</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0:00</span>
+                                    }
+                                </td>
+                                <td class="col-result">
+                                    <span class="nova-status @row.ResultCss">@row.Result</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="calls-table__empty">
+                <strong>No calls found</strong>
+                Call activity will appear here once calls are placed or received.
+            </div>
+        }
+    </div>
+</div>
+
+@* replaced by calls-pagination-fix 2026-11-19: DataTable init moved to calls-table.js in wwwroot/js/ *@
+@*
+<script>
+    (function () {
+        'use strict';
+        
+        if (document.getElementById('tblCalls') && typeof jQuery !== 'undefined' && jQuery.fn.DataTable) {
+            jQuery('#tblCalls').DataTable({
+                processing: true,
+                scrollX: false,
+                autoWidth: false,
+                pageLength: 10,
+                lengthMenu: [10, 25, 50, 100],
+                order: [],
+                language: {
+                    emptyTable: "No calls found for the selected date range.",
+                    zeroRecords: "No matching calls found.",
+                    search: "",
+                    searchPlaceholder: "Search calls...",
+                    lengthMenu: "Show _MENU_ entries",
+                    info: "Showing _START_ to _END_ of _TOTAL_ calls",
+                    infoEmpty: "Showing 0 to 0 of 0 calls",
+                    infoFiltered: "(filtered from _MAX_ total calls)",
+                    paginate: {
+                        previous: "Previous",
+                        next: "Next"
+                    }
+                },
+                initComplete: function () {
+                    // Wrap search input with icon
+                    var searchLabel = jQuery('#tblCalls_wrapper .dataTables_filter label');
+                    if (searchLabel && !searchLabel.find('.fa-search').length) {
+                        searchLabel.prepend('<i class="fa fa-search" aria-hidden="true"></i>');
+                    }
+                    
+                    this.api().columns.adjust();
+                }
+            });
+        }
+        
+        // Adjust table when sidebar is toggled
+        if (typeof jQuery !== 'undefined') {
+            jQuery('#toggle_btn, #mobile_btn').on('click', function () {
+                setTimeout(function () {
+                    if (jQuery.fn.DataTable.isDataTable('#tblCalls')) {
+                        jQuery('#tblCalls').DataTable().columns.adjust();
+                    }
+                }, 320);
+            });
+        }
+    })();
+</script>
+*@

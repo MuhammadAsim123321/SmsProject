@@ -111,6 +111,8 @@
     }
 
     /* Table */
+    @* replaced by calls-shared-fix 2026-11-19: Table styling moved to calls-shared.css *@
+    @*
     #tblOutgoingCalls {
         width: 100% !important;
         border-collapse: collapse;
@@ -141,6 +143,7 @@
         #tblOutgoingCalls tbody tr:nth-child(even) {
             background-color: #fafafa;
         }
+    *@
 
     .nova-table-viewport {
         width: 100%;
@@ -148,53 +151,13 @@
         padding: 0 15px 15px;
     }
 
-    /* DataTables Search */
-    .dataTables_wrapper .dataTables_filter input {
-        border-radius: 8px;
-        border: 1px solid #ddd;
-        padding: 4px 10px;
-    }
-
-    #tblOutgoingCalls_wrapper .dataTables_filter {
-        margin: 0;
-        text-align: right;
-    }
-
-        #tblOutgoingCalls_wrapper .dataTables_filter label {
-            margin: 0;
-            width: min(100%, 350px);
-        }
-
-        #tblOutgoingCalls_wrapper .dataTables_filter input {
-            width: 100%;
-            height: 46px;
-            margin-left: 0;
-            padding: 0 12px 0 44px !important;
-            border-radius: 12px;
-            background: #fbfcff;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 18 18'%3E%3Cpath fill='%2395a3bf' d='M7.5 3a4.5 4.5 0 103.15 7.71l3.32 3.32 1.06-1.06-3.32-3.32A4.5 4.5 0 007.5 3zm0 1.5a3 3 0 110 6 3 3 0 010-6z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: 14px center;
-            background-size: 18px 18px;
-            border-color: #e1e5f0;
-            font-size: 13px;
-        }
-
-    .dataTables_wrapper .dataTables_length select {
-        border-radius: 8px;
-        border: 1px solid #ddd;
-        padding: 3px 8px;
-    }
-
-    div.dataTables_wrapper div.dataTables_paginate ul.pagination {
-        margin-top: 10px;
-    }
-
-    div.dataTables_wrapper div.dataTables_info {
-        color: #888;
-        font-size: 0.85rem;
-        padding-top: 15px;
-    }
+    /* replaced by calls-align-techjobs 2026-11-19: Removed custom DataTables control styling to match Technician Jobs (Bootstrap5 defaults) */
+    /* 
+    .dataTables_wrapper .dataTables_filter input { ... }
+    #tblOutgoingCalls_wrapper .dataTables_filter { ... }
+    .dataTables_wrapper .dataTables_length select { ... }
+    div.dataTables_wrapper div.dataTables_paginate ul.pagination { ... }
+    */
 
     /* Mobile */
     @@media (max-width: 768px) {
@@ -219,14 +182,16 @@
             max-width: 100%;
         }
 
+        /* replaced by calls-align-techjobs 2026-11-19: Removed custom DataTables filter styling from mobile breakpoint */
+        /* 
         #tblOutgoingCalls_wrapper .dataTables_filter {
             text-align: left;
             margin-top: 12px;
         }
-
-            #tblOutgoingCalls_wrapper .dataTables_filter input {
-                width: 100%;
-            }
+        #tblOutgoingCalls_wrapper .dataTables_filter input {
+            width: 100%;
+        }
+        */
     }
 </style>
 
@@ -325,7 +290,7 @@
         </div>
 
         <!-- Outgoing Call Activity -->
-        <div class="nova-list-card nova-jobs-table sg-fix-jobs">
+        <div class="nova-list-card nova-jobs-table sg-fix-jobs calls-scope">
 
             <div class="nova-list-toolbar">
 
@@ -345,7 +310,8 @@
             </div>
 
             <div class="nova-table-viewport">
-
+                @* replaced by calls-shared-fix 2026-11-19: Outgoing calls table replaced with shared partial *@
+                @* 
                 <table class="table" id="tblOutgoingCalls">
 
                     <thead>
@@ -414,7 +380,9 @@
                     </tbody>
 
                 </table>
+                *@
 
+                @await Html.PartialAsync("_CallsTable", Model.Rows)
             </div>
         </div>
     }
@@ -427,6 +395,8 @@
     <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
+        @* replaced by calls-shared-fix 2026-11-19: DataTable init moved to _CallsTable.cshtml partial *@
+        @*
         $(document).ready(function () {
 
             if ($('#tblOutgoingCalls').length) {
@@ -498,5 +468,6 @@
             });
 
         });
+        *@
     </script>
 }

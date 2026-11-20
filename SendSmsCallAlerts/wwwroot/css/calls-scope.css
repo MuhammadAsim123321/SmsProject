@@ -1,0 +1,342 @@
+/* =============================================================================
+   Calls Scope CSS: Outgoing Calls and Staff Activity Phone Calls pages only
+   
+   All rules in this file are scoped to .calls-scope wrapper class added to:
+   - Outgoing calls card (.nova-list-card.calls-scope)
+   - Phone calls pane (.sa-pane.calls-scope)
+   
+   This ensures no rules affect other pages or components.
+   ============================================================================= */
+
+/* FIX 1: Header - compress on first load (removed via app.js check)
+   The sessionStorage script in _Layout.cshtml will only apply the collapsed class
+   if explicitly set by the toggle handler. On first load, it will not apply.
+   No CSS changes needed for this fix; it is handled by reverting the script logic. */
+
+/* ============================================================================= */
+/* FIX 2: Search box styling - dark theme with icon for both calls views only */
+
+/* Outgoing calls: DataTables filter input styling */
+.calls-scope #tblOutgoingCalls_wrapper .dataTables_filter {
+    margin: 0;
+    text-align: right;
+}
+
+.calls-scope #tblOutgoingCalls_wrapper .dataTables_filter label {
+    margin: 0;
+    width: min(100%, 350px);
+}
+
+.calls-scope #tblOutgoingCalls_wrapper .dataTables_filter input {
+    width: 100%;
+    height: 40px;
+    margin-left: 0;
+    padding: 0 12px 0 38px !important;
+    border-radius: 11px;
+    background: #ffffff;
+    color: #1f2340;
+    border: 1px solid #9aa3bd;
+    font-size: 12.5px;
+    font-weight: 500;
+    outline: 0;
+    transition: box-shadow 0.18s, border-color 0.18s;
+    /* replaced old styling: background #fbfcff with border #e1e5f0 and light icon */
+    /* new styling: dark theme with icon color #5a55d9 */
+}
+
+.calls-scope #tblOutgoingCalls_wrapper .dataTables_filter input:focus {
+    border-color: #5a55d9;
+    box-shadow: 0 0 0 3px rgba(90, 85, 217, 0.15);
+    background: #fff;
+}
+
+.calls-scope #tblOutgoingCalls_wrapper .dataTables_filter input::placeholder {
+    color: #6b7390;
+}
+
+/* Icon for Outgoing calls - use pseudo-element ::before for search icon */
+.calls-scope #tblOutgoingCalls_wrapper .dataTables_filter label::before {
+    content: '\f002';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    z-index: 1;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: #5a55d9;
+    pointer-events: none;
+    margin-top: 0;
+}
+
+.calls-scope #tblOutgoingCalls_wrapper .dataTables_filter label {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 40px;
+}
+
+/* replaced old background-image SVG with icon color #95a3bf */
+
+/* Phone calls (Staff Activity): DataTables filter input styling */
+.calls-scope .sa-card .dataTables_wrapper .dataTables_filter {
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: var(--sg-muted);
+    font-weight: 600;
+}
+
+.calls-scope .sa-card .dataTables_wrapper .dataTables_filter label {
+    display: block;
+    position: relative;
+    height: 40px;
+    margin: 0;
+    width: 100%;
+    max-width: 350px;
+}
+
+.calls-scope .sa-card .dataTables_wrapper .dataTables_filter label::before {
+    content: '\f002';
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    z-index: 1;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: #5a55d9;
+    pointer-events: none;
+}
+
+.calls-scope .sa-card .dataTables_wrapper .dataTables_filter input {
+    height: 40px;
+    width: 100%;
+    padding: 0 12px 0 38px;
+    font-size: 12.5px;
+    font-weight: 500;
+    background: #ffffff;
+    color: #1f2340;
+    border: 1px solid #9aa3bd;
+    border-radius: 11px;
+    outline: 0;
+    transition: box-shadow 0.18s, border-color 0.18s;
+    /* replaced old styling: border #cbd5e1, padding 4px 8px, no icon */
+}
+
+.calls-scope .sa-card .dataTables_wrapper .dataTables_filter input:focus {
+    border-color: #5a55d9;
+    box-shadow: 0 0 0 3px rgba(90, 85, 217, 0.15);
+    background: #fff;
+}
+
+.calls-scope .sa-card .dataTables_wrapper .dataTables_filter input::placeholder {
+    color: #6b7390;
+}
+
+/* ============================================================================= */
+/* FIX 3: Table layout - fixed columns, NOVA header, proper spacing */
+
+/* Outgoing calls table */
+.calls-scope #tblOutgoingCalls {
+    table-layout: fixed;
+    width: 100% !important;
+    border-collapse: collapse;
+}
+
+.calls-scope #tblOutgoingCalls thead th {
+    background-color: #f6f6ff;
+    color: #62608a;
+    text-align: left;
+    padding: 9px 14px;
+    white-space: nowrap;
+    border: none;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.075em;
+    /* replaced by calls-compact-fix 2026-11-19: old padding 12px 14px was too much */
+    /* replaced old: background-color #70b3db; color white; text-align center; padding 12px 10px */
+}
+
+.calls-scope #tblOutgoingCalls thead th:nth-child(1) { width: 14%; }  /* Date */
+.calls-scope #tblOutgoingCalls thead th:nth-child(2) { width: 10%; }  /* Time */
+.calls-scope #tblOutgoingCalls thead th:nth-child(3) { width: 22%; }  /* From */
+.calls-scope #tblOutgoingCalls thead th:nth-child(4) { width: 22%; }  /* To */
+.calls-scope #tblOutgoingCalls thead th:nth-child(5) { width: 10%; }  /* Duration */
+.calls-scope #tblOutgoingCalls thead th:nth-child(6) { width: 16%; }  /* Result */
+
+.calls-scope #tblOutgoingCalls tbody td {
+    padding: 8px 14px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+    border-left: none;
+    border-right: none;
+    line-height: 1.35;
+    /* replaced by calls-compact-fix 2026-11-19: old padding 12px 14px made rows too tall */
+}
+
+/* Phone number cells: keep nowrap for number, allow wrap for name */
+.calls-scope #tblOutgoingCalls tbody td:nth-child(3),
+.calls-scope #tblOutgoingCalls tbody td:nth-child(4) {
+    white-space: normal;
+}
+
+/* Date and time cells: nowrap */
+.calls-scope #tblOutgoingCalls tbody td:nth-child(1),
+.calls-scope #tblOutgoingCalls tbody td:nth-child(2) {
+    white-space: nowrap;
+}
+
+/* Duration and Result cells: nowrap */
+.calls-scope #tblOutgoingCalls tbody td:nth-child(5),
+.calls-scope #tblOutgoingCalls tbody td:nth-child(6) {
+    white-space: nowrap;
+}
+
+/* Result column: center-aligned for status pill */
+.calls-scope #tblOutgoingCalls tbody td:nth-child(6) {
+    text-align: center;
+}
+
+/* Duration column: right-aligned for time */
+.calls-scope #tblOutgoingCalls tbody td:nth-child(5) {
+    text-align: right;
+}
+
+.calls-scope #tblOutgoingCalls tbody tr:hover {
+    background-color: #f7fbff;
+}
+
+.calls-scope #tblOutgoingCalls tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* Phone calls (Staff Activity) table */
+.calls-scope #tblPhoneCalls {
+    table-layout: fixed;
+    width: 100% !important;
+    border-collapse: collapse;
+}
+
+.calls-scope #tblPhoneCalls thead th {
+    background-color: #f6f6ff;
+    color: #62608a;
+    text-align: left;
+    padding: 9px 14px;
+    white-space: nowrap;
+    border: none;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.075em;
+    /* replaced by calls-compact-fix 2026-11-19: old padding 12px 14px was too much */
+    /* replaced old: background-color #70b3db; color white; text-align left; padding 9px 10px; font-size .8rem */
+}
+
+.calls-scope #tblPhoneCalls thead th:nth-child(1) { width: 14%; }  /* Date */
+.calls-scope #tblPhoneCalls thead th:nth-child(2) { width: 10%; }  /* Time */
+.calls-scope #tblPhoneCalls thead th:nth-child(3) { width: 22%; }  /* From */
+.calls-scope #tblPhoneCalls thead th:nth-child(4) { width: 22%; }  /* To */
+.calls-scope #tblPhoneCalls thead th:nth-child(5) { width: 10%; }  /* Duration */
+.calls-scope #tblPhoneCalls thead th:nth-child(6) { width: 16%; }  /* Result */
+
+.calls-scope #tblPhoneCalls tbody td {
+    padding: 8px 14px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e5e7eb;
+    border-left: none;
+    border-right: none;
+    line-height: 1.35;
+    /* replaced by calls-compact-fix 2026-11-19: old padding 12px 14px made rows too tall */
+}
+
+/* Phone number cells: keep nowrap for number, allow wrap for name */
+.calls-scope #tblPhoneCalls tbody td:nth-child(3),
+.calls-scope #tblPhoneCalls tbody td:nth-child(4) {
+    white-space: normal;
+}
+
+/* Date and time cells: nowrap */
+.calls-scope #tblPhoneCalls tbody td:nth-child(1),
+.calls-scope #tblPhoneCalls tbody td:nth-child(2) {
+    white-space: nowrap;
+}
+
+/* Duration and Result cells: nowrap */
+.calls-scope #tblPhoneCalls tbody td:nth-child(5),
+.calls-scope #tblPhoneCalls tbody td:nth-child(6) {
+    white-space: nowrap;
+}
+
+/* Result column: center-aligned for status pill */
+.calls-scope #tblPhoneCalls tbody td:nth-child(6) {
+    text-align: center;
+}
+
+/* Duration column: right-aligned for time */
+.calls-scope #tblPhoneCalls tbody td:nth-child(5) {
+    text-align: right;
+}
+
+.calls-scope #tblPhoneCalls tbody tr:hover {
+    background-color: #f0f9ff;
+}
+
+.calls-scope #tblPhoneCalls tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+/* Styling for small text under phone numbers (name line) */
+.calls-scope #tblOutgoingCalls small.d-block.text-muted,
+.calls-scope #tblPhoneCalls small.d-block.text-muted {
+    display: block !important;
+    font-size: 12px;
+    color: #7a8199;
+    margin-top: 2px;
+    font-weight: 400;
+}
+
+/* Table viewport container */
+.calls-scope .nova-table-viewport {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: #ced0ef transparent;
+    min-width: 0;
+}
+
+.calls-scope .nova-table-viewport > table.table {
+    width: 100%;
+    min-width: 760px;
+    margin: 0 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 0;
+    font-size: 12.7px;
+}
+
+/* Staff Activity specific container */
+.calls-scope .sa-card {
+    padding: 0 !important;
+}
+
+.calls-scope .sa-card .dataTables_wrapper {
+    margin: 0 !important;
+}
+
+/* Responsive: ensure horizontal scroll at smaller viewports */
+@media (max-width: 991px) {
+    .calls-scope .nova-table-viewport > table.table,
+    .calls-scope #tblOutgoingCalls,
+    .calls-scope #tblPhoneCalls {
+        min-width: 760px;
+    }
+}
+
+/* ============================================================================= */
+/* End of calls-scope.css */

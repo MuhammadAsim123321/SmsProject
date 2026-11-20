@@ -1,5 +1,6 @@
 ﻿@using SendSmsCallAlerts.Services
-@model List<StaffRow>
+@using SendSmsCallAlerts.Models
+@model StaffActivityIndexVm
 @inject IAppClock Clock
 @{
     ViewData["Title"] = "Staff Activity";
@@ -8,12 +9,12 @@
     string P(int n, int total) => StaffActivityService.Pct(n, total);
     var chartJson = System.Text.Json.JsonSerializer.Serialize(new
     {
-        labels = Model.Select(r => r.Name),
-        ontime = Model.Select(r => r.OnTime),
-        gold = Model.Select(r => r.Gold),
-        orange = Model.Select(r => r.Orange),
-        red = Model.Select(r => r.Red),
-        pending = Model.Select(r => r.Pending)
+        labels = Model.StaffRows.Select(r => r.Name),
+        ontime = Model.StaffRows.Select(r => r.OnTime),
+        gold = Model.StaffRows.Select(r => r.Gold),
+        orange = Model.StaffRows.Select(r => r.Orange),
+        red = Model.StaffRows.Select(r => r.Red),
+        pending = Model.StaffRows.Select(r => r.Pending)
     });
 }
 @await Html.PartialAsync("_StaffActivityStyles")
@@ -41,6 +42,7 @@
     <button class="btn btn-primary btn-sm">Apply</button>
 </form>
 
+@* removed by staff-calls-fix 2024 - legend moved into pane-sms
 <div class="sa-legend">
     <span><i class="sa-dot" style="background:#15803d"></i>On time: under 10 min</span>
     <span><i class="sa-dot" style="background:#B8860B"></i>Gold: 10–15 min</span>
@@ -48,6 +50,7 @@
     <span><i class="sa-dot" style="background:#cc0000"></i>Red: 20+ min</span>
     <span><i class="sa-dot" style="background:#64748b"></i>Pending: no reply yet</span>
 </div>
+*@
 
 <div class="sa-tabs">
     <button type="button" class="active" data-tab="sms">SMS performance</button>
@@ -56,6 +59,15 @@
 </div>
 
 <div class="sa-pane active" id="pane-sms">
+    @* legend moved here by staff-calls-fix 2024 *@
+    <div class="sa-legend">
+        <span><i class="sa-dot" style="background:#15803d"></i>On time: under 10 min</span>
+        <span><i class="sa-dot" style="background:#B8860B"></i>Gold: 10–15 min</span>
+        <span><i class="sa-dot" style="background:#b35a00"></i>Orange: 15–20 min</span>
+        <span><i class="sa-dot" style="background:#cc0000"></i>Red: 20+ min</span>
+        <span><i class="sa-dot" style="background:#64748b"></i>Pending: no reply yet</span>
+    </div>
+
     <div class="sa-card">
         <h2>Staff comparison</h2>
         <p>Response speed of the messages each staff member answered, plus their pending messages</p>
@@ -79,7 +91,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var r in Model)
+                @foreach (var r in Model.StaffRows)
                 {
                     <tr>
                         <td class="sa-name"><a href="/StaffActivity/Detail/@r.UserId?from=@from&to=@to">@r.Name</a><br /><small>@r.Phone</small></td>
@@ -94,25 +106,25 @@
                         <td style="color:#cc0000;font-weight:600"><a href="@Drill(r.UserId, "red")" style="color:inherit">@r.Red</a> <span class="sa-sub">@P(r.Red, r.Answered)</span></td>
                     </tr>
                 }
-                @if (Model.Count == 0)
+                @if (Model.StaffRows.Count == 0)
                 {
                     <tr><td colspan="10" class="sa-empty">No staff users found.</td></tr>
                 }
             </tbody>
-            @if (Model.Count > 0)
+            @if (Model.StaffRows.Count > 0)
             {
                 <tfoot>
                     <tr>
                         <td>Team total</td>
-                        <td>@Model.Sum(r => r.Inbound)</td>
-                        <td>@Model.Sum(r => r.Outbound)</td>
-                        <td>@Model.Sum(r => r.Answered)</td>
-                        <td>@Model.Sum(r => r.Pending)</td>
+                        <td>@Model.StaffRows.Sum(r => r.Inbound)</td>
+                        <td>@Model.StaffRows.Sum(r => r.Outbound)</td>
+                        <td>@Model.StaffRows.Sum(r => r.Answered)</td>
+                        <td>@Model.StaffRows.Sum(r => r.Pending)</td>
                         <td></td>
-                        <td>@Model.Sum(r => r.OnTime)</td>
-                        <td>@Model.Sum(r => r.Gold)</td>
-                        <td>@Model.Sum(r => r.Orange)</td>
-                        <td>@Model.Sum(r => r.Red)</td>
+                        <td>@Model.StaffRows.Sum(r => r.OnTime)</td>
+                        <td>@Model.StaffRows.Sum(r => r.Gold)</td>
+                        <td>@Model.StaffRows.Sum(r => r.Orange)</td>
+                        <td>@Model.StaffRows.Sum(r => r.Red)</td>
                     </tr>
                 </tfoot>
             }
@@ -122,7 +134,7 @@
         Inbound = customer messages sent to the staff member's own number. Outbound = replies they sent from the app.
         Answered = messages whose first real reply was sent by them (percentages are of Answered).
         @{
-            var unknown = Model.Sum(r => r.ReplyUnknown);
+            var unknown = Model.StaffRows.Sum(r => r.ReplyUnknown);
         }
         @if (unknown > 0)
         {
@@ -131,13 +143,92 @@
     </p>
 </div>
 
-<div class="sa-pane" id="pane-calls">
-    <div class="sa-card">
-        <div class="sa-empty">
-            <strong>Call log tracking is not implemented yet</strong>
-            Inbound/outbound calls, call handling and response-time statistics will appear here once call logging is added.
+<div class="sa-pane calls-scope" id="pane-calls">
+    @if (Model.CallsError != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fa fa-exclamation-triangle me-1"></i>
+            <strong>Could not load call data.</strong> @Model.CallsError
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
+    }
+
+    <div class="sa-card">
+        <h2>Outgoing calls</h2>
+        <p>All outbound calls placed through RingCentral for the selected date range</p>
     </div>
+
+    @if (Model.CallRows.Count == 0)
+    {
+        <div class="sa-card">
+            <div class="sa-empty">
+                <strong>No outgoing calls found</strong>
+                Outbound call activity will appear here once calls are placed.
+            </div>
+        </div>
+    }
+    else
+    {
+        @* replaced by calls-shared-fix 2026-11-19: Phone calls table replaced with shared partial *@
+        @* 
+        <div class="sa-card sa-wrap" style="padding:0">
+            <div style="overflow-x:auto">
+                <table class="sa-table" id="tblPhoneCalls">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Duration</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.CallRows)
+                        {
+                            <tr>
+                                <td>@row.Date</td>
+                                <td>@row.Time</td>
+                                <td>
+                                    @row.FromNumber
+                                    @if (!string.IsNullOrWhiteSpace(row.FromName))
+                                    {
+                                        <small class="d-block text-muted">@row.FromName</small>
+                                    }
+                                </td>
+                                <td>
+                                    @row.ToNumber
+                                    @if (!string.IsNullOrWhiteSpace(row.ToName))
+                                    {
+                                        <small class="d-block text-muted">@row.ToName</small>
+                                    }
+                                </td>
+                                <td>
+                                    @if (row.DurationSeconds > 0)
+                                    {
+                                        <span title="@row.DurationSeconds seconds">@row.Duration</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0:00</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="nova-status @row.ResultCss">@row.Result</span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        *@
+        
+        <div class="sa-card sa-wrap" style="padding:0">
+            @await Html.PartialAsync("_CallsTable", Model.CallRows)
+        </div>
+    }
 </div>
 
 <div class="sa-pane" id="pane-sessions">
@@ -158,7 +249,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var r in Model)
+                @foreach (var r in Model.StaffRows)
                 {
                     <tr>
                         <td class="sa-name"><a href="/StaffActivity/Detail/@r.UserId?from=@from&to=@to">@r.Name</a></td>
@@ -184,6 +275,77 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css" rel="stylesheet" />
+    <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+
+    <style>
+        /* Staff Activity phone calls table styling */
+        @* replaced by calls-shared-fix 2026-11-19: Phone calls table styling moved to calls-shared.css *@
+        @*
+        #tblPhoneCalls {
+            width: 100% !important;
+            border-collapse: collapse;
+        }
+
+        #tblPhoneCalls thead th {
+            background-color: #70b3db;
+            color: white;
+            text-align: left;
+            padding: 9px 10px;
+            white-space: nowrap;
+            font-size: .8rem;
+            border: none;
+        }
+
+        #tblPhoneCalls tbody td {
+            padding: 9px 10px;
+            vertical-align: middle;
+            border-bottom: 1px solid #e5e7eb;
+            border-left: none;
+            border-right: none;
+            white-space: nowrap;
+        }
+
+        #tblPhoneCalls tbody tr:hover {
+            background-color: #f0f9ff;
+        }
+
+        #tblPhoneCalls tbody tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        *@
+
+        /* replaced by calls-align-techjobs 2026-11-19: Removed custom DataTables wrapper and control styling to match Technician Jobs (Bootstrap5 defaults) */
+        @* 
+        .sa-card #tblPhoneCalls_wrapper {
+            margin: 0;
+        }
+        
+        .sa-card .dataTables_wrapper .dataTables_length select {
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            padding: 2px 4px;
+        }
+        
+        .sa-card .dataTables_wrapper .dataTables_filter input {
+            border-radius: 4px;
+            border: 1px solid #cbd5e1;
+            padding: 4px 8px;
+        }
+        
+        .sa-card div.dataTables_wrapper div.dataTables_paginate ul.pagination {
+            margin-top: 10px;
+        }
+        
+        .sa-card div.dataTables_wrapper div.dataTables_info {
+            color: #888;
+            font-size: 0.85rem;
+            padding-top: 15px;
+        }
+        *@
+    </style>
+
     <script>
         (function () {
             'use strict';
@@ -271,70 +433,53 @@
             }
 
             // -------------------------
-            // Staff comparison chart
+            // Phone calls DataTable
             // -------------------------
-            var chartCanvas = document.getElementById('cmpChart');
+            @* replaced by calls-shared-fix 2026-11-19: DataTable init moved to _CallsTable.cshtml partial *@
+            @*
+            var phoneCallsTable = document.getElementById('tblPhoneCalls');
 
-            if (chartCanvas && typeof Chart !== 'undefined') {
-                var chartData = @Html.Raw(chartJson);
-
-                new Chart(chartCanvas.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: chartData.labels,
-                        datasets: [
-                            {
-                                label: 'On time',
-                                data: chartData.ontime,
-                                backgroundColor: '#15803d',
-                                stack: 's'
-                            },
-                            {
-                                label: 'Gold',
-                                data: chartData.gold,
-                                backgroundColor: '#B8860B',
-                                stack: 's'
-                            },
-                            {
-                                label: 'Orange',
-                                data: chartData.orange,
-                                backgroundColor: '#b35a00',
-                                stack: 's'
-                            },
-                            {
-                                label: 'Red',
-                                data: chartData.red,
-                                backgroundColor: '#cc0000',
-                                stack: 's'
-                            },
-                            {
-                                label: 'Pending',
-                                data: chartData.pending,
-                                backgroundColor: '#94a3b8',
-                                stack: 's'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            x: {
-                                stacked: true,
-                                grid: { display: false }
-                            },
-                            y: {
-                                stacked: true,
-                                beginAtZero: true,
-                                ticks: { precision: 0 }
-                            }
-                        },
-                        plugins: {
-                            legend: { position: 'bottom' }
+            if (phoneCallsTable && $.fn.DataTable) {
+                $(phoneCallsTable).DataTable({
+                    processing: true,
+                    scrollX: true,
+                    autoWidth: false,
+                    pageLength: 10,
+                    lengthMenu: [10, 25, 50, 100],
+                    order: [],
+                    language: {
+                        emptyTable: "No outgoing calls found for the selected date range.",
+                        zeroRecords: "No matching outgoing calls found.",
+                        processing:
+                            '<div class="text-center py-3">' +
+                            '<i class="fa fa-spinner fa-spin fa-2x" style="color:#70b3db;"></i>' +
+                            '</div>',
+                        search: "",
+                        searchPlaceholder: "Search calls...",
+                        lengthMenu: "Show _MENU_ entries",
+                        info: "Showing _START_ to _END_ of _TOTAL_ calls",
+                        infoEmpty: "Showing 0 to 0 of 0 calls",
+                        infoFiltered: "(filtered from _MAX_ total calls)",
+                        paginate: {
+                            previous: "Previous",
+                            next: "Next"
                         }
+                    },
+                    initComplete: function () {
+                        this.api().columns.adjust();
                     }
                 });
             }
+
+            // Adjust phone calls table when sidebar is toggled
+            $('#toggle_btn, #mobile_btn').on('click', function () {
+                setTimeout(function () {
+                    if ($.fn.DataTable.isDataTable('#tblPhoneCalls')) {
+                        $('#tblPhoneCalls').DataTable().columns.adjust();
+                    }
+                }, 320);
+            });
+            *@
         })();
     </script>
 }

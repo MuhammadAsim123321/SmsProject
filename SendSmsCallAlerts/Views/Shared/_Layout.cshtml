@@ -93,7 +93,7 @@
     <link rel="stylesheet" href="~/css/signal-shell.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/signal-sidebar.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/signal-brand.css" asp-append-version="true" />
-    
+    <link rel="stylesheet" href="~/css/calls-shared.css" asp-append-version="true" />
     @* Sidebar collapsed state: apply via class on <html> before paint to prevent layout shift on reload *@
     <script>
         (function () {
@@ -314,6 +314,7 @@
             })();
     </script>
     @await RenderSectionAsync("Scripts", required: false)
+    <script src="~/js/calls-table.js" asp-append-version="true"></script>
     @await Html.PartialAsync("_Toast")
     <script src="~/js/toast.js?v=7"></script>
 
